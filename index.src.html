@@ -130,6 +130,29 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 .manual .nilai { font: 600 12px var(--f-mono); background: #e9f9f1; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 8px; }
 .manual .tog { display: flex; align-items: center; gap: 6px; font: 700 13px var(--f-display); }
 .manual textarea { border: 2px solid var(--ink); border-radius: 8px; padding: 7px 9px; background: #fff; width: 100%; min-height: 58px; resize: vertical; font: 400 13px var(--f-body); }
+.trace .k-catat .tag { background: #ffe98a; }
+.manual input[type=text], .manual select { border: 2px solid var(--ink); border-radius: 8px; padding: 6px 9px; background: #fff; min-width: 0; }
+.manual .baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.manual .baris input[type=text] { flex: 1; }
+.manual .kepala { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 4px; }
+.manual .kepala label { margin: 0; }
+.manual .kepala button { border: 2px solid var(--ink); border-radius: 6px; background: #fff; font-size: 12px; padding: 0 7px; }
+.manual h3, .dunia h3 { margin: 10px 0 0; font: 800 14px var(--f-display); }
+.hasilcari { margin: 0; padding: 0; list-style: none; font: 600 12px var(--f-mono); display: flex; flex-direction: column; gap: 3px; }
+.hasilcari li { display: grid; grid-template-columns: 46px 1fr; gap: 6px; align-items: center; }
+.hasilcari .bar { height: 10px; background: var(--mint); border: 2px solid var(--ink); border-radius: 5px; min-width: 2px; }
+.hasilcari li.nol { color: var(--muted); }
+.hasilcari li.nol .bar { background: #dfe4f1; }
+.dunia { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.dunia label { font: 700 13px var(--f-display); margin-top: 4px; }
+.dunia select, .dunia input[type=text] { border: 2px solid var(--ink); border-radius: 8px; padding: 6px 9px; background: #fff; min-width: 0; }
+.dunia .note { margin: 2px 0; font-size: 12.5px; color: var(--muted); }
+.dunia .baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dunia .baris > select, .dunia .baris > input[type=text] { flex: 1; }
+.dunia textarea { border: 2px solid var(--ink); border-radius: 8px; padding: 8px; background: #12121f; color: #e9ecff; width: 100%; min-height: 220px; resize: vertical; font: 400 11.5px/1.45 var(--f-mono); white-space: pre; }
+.dunia .galat { margin: 0; padding: 6px 8px 6px 24px; border: 2px solid var(--ink); border-radius: 8px; background: #ffe4df; font-size: 12.5px; }
+.dunia .galat:empty { display: none; }
+.dunia .oke { color: #0f7a52; font-weight: 600; }
 .otak { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
 .otak label { font: 700 13px var(--f-display); margin-top: 4px; }
 .otak input, .otak select { border: 2px solid var(--ink); border-radius: 8px; padding: 7px 9px; background: #fff; width: 100%; min-width: 0; }
@@ -190,6 +213,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
       <button type="button" role="tab" id="tab-jejak" data-tab="jejak" aria-selected="false">Jejak</button>
       <button type="button" role="tab" id="tab-misi" data-tab="misi" aria-selected="false">Misi</button>
       <button type="button" role="tab" id="tab-manual" data-tab="manual" aria-selected="false">Manual</button>
+      <button type="button" role="tab" id="tab-dunia" data-tab="dunia" aria-selected="false">Dunia</button>
       <button type="button" role="tab" id="tab-otak" data-tab="otak" aria-selected="false">Otak</button>
     </div>
 
@@ -214,16 +238,51 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
     <section class="pane" id="pane-misi" role="tabpanel" aria-labelledby="tab-misi">
       <ul class="misi" id="misiList"></ul>
       <div class="legend" id="badgeList" style="border-top:0;padding-bottom:0"></div>
-      <div class="legend">Otak bisa parser aturan atau LLM. Agen membaca rak manual (RAG), dan orkestrator membagi tugas ke tiga spesialis.</div>
+      <div class="legend">Tiap ruang punya misi sendiri. Pindah ruang atau buat ruang baru di tab Dunia.</div>
     </section>
 
     <section class="pane" id="pane-manual" role="tabpanel" aria-labelledby="tab-manual">
       <div class="manual">
         <p class="note">Ini isi rak manual di ruangan. Agen mengambil potongan yang relevan lalu bertindak berdasarkan angka di sini. Ubah teksnya dan lihat perilaku agen ikut berubah.</p>
         <label class="tog"><input type="checkbox" id="ragOn" checked> Agen boleh membaca manual (RAG)</label>
+        <div class="baris"><label for="ragK" style="margin:0">Jumlah potongan yang diambil (top-k)</label>
+          <select id="ragK"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
         <div id="manualList"></div>
         <div class="nilai" id="manualNilai"></div>
+        <h3>Titip catatan (memori agen)</h3>
+        <p class="note">Catatan masuk ke rak yang sama dan ikut dicari. Lewat chat juga bisa: "ingat ya, ...". Catatan berisi "suhu nyaman 27 sampai 29 C" mengalahkan bab suhu.</p>
+        <div class="baris"><input type="text" id="catatanBaru" maxlength="160" placeholder="misalnya: pelanggan meja 3 alergi susu" aria-label="Catatan baru"><button class="btn sm" type="button" id="catatanTambah">Simpan</button></div>
+        <h3>Uji pencarian</h3>
+        <p class="note">Ketik pertanyaan untuk melihat skor TF-IDF tiap bab dan kata yang cocok. Begini cara agen memilih potongan.</p>
+        <input type="text" id="cariUji" maxlength="120" placeholder="misalnya: gerah banget" aria-label="Uji pencarian manual">
+        <ul class="hasilcari" id="cariHasil"></ul>
         <div class="btnrow" style="display:flex;gap:8px;margin-top:6px"><button class="btn" type="button" id="manualReset">Kembalikan manual awal</button></div>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-dunia" role="tabpanel" aria-labelledby="tab-dunia">
+      <div class="dunia">
+        <label for="duRuang">Ruang</label>
+        <div class="baris"><select id="duRuang"></select></div>
+        <p class="note" id="duDesk"></p>
+        <label for="duGrafis">Grafis</label>
+        <div class="baris"><select id="duGrafis"><option value="auto">Otomatis</option><option value="realistis">Realistis</option><option value="ringan">Ringan (laptop lambat)</option></select></div>
+        <p class="note" id="duFps"></p>
+        <h3>Ajari kata gaul</h3>
+        <p class="note">Tambah satu aturan: kalau pengguna bilang kata ini, agen menjalankan aksi itu. Aturan langsung dipakai parser dan ikut masuk prompt LLM.</p>
+        <div class="baris"><input type="text" id="duKata" maxlength="24" placeholder="kata, misalnya: mager" aria-label="Kata gaul"><select id="duDev" aria-label="Perangkat"></select><select id="duOp" aria-label="Aksi"></select><button class="btn sm" type="button" id="duAjar">Ajari</button></div>
+        <h3>Definisi ruang (JSON)</h3>
+        <p class="note">Seluruh ruang hanyalah data: perangkat, batas guard, interlock, kata gaul, manual, dan misi. Ubah lalu Terapkan. Ganti "id" untuk membuat ruang baru.</p>
+        <textarea id="duJson" spellcheck="false" aria-label="Definisi ruang dalam JSON"></textarea>
+        <ul class="galat" id="duGalat"></ul>
+        <p class="note" id="duStatus" role="status"></p>
+        <div class="baris">
+          <button class="btn pri sm" type="button" id="duTerap">Terapkan</button>
+          <button class="btn sm" type="button" id="duBaru">Ruang baru dari templat</button>
+          <button class="btn sm" type="button" id="duEkspor">Ekspor</button>
+          <label class="btn sm" for="duImpor" style="margin:0">Impor</label><input type="file" id="duImpor" accept=".json,application/json" hidden>
+          <button class="btn sm" type="button" id="duHapus">Hapus atau kembalikan</button>
+        </div>
       </div>
     </section>
 
@@ -278,6 +337,9 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 /*MANUAL*/
 </script>
 <script>
+/*DUNIA*/
+</script>
+<script>
 /*BRAIN*/
 </script>
 <script>
@@ -285,6 +347,9 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 </script>
 <script>
 /*LLM*/
+</script>
+<script>
+/*ADEGAN*/
 </script>
 <script>
 /*GAME*/
