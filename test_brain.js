@@ -1,3 +1,4 @@
+global.Manual = require('./manual.js');
 const O = require('./brain.js');
 let gagal = 0;
 function cek(nama, cond, info) { if (!cond) { gagal++; console.log('GAGAL:', nama, info !== undefined ? JSON.stringify(info) : ''); } else console.log('ok   :', nama); }

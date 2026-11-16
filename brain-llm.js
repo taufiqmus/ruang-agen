@@ -38,7 +38,7 @@
     const mentah = Array.isArray(raw.aksi) ? raw.aksi.slice(0, 6) : [];
     const aksi = [];
     for (const a of mentah) { const x = normAksi(a); if (x) aksi.push(x); }
-    const fokus = ['suhu', 'cahaya', 'semua'].includes(raw.fokus) ? raw.fokus : 'semua';
+    const fokus = ['suhu', 'cahaya', 'semua', 'manual'].includes(raw.fokus) ? raw.fokus : 'semua';
     return { intent, pikiran: str(raw.pikiran, 220), aksi, fokus, balasan: str(raw.balasan, 240), dibuang: mentah.length - aksi.length };
   }
 
@@ -83,20 +83,50 @@
     pintu: { open: !!s.pintu.open }, lengan: { on: !!s.lengan.on, speed: s.lengan.speed, angle: s.lengan.angle }
   });
 
-  async function satuPanggilan(pesan, state, cfg) {
+  /* Skema keluaran terstruktur untuk Ollama (format JSON schema). */
+  const SKEMA = {
+    type: 'object',
+    properties: {
+      intent: { type: 'string', enum: ['kontrol', 'info', 'obrol', 'tidak_paham'] },
+      pikiran: { type: 'string' },
+      aksi: { type: 'array', items: { type: 'object', properties: { device: { type: 'string', enum: ['lampu', 'kipas', 'pintu', 'lengan'] }, op: { type: 'string', enum: ['on', 'off', 'open', 'close'] }, speed: { type: 'number' }, angle: { type: 'number' } }, required: ['device', 'op'] } },
+      fokus: { type: 'string', enum: ['suhu', 'cahaya', 'semua', 'manual'] },
+      balasan: { type: 'string' }
+    },
+    required: ['intent', 'pikiran', 'aksi', 'fokus', 'balasan']
+  };
+
+  async function satuPanggilan(pesan, state, cfg, potongan) {
     const timeout = cfg.timeoutMs || 12000;
+    if (cfg.mode === 'ollama') {
+      const base = String(cfg.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
+      const model = cfg.ollamaModel || 'qwen2.5:3b';
+      let d;
+      try {
+        d = await http(base + '/api/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, messages: bangunPrompt(pesan, state, potongan), stream: false, format: SKEMA, options: { temperature: 0.2 } })
+        }, timeout);
+      } catch (e) {
+        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Ollama tidak terjangkau. Pastikan Ollama berjalan di laptop ini dan OLLAMA_ORIGINS mengizinkan alamat halaman ini.');
+        throw e;
+      }
+      const teks = d && d.message && d.message.content;
+      if (!teks) throw new GalatOtak('kosong', 'Ollama mengembalikan jawaban kosong (model sudah diunduh?).');
+      return { teks, model: 'ollama:' + (d.model || model) };
+    }
     if (cfg.mode === 'proxy') {
       if (!cfg.proxyUrl) throw new GalatOtak('konfig', 'URL proxy belum diisi.');
       const d = await http(cfg.proxyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-kode-kelas': cfg.kodeKelas || '', 'x-klien': cfg.klienId || '' },
-        body: JSON.stringify({ pesan, state: ringkasState(state) })
+        body: JSON.stringify({ pesan, state: ringkasState(state), potongan })
       }, timeout);
       if (!d || typeof d.teks !== 'string' || !d.teks) throw new GalatOtak('kosong', 'proxy mengembalikan jawaban kosong.');
       return { teks: d.teks, model: d.model || 'proxy' };
     }
     if (!cfg.apiKey) throw new GalatOtak('konfig', 'kunci OpenRouter belum diisi.');
-    const body = { messages: bangunPrompt(pesan, state), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };
+    const body = { messages: bangunPrompt(pesan, state, potongan), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };
     const m = (cfg.models || []).filter(Boolean);
     if (m.length > 1) body.models = m; else body.model = m[0] || 'openrouter/free';
     const d = await http(OR_URL, {
@@ -111,24 +141,36 @@
 
   async function pikirAsync(pesan, state, cfg, opsi) {
     const O = root.Otak; opsi = opsi || {}; cfg = cfg || { mode: 'parser' };
+    const opsiOtak = { manual: opsi.manual, rag: opsi.rag };
     const t0 = Date.now();
     const tandai = (plan, info, catatan) => {
       plan.otak = Object.assign({ ms: Date.now() - t0, panggilan: 0 }, info);
       plan.jejak.splice(1, 0, { k: 'otak', t: catatan });
       return plan;
     };
-    if (!cfg.mode || cfg.mode === 'parser') return tandai(O.pikir(pesan, state), { asal: 'parser' }, 'Otak: parser aturan (tanpa LLM).');
+    if (!cfg.mode || cfg.mode === 'parser') return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser' }, 'Otak: parser aturan (tanpa LLM).');
     const inj = O.cekInjeksi(pesan);
     if (inj) return tandai(inj, { asal: 'guard' }, 'Input guard di kode menangkap pesan ini sebelum LLM dipanggil, jadi kuota tidak terpakai.');
-    if (opsi.kuotaHabis) return tandai(O.pikir(pesan, state), { asal: 'parser', fallback: true, alasan: 'kuota sesi' }, 'Kuota LLM sesi ini habis. Memakai parser aturan.');
+    if (opsi.kuotaHabis) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', fallback: true, alasan: 'kuota sesi' }, 'Kuota LLM sesi ini habis. Memakai parser aturan.');
+
+    /* RAG di kode: potongan dicari sebelum LLM dipanggil. Potongan yang memuat pola injeksi dibuang
+       (manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung). */
+    let diambil = [], dibuang = 0;
+    if (root.Manual && Array.isArray(opsi.manual) && opsi.rag !== false) {
+      const kandidat = root.Manual.cari(pesan, opsi.manual, 2, 0.8);
+      diambil = kandidat.filter(p => !O.adaInjeksi(p.judul + ' ' + p.teks));
+      dibuang = kandidat.length - diambil.length;
+    }
+    const potongan = diambil.map(p => ({ id: p.id, judul: p.judul, teks: p.teks }));
 
     let panggilan = 0, galat = null;
     for (let percobaan = 0; percobaan < 2; percobaan++) {
       try {
         panggilan++;
-        const { teks, model } = await satuPanggilan(pesan, state, cfg);
+        const { teks, model } = await satuPanggilan(pesan, state, cfg, potongan);
         const u = normalisasi(parseLonggar(teks));
-        const plan = O.dariUsulan(pesan, u, state);
+        const plan = O.dariUsulan(pesan, u, state, { diambil });
+        if (dibuang) plan.jejak.push({ k: 'guard', t: `Guard: ${dibuang} potongan manual dibuang karena memuat pola injeksi.` });
         const dtk = ((Date.now() - t0) / 1000).toFixed(1);
         return tandai(plan, { asal: 'llm', model, panggilan }, `Otak: LLM ${model} (${dtk} dtk)${panggilan > 1 ? ', percobaan ke-2' : ''}${u.dibuang ? `. ${u.dibuang} aksi tidak sah dibuang oleh validasi skema` : ''}.`);
       } catch (e) {
@@ -137,7 +179,7 @@
       }
     }
     const alasan = galat instanceof GalatOtak ? galat.message : 'galat tak terduga (' + str(String(galat && galat.message), 60) + ').';
-    return tandai(O.pikir(pesan, state), { asal: 'parser', fallback: true, alasan, panggilan }, `LLM gagal: ${alasan} Beralih ke parser aturan.`);
+    return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', fallback: true, alasan, panggilan }, `LLM gagal: ${alasan} Beralih ke parser aturan.`);
   }
 
   /* Dipakai tombol "Tes koneksi": satu panggilan nyata, hasilnya divalidasi seperti biasa. */

@@ -38,6 +38,19 @@ function ringkas(s: any) {
   };
 }
 
+/* Potongan manual dari klien tidak dipercaya: dibatasi jumlah dan panjangnya, dan yang memuat pola injeksi dibuang. */
+const POLA_INJEKSI = /abaikan|lupakan|ignore|bypass|jailbreak|system prompt|kamu sekarang|tanpa (batas|aturan)|mode (admin|developer|root)/i;
+function bersihPotongan(p: unknown): { id: string; judul: string; teks: string }[] {
+  const out: { id: string; judul: string; teks: string }[] = []; let sisa = 900;
+  for (const x of (Array.isArray(p) ? p.slice(0, 3) : []) as any[]) {
+    const judul = String(x?.judul ?? '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+    const teks = String(x?.teks ?? '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, Math.min(300, sisa));
+    if (!teks || POLA_INJEKSI.test(judul + ' ' + teks)) continue;
+    sisa -= teks.length; out.push({ id: String(x?.id ?? '').slice(0, 20), judul, teks });
+  }
+  return out;
+}
+
 export async function handle(req: Request, env: Env, now: number = Date.now()): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(env) });
   if (req.method !== 'POST') return balas(env, 405, { error: 'metode' });
@@ -72,7 +85,7 @@ export async function handle(req: Request, env: Env, now: number = Date.now()): 
 
   const models = (env.MODELS || 'openrouter/free').split(',').map((m) => m.trim()).filter(Boolean);
   const badan: Record<string, unknown> = {
-    messages: bangunPrompt(isi.pesan, ringkas(isi.state)),
+    messages: bangunPrompt(isi.pesan, ringkas(isi.state), bersihPotongan(isi.potongan)),
     temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' }
   };
   if (models.length > 1) badan.models = models; else badan.model = models[0];

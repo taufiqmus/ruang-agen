@@ -37,6 +37,14 @@
   const INFO_KERAS = /\b(berapa|status|kondisi|cek|periksa|laporan|apakah|gimana|bagaimana|apa kabar)\b|\b(nyala|hidup|mati|terbuka|tertutup|aktif)\s*(nggak|ngga|gak|ga|enggak|tidak)\s*\??\s*$/;
   const INFO_LUNAK = /\b(suhu|temperatur|cahaya|lux)\b/;
 
+  /* Orkestrasi: tiap perangkat punya agen spesialis. Urutan ("lalu", "setelah") dijalankan sekuensial,
+     sisanya paralel. Pintu tidak boleh sepanggung dengan lengan karena interlock (hindari balapan). */
+  const SPESIALIS = { lampu: 'Cahaya', kipas: 'Suhu', pintu: 'Keamanan', lengan: 'Keamanan' };
+  const URUT = /\b(lalu|setelah|sesudah|terus|kemudian|habis itu|baru)\b/;
+  const MANUAL_Q = /\b(manual|sop|aturan|prosedur|jadwal|jam|batas|standar|ketentuan|panduan|boleh|seharusnya|idealnya|ideal|sebaiknya|disarankan)\b|\bsuhu (yang )?(nyaman|ideal)\b/;
+  /* Model fisika di game.js (papan sensor): suhu stabil = 31 - 2.2 x level kipas - 1.5 bila pintu terbuka. */
+  const FISIKA = { ambien: 31, perLevel: 2.2, pintu: 1.5 };
+
   function stateAwal() {
     return {
       lampu: { on: false },
@@ -121,7 +129,29 @@
     return { verb: verbSendiri || verbWarisan, aksi };
   }
 
-  function cariGaul(teks, state) {
+  /* Paket "nyaman" yang angkanya dibaca dari manual (RAG). Mengubah teks manual mengubah perilaku agen. */
+  function paketNyaman(state, M, manual) {
+    const sh = M.nilaiSuhu(manual), cy = M.nilaiCahaya(manual);
+    const lux = cy ? cy.min : 200;
+    const aksi = []; const catatan = [];
+    if (sh) {
+      if (state.suhu > sh.maks) {
+        let level = 0, pintu = false;
+        for (let s = 1; s <= 3 && !level; s++) if (FISIKA.ambien - FISIKA.perLevel * s <= sh.maks) level = s;
+        for (let s = 1; s <= 3 && !level; s++) if (FISIKA.ambien - FISIKA.perLevel * s - FISIKA.pintu <= sh.maks) { level = s; pintu = true; }
+        if (!level) { level = 3; pintu = true; }
+        const stabil = FISIKA.ambien - FISIKA.perLevel * level - (pintu ? FISIKA.pintu : 0);
+        aksi.push({ device: 'kipas', op: 'on', speed: level });
+        if (pintu) aksi.push({ device: 'pintu', op: 'open' });
+        catatan.push(`manual: suhu nyaman ${sh.min} sampai ${sh.maks} C, suhu sekarang ${state.suhu.toFixed(1)} C, jadi kipas level ${level}${pintu ? ' dan pintu dibuka' : ''} (perkiraan stabil ${stabil.toFixed(1)} C)`);
+      } else catatan.push(`manual: suhu nyaman ${sh.min} sampai ${sh.maks} C, suhu sekarang ${state.suhu.toFixed(1)} C, sudah cukup sejuk`);
+    } else catatan.push('batas suhu di manual tidak terbaca, suhu dibiarkan');
+    if (state.cahaya < lux) { aksi.push({ device: 'lampu', op: 'on' }); catatan.push(`cahaya ${Math.round(state.cahaya)} lux di bawah ${lux} lux, lampu dinyalakan`); }
+    else catatan.push(`cahaya ${Math.round(state.cahaya)} lux sudah cukup`);
+    return { aksi, catatan: catatan.join('; ') };
+  }
+
+  function cariGaul(teks, state, ctx) {
     const h = [];
     const suhu = state.suhu;
     if (/\b(gerah|gerahh+|panas|sumuk|kepanasan)\b/.test(teks))
@@ -132,8 +162,12 @@
       h.push({ kata: 'silau', alasan: 'cahaya berlebih', aksi: [{ device: 'lampu', op: 'off' }] });
     if (/\b(pengap|sesak|sumpek|kurang udara)\b/.test(teks))
       h.push({ kata: 'pengap', alasan: 'butuh sirkulasi udara', aksi: [{ device: 'pintu', op: 'open' }, { device: 'kipas', op: 'on', speed: 1 }] });
-    if (/\b(nyaman|adem|sejuk|enak)\b/.test(teks))
-      h.push({ kata: 'nyaman', alasan: 'paket nyaman bawaan (manual belum tersedia)', aksi: [{ device: 'kipas', op: 'on', speed: 2 }, { device: 'lampu', op: 'on' }] });
+    if (/\b(nyaman|adem|sejuk|enak)\b/.test(teks)) {
+      if (ctx && ctx.manual) {
+        const p = paketNyaman(state, ctx.M, ctx.manual);
+        h.push({ kata: 'nyaman', alasan: p.catatan, aksi: p.aksi, manual: true });
+      } else h.push({ kata: 'nyaman', alasan: 'tanpa manual, angkanya kukarang sendiri: kipas level 2 dan lampu', aksi: [{ device: 'kipas', op: 'on', speed: 2 }, { device: 'lampu', op: 'on' }] });
+    }
     if (/\b(dingin|kedinginan|menggigil)\b/.test(teks))
       h.push({ kata: 'dingin', alasan: 'suhu terasa rendah', aksi: [{ device: 'kipas', op: 'off' }] });
     return h;
@@ -215,6 +249,34 @@
     return out;
   }
 
+  /* Membagi aksi menjadi tahap (sekuensial) berisi tugas per spesialis (paralel dalam satu tahap). */
+  function bagiTugas(aksi, teks) {
+    if (!aksi.length) return null;
+    const urut = URUT.test(teks);
+    const tahap = [];
+    const bentrok = (st, a) => st.some(x => (x.device === 'pintu' && x.op === 'open' && a.device === 'lengan') || (a.device === 'pintu' && a.op === 'open' && x.device === 'lengan'));
+    for (const a of aksi) {
+      let st = tahap[tahap.length - 1];
+      if (!st || urut || bentrok(st, a)) { st = []; tahap.push(st); }
+      st.push(a);
+    }
+    const tugas = [];
+    tahap.forEach((st, i) => {
+      for (const nama of [...new Set(st.map(a => SPESIALIS[a.device]))]) tugas.push({ agen: nama, tahap: i, aksi: st.filter(a => SPESIALIS[a.device] === nama) });
+    });
+    return tugas;
+  }
+  function delegasiJejak(tugas) {
+    if (!tugas || !tugas.length) return [];
+    const n = Math.max(...tugas.map(t => t.tahap)) + 1;
+    const baris = [`Orkestrator membagi ${tugas.reduce((s, t) => s + t.aksi.length, 0)} aksi ke ${new Set(tugas.map(t => t.agen)).size} spesialis dalam ${n} tahap.`];
+    for (let i = 0; i < n; i++) {
+      const dalam = tugas.filter(t => t.tahap === i);
+      baris.push(`Tahap ${i + 1}${dalam.length > 1 ? ' (paralel)' : ''}: ` + dalam.map(t => `${t.agen} (${t.aksi.map(a => a.device + ' ' + a.op).join(', ')})`).join(' dan '));
+    }
+    return baris;
+  }
+
   function kerangka(pesan) {
     const asli = String(pesan || '').trim();
     const teks = norm(asli);
@@ -224,7 +286,10 @@
     const selesai = (tujuan) => {
       const router = { k: 'router', intent: out.intent, t: `Router: intent "${LABEL_INTENT[out.intent]}"${out.sub ? ' (' + out.sub + ')' : ''}${tujuan ? '. Tujuan: ' + tujuan : ''}` };
       J.splice(1, 0, router);
-      if (out.pikiran) J.splice(2, 0, { k: 'pikir', t: out.pikiran });
+      let i = 2;
+      if (out.pikiran) J.splice(i++, 0, { k: 'pikir', t: out.pikiran });
+      if (out.diambil.length) J.splice(i++, 0, { k: 'ambil', t: 'Membuka rak manual: ' + out.diambil.map(d => `${d.judul} (skor ${d.skor})`).join('; ') });
+      for (const d of delegasiJejak(out.didelegasikan_ke)) J.splice(i++, 0, { k: 'delegasi', t: d });
       for (const t of out.ditolak) J.push({ k: 'guard', t: `Guard (${t.aturan}): ${t.pesan}` });
       return out;
     };
@@ -258,7 +323,11 @@
     return bagian.join(' ');
   }
 
-  function pikir(pesan, state) {
+  function pikir(pesan, state, opsi) {
+    opsi = opsi || {};
+    const M = root.Manual;
+    const manual = M && opsi.rag !== false && Array.isArray(opsi.manual) ? opsi.manual : null;
+    const ctx = manual ? { M, manual } : null;
     const { asli, teks, out, J, selesai } = kerangka(pesan);
     const plIn = cekInjeksi(pesan);
     if (plIn) return plIn;
@@ -277,8 +346,19 @@
       return selesai('tidak perlu berjalan');
     }
 
+    // 2b. Pertanyaan tentang manual (SOP): agen ke rak manual, bukan ke papan sensor
+    if (manual && !cariVerb(teks) && MANUAL_Q.test(teks)) {
+      const hit = M.cari(teks, manual, 2, 0.8);
+      if (hit.length) {
+        out.intent = 'info'; out.sub = 'baca manual'; out.fokus = 'manual'; out.diambil = hit;
+        out.pikiran = 'Ini pertanyaan tentang aturan ruangan. Aku cari jawabannya di rak manual, bukan menebak.';
+        out.balasan = potong(`Menurut manual, ${hit[0].judul}: ${hit[0].teks}`, 260);
+        return selesai('Rak Manual');
+      }
+    }
+
     // 3. Tentukan jenis
-    const gaul = cariGaul(teks, state);
+    const gaul = cariGaul(teks, state, ctx);
     let jenis;
     if (/(nggak|ngga|gak|ga|enggak|tidak)\s*\??\s*$/.test(teks) && INFO_KERAS.test(teks)) jenis = 'info';
     else if (verbAda) jenis = 'jelas';
@@ -327,6 +407,13 @@
       const peta = new Map();
       for (const g of gaul) for (const a of g.aksi) peta.set(a.device, a);
       rencana = [...peta.values()];
+      if (gaul.some(g => g.manual)) out.diambil = M.ambilId(manual, ['suhu', 'cahaya']);
+      if (!rencana.length && gaul.some(g => g.manual)) {
+        out.intent = 'info'; out.sub = 'sudah nyaman (manual)';
+        out.pikiran = gaul.map(g => g.alasan).join('; ') + '.';
+        out.balasan = 'Ruangan sudah nyaman menurut manual, tidak ada yang perlu diubah.';
+        return selesai('Rak Manual');
+      }
       out.pikiran = gaul.map(g => `"${g.kata}" berarti ${g.alasan}`).join('; ') + `. Kutafsirkan menjadi: ${rencana.map(a => a.device + ' ' + a.op).join(', ')}.`;
     }
 
@@ -343,18 +430,26 @@
     if (!v.ok.length) out.sub = 'ditolak oleh aturan';
 
     out.balasan = susunBalasan(v);
-    const panels = [...new Set(v.ok.map(a => PANEL[PERANGKAT[a.device].panel].nama))];
-    return selesai(panels.join(' lalu ') || 'tidak ada aksi');
+    out.didelegasikan_ke = bagiTugas(v.ok, teks);
+    return selesai(tujuanSpesialis(out));
   }
+
+  const tujuanSpesialis = out => (out.didelegasikan_ke ? 'spesialis ' + [...new Set(out.didelegasikan_ke.map(t => t.agen))].join(', ') : 'tidak ada aksi');
 
   /* Mengubah usulan dari LLM (sudah dinormalisasi) menjadi rencana yang sama bentuknya dengan parser.
      Guardrail aksi tetap dijalankan di kode: LLM hanya mengusulkan, tidak memutuskan. */
-  function dariUsulan(pesan, u, state) {
-    const { out, selesai } = kerangka(pesan);
+  function dariUsulan(pesan, u, state, opsi) {
+    opsi = opsi || {};
+    const { teks, out, selesai } = kerangka(pesan);
     out.pikiran = u.pikiran || '';
+    out.diambil = Array.isArray(opsi.diambil) ? opsi.diambil : [];
     const ada = (u.aksi || []).length;
+    if (u.intent === 'info' && u.fokus === 'manual' && u.balasan && out.diambil.length && MANUAL_Q.test(teks)) {
+      out.intent = 'info'; out.sub = 'baca manual (LLM)'; out.fokus = 'manual'; out.balasan = u.balasan;
+      return selesai('Rak Manual');
+    }
     if (u.intent === 'info') {
-      out.intent = 'info'; out.sub = 'baca sensor (LLM)'; out.baca = true; out.fokus = u.fokus || 'semua';
+      out.intent = 'info'; out.sub = 'baca sensor (LLM)'; out.baca = true; out.fokus = u.fokus === 'manual' ? 'semua' : u.fokus || 'semua';
       return selesai('Papan Sensor');
     }
     if (u.intent === 'obrol') {
@@ -372,11 +467,12 @@
     out.intent = v.ok.length ? 'kontrol' : 'bahaya';
     out.sub = v.ok.length ? 'kontrol (LLM)' : 'ditolak oleh aturan';
     out.balasan = v.tolak.length || !u.balasan ? susunBalasan(v) : u.balasan;
-    const panels = [...new Set(v.ok.map(a => PANEL[PERANGKAT[a.device].panel].nama))];
-    return selesai(panels.join(' lalu ') || 'tidak ada aksi');
+    out.didelegasikan_ke = bagiTugas(v.ok, teks);
+    return selesai(tujuanSpesialis(out));
   }
 
-  const api = { pikir, cekInjeksi, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, PERANGKAT, PANEL, BATAS };
+  const adaInjeksi = teks => INJEKSI.test(norm(teks));
+  const api = { pikir, cekInjeksi, adaInjeksi, bagiTugas, SPESIALIS, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, PERANGKAT, PANEL, BATAS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Otak = api;
 })(typeof window !== 'undefined' ? window : globalThis);
