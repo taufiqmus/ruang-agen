@@ -147,6 +147,6 @@ n = D.nilaiMisi(K, K.misi[3], s, { tolak: 0, paralel: 0, tahapMaks: 0, ambil: ['
 cek('misi deklaratif: syarat ambil dan memori', n.length === 2 && n.every(x => x[1]), n);
 
 const semua = ['dunia.js', 'brain.js', 'prompt.js', 'manual.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(tanya('bikin nyaman'));
-cek('tanpa em dash', !/—/.test(semua));
+cek('tanpa em dash', !/\u2014/.test(semua));
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);
