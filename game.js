@@ -627,7 +627,11 @@
       const v = speechSynthesis.getVoices().find(x => /^id/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u);
     } catch (e) { /* abaikan */ }
   }
-  if (adaTTS) { $('#ttsLbl').hidden = false; $('#ttsOn').checked = !!cfg.tts; $('#ttsOn').addEventListener('change', e => { cfg.tts = e.target.checked; simpanCfg(); if (!cfg.tts) speechSynthesis.cancel(); }); }
+  if (adaTTS) { $('#ttsLbl').hidden = false; $('#ttsOn').checked = !!cfg.tts; $('#ttsOn').addEventListener('change', e => {
+      cfg.tts = e.target.checked; simpanCfg(); if (!cfg.tts) speechSynthesis.cancel();
+      const adaId = speechSynthesis.getVoices().some(v => /^id/i.test(v.lang));
+      $('#voiceNote').textContent = cfg.tts && !adaId ? 'Perangkat ini belum punya suara Indonesia, balasan dibacakan dengan suara lain.' : '';
+    }); }
   if (SR) {
     const mic = $('#micBtn'); mic.hidden = false; let rec = null;
     mic.addEventListener('click', () => {
