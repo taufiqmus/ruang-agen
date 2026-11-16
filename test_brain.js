@@ -1,4 +1,5 @@
 global.Manual = require('./manual.js');
+global.Dunia = require('./dunia.js');
 const O = require('./brain.js');
 let gagal = 0;
 function cek(nama, cond, info) { if (!cond) { gagal++; console.log('GAGAL:', nama, info !== undefined ? JSON.stringify(info) : ''); } else console.log('ok   :', nama); }
@@ -58,7 +59,7 @@ p = O.pikir('matikan semua', baru());
 cek('matikan semua = 4 aksi', p.aksi.length === 4, ringkas(p));
 
 p = O.pikir('kipas kecepatan 5', baru());
-cek('kipas level 5 ditolak', p.ditolak.length === 1 && p.ditolak[0].aturan === 'batas_kipas', ringkas(p));
+cek('kipas level 5 ditolak', p.ditolak.length === 1 && p.ditolak[0].aturan === 'batas_level', ringkas(p));
 
 p = O.pikir('pelankan kipas', Object.assign(baru(), { kipas: { on: true, speed: 3 } }));
 cek('pelankan kipas 3 -> 2', p.aksi[0].speed === 2, ringkas(p));

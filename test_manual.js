@@ -1,7 +1,7 @@
 /* Uji RAG (rak manual) dan orkestrasi (pembagian tugas ke spesialis). Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i) : ''); } else console.log('ok   :', n); };
@@ -20,7 +20,7 @@ cek('cari: level kipas', top('kipas level berapa saja') === 'kipas');
 cek('cari: gerah menemukan suhu (sinonim)', top('gerah banget') === 'suhu');
 cek('cari: tanpa kecocokan = kosong', M.cari('halo', M.MANUAL_AWAL, 2).length === 0);
 cek('cari: ambang skor', M.cari('nyalakan lampu', M.MANUAL_AWAL, 2, 0.8).length === 0);
-cek('nilai suhu dari teks', JSON.stringify(M.nilaiSuhu(M.MANUAL_AWAL)) === '{"min":24,"maks":26}');
+cek('nilai suhu dari teks', JSON.stringify(M.nilaiSuhu(M.MANUAL_AWAL)) === '{"min":24,"maks":26,"sumber":"suhu"}');
 cek('nilai suhu koma desimal', M.nilaiSuhu(ubahSuhu('Suhu nyaman 23,5 sampai 25,5 C.')).maks === 25.5);
 cek('nilai suhu tak terbaca = null', M.nilaiSuhu(ubahSuhu('Suhu terserah saja.')) === null);
 cek('nilai suhu ngawur ditolak', M.nilaiSuhu(ubahSuhu('Suhu nyaman 90 sampai 99 C.')) === null);

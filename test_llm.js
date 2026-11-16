@@ -13,7 +13,7 @@ function fetchTiruan(url, opsi) {
   return Promise.resolve({ ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.json });
 }
 const ctx = vm.createContext({ console, fetch: fetchTiruan, AbortController, setTimeout, clearTimeout, Date, Error, TypeError });
-for (const f of ['manual.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const O = ctx.Otak, L = ctx.OtakLLM;
 const OR = (obj, model) => ({ status: 200, json: { model: model || 'google/gemma-4-31b-it:free', choices: [{ message: { content: typeof obj === 'string' ? obj : JSON.stringify(obj) } }] } });
 const baru = () => O.stateAwal();
@@ -80,7 +80,7 @@ const reset = (...r) => { antrean = r; panggilan = []; };
 
   reset(OR({ intent: 'kontrol', aksi: [{ device: 'kipas', op: 'on', speed: '9' }] }));
   p = await L.pikirAsync('kipas kencang banget', baru(), cfgK());
-  cek('angka string dinormalisasi lalu ditolak guard', p.ditolak[0] && p.ditolak[0].aturan === 'batas_kipas', p.ditolak);
+  cek('angka string dinormalisasi lalu ditolak guard', p.ditolak[0] && p.ditolak[0].aturan === 'batas_level', p.ditolak);
 
   reset(OR({ intent: 'info', fokus: 'suhu', aksi: [] }));
   p = await L.pikirAsync('panas ga sih', baru(), cfgK());

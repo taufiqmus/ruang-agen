@@ -1,4 +1,4 @@
-/* Otak LLM: memanggil model (kunci OpenRouter pribadi atau Ollama lokal),
+/* Otak LLM: memanggil model (server lokal Python, kunci OpenRouter pribadi, atau Ollama),
    memvalidasi jawabannya, dan jatuh kembali ke parser aturan bila gagal.
    Prinsip: LLM hanya MENGUSULKAN. Input guard dan guard aksi tetap dijalankan di kode. */
 (function (root) {
@@ -9,21 +9,23 @@
     constructor(kode, pesan) { super(pesan); this.kode = kode; }
   }
 
-  const OPS = { lampu: ['on', 'off'], kipas: ['on', 'off'], pintu: ['open', 'close'], lengan: ['on', 'off'] };
   const SINONIM = { buka: 'open', tutup: 'close', nyala: 'on', hidup: 'on', mati: 'off', matikan: 'off', nyalakan: 'on' };
   const num = v => { const x = parseFloat(String(v).replace('%', '')); return Number.isFinite(x) ? x : undefined; };
   const str = (v, n) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '');
 
   function normAksi(a) {
     if (!a || typeof a !== 'object') return null;
+    /* Perangkat dan aksi yang sah dibaca dari ruang aktif. Yang tidak dikenal dibuang, bukan ditebak. */
+    const P = root.Otak.ruang().perangkat, D = root.Dunia;
     const device = String(a.device || '').toLowerCase();
-    if (!OPS[device]) return null;
+    if (!D.punya(P, device)) return null;
+    const d = P[device];
     let op = String(a.op || '').toLowerCase();
     op = SINONIM[op] || op;
-    if (!OPS[device].includes(op)) return null;
+    if (!D.TIPE[d.tipe].ops.includes(op)) return null;
     const x = { device, op };
-    if (device === 'kipas' && op === 'on') { const s = num(a.speed); x.speed = s === undefined ? 2 : s; }
-    if (device === 'lengan' && op === 'on') {
+    if (d.tipe === 'level' && op === 'on') { const s = num(a.speed); x.speed = s === undefined ? Math.min(2, d.maks) : s; }
+    if (d.tipe === 'mesin' && op === 'on') {
       const s = num(a.speed), g = num(a.angle);
       x.speed = s === undefined ? 30 : s; x.angle = g === undefined ? 60 : g;
     }
@@ -77,27 +79,23 @@
     return data;
   }
 
-  const ringkasState = s => ({
-    suhu: s.suhu, cahaya: s.cahaya,
-    lampu: { on: !!s.lampu.on }, kipas: { on: !!s.kipas.on, speed: s.kipas.speed },
-    pintu: { open: !!s.pintu.open }, lengan: { on: !!s.lengan.on, speed: s.lengan.speed, angle: s.lengan.angle }
-  });
-
-  /* Skema keluaran terstruktur untuk Ollama (format JSON schema). */
-  const SKEMA = {
+  /* Skema keluaran terstruktur (JSON schema) untuk server lokal dan Ollama. Daftar perangkat mengikuti ruang aktif,
+     jadi model kecil tidak bisa mengarang nama perangkat. */
+  const skema = () => ({
     type: 'object',
     properties: {
       intent: { type: 'string', enum: ['kontrol', 'info', 'obrol', 'tidak_paham'] },
       pikiran: { type: 'string' },
-      aksi: { type: 'array', items: { type: 'object', properties: { device: { type: 'string', enum: ['lampu', 'kipas', 'pintu', 'lengan'] }, op: { type: 'string', enum: ['on', 'off', 'open', 'close'] }, speed: { type: 'number' }, angle: { type: 'number' } }, required: ['device', 'op'] } },
+      aksi: { type: 'array', items: { type: 'object', properties: { device: { type: 'string', enum: Object.keys(root.Otak.ruang().perangkat) }, op: { type: 'string', enum: ['on', 'off', 'open', 'close'] }, speed: { type: 'number' }, angle: { type: 'number' } }, required: ['device', 'op'] } },
       fokus: { type: 'string', enum: ['suhu', 'cahaya', 'semua', 'manual'] },
       balasan: { type: 'string' }
     },
     required: ['intent', 'pikiran', 'aksi', 'fokus', 'balasan']
-  };
+  });
 
   async function satuPanggilan(pesan, state, cfg, potongan) {
     const timeout = cfg.timeoutMs || 12000;
+    const SKEMA = skema();
     const susun = cfg.ringkas ? bangunPromptRingkas : bangunPrompt; // prompt ringkas untuk model kecil
     if (cfg.mode === 'ollama') {
       const base = String(cfg.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
@@ -150,7 +148,8 @@
 
   async function pikirAsync(pesan, state, cfg, opsi) {
     const O = root.Otak; opsi = opsi || {}; cfg = cfg || { mode: 'parser' };
-    const opsiOtak = { manual: opsi.manual, rag: opsi.rag };
+    const opsiOtak = { manual: opsi.manual, rag: opsi.rag, k: opsi.k };
+    const k = Math.max(1, Math.min(3, opsi.k | 0 || 2));
     const t0 = Date.now();
     const tandai = (plan, info, catatan) => {
       plan.otak = Object.assign({ ms: Date.now() - t0, panggilan: 0 }, info);
@@ -160,6 +159,7 @@
     if (!cfg.mode || cfg.mode === 'parser') return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser' }, 'Otak: parser aturan (tanpa LLM).');
     const inj = O.cekInjeksi(pesan);
     if (inj) return tandai(inj, { asal: 'guard' }, 'Input guard di kode menangkap pesan ini sebelum LLM dipanggil, jadi kuota tidak terpakai.');
+    if (O.adaMemori(pesan)) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser' }, 'Menulis memori dikerjakan kode, bukan LLM: apa yang boleh ditulis ke rak tidak diserahkan ke model.');
     if (opsi.kuotaHabis) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', fallback: true, alasan: 'kuota sesi' }, 'Kuota LLM sesi ini habis. Memakai parser aturan.');
 
     /* Router biaya (mode hemat): pesan yang dikenali parser dikerjakan parser. LLM hanya dipanggil untuk pesan yang
@@ -175,7 +175,7 @@
        (manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung). */
     let diambil = [], dibuang = 0;
     if (root.Manual && Array.isArray(opsi.manual) && opsi.rag !== false) {
-      const kandidat = root.Manual.cari(pesan, opsi.manual, 2, 0.8);
+      const kandidat = root.Manual.cari(pesan, opsi.manual, k, 0.8);
       diambil = kandidat.filter(p => !O.adaInjeksi(p.judul + ' ' + p.teks));
       dibuang = kandidat.length - diambil.length;
     }

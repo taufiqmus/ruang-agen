@@ -53,13 +53,28 @@
 
   /* Nilai dibaca dari TEKS manual, jadi mengedit teks mengubah perilaku agen. */
   function angka(s) { return parseFloat(String(s).replace(',', '.')); }
+  const RENTANG_SUHU = /(\d+(?:[.,]\d+)?)\s*(?:sampai|hingga|-|s\.d\.?)\s*(\d+(?:[.,]\d+)?)\s*(?:c\b|derajat)/i;
+  const adalahCatatan = m => /^catatan/.test(m.id);
+  /* Catatan memori terbaru menang atas bab "suhu": preferensi pengguna mengalahkan SOP umum. */
   function nilaiSuhu(manual) {
-    const m = (manual || []).find(x => x.id === 'suhu'); if (!m) return null;
-    const r = m.teks.match(/(\d+(?:[.,]\d+)?)\s*(?:sampai|hingga|-|s\.d\.?)\s*(\d+(?:[.,]\d+)?)\s*(?:c\b|derajat)/i);
-    if (!r) return null;
-    const a = angka(r[1]), b = angka(r[2]);
-    if (!(a >= 10 && b <= 45 && a <= b)) return null;
-    return { min: a, maks: b };
+    const semua = manual || [];
+    const calon = semua.filter(adalahCatatan).reverse().concat(semua.filter(x => x.id === 'suhu'));
+    for (const m of calon) {
+      const r = m.teks.match(RENTANG_SUHU);
+      if (!r) continue;
+      const a = angka(r[1]), b = angka(r[2]);
+      if (a >= 10 && b <= 45 && a <= b) return { min: a, maks: b, sumber: m.id };
+    }
+    return null;
+  }
+  /* Untuk belajar: skor tiap potongan terhadap sebuah pertanyaan, beserta kata yang cocok. */
+  function jelaskan(pesan, manual) {
+    const q = [...new Set(tokenQuery(pesan))];
+    const skor = {}; for (const h of cari(pesan, manual, 99, 0)) skor[h.id] = h.skor;
+    return (manual || []).map(m => {
+      const t = new Set(token(m.judul + ' ' + m.teks));
+      return { id: m.id, judul: m.judul, skor: skor[m.id] || 0, cocok: q.filter(w => t.has(w)) };
+    }).sort((a, b) => b.skor - a.skor);
   }
   function nilaiCahaya(manual) {
     const m = (manual || []).find(x => x.id === 'cahaya'); if (!m) return null;
@@ -67,7 +82,7 @@
     return r ? { min: angka(r[1]) } : null;
   }
 
-  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, norm };
+  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, jelaskan, adalahCatatan, norm };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Manual = api;
 })(typeof window !== 'undefined' ? window : globalThis);

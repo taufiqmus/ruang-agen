@@ -1,28 +1,12 @@
-/* Otak agen: parser aturan + intent router + validasi aksi (guardrail).
-   Semua fungsi murni, tanpa DOM, supaya mudah diuji dan nanti bisa diganti LLM
-   selama kontrak JSON keluarannya sama. */
+/* Otak agen: parser aturan + intent router + validasi aksi (guardrail) + pembagian tugas.
+   Tidak ada nama perangkat yang ditulis mati di sini: semuanya dibaca dari definisi ruang (dunia.js).
+   Tanpa DOM, supaya mudah diuji. Otak LLM boleh menggantikan parser selama kontrak JSON keluarannya sama:
+   {intent, sub, diambil[], didelegasikan_ke, memori, pikiran, aksi[], ditolak[], baca, fokus, balasan, jejak[], otak} */
 (function (root) {
   'use strict';
+  const D = root.Dunia || (typeof require === 'function' ? require('./dunia.js') : null);
 
-  const PERANGKAT = {
-    lampu:  { nama: 'Lampu',        panel: 'A' },
-    kipas:  { nama: 'Kipas',        panel: 'A' },
-    pintu:  { nama: 'Pintu',        panel: 'B' },
-    lengan: { nama: 'Lengan robot', panel: 'B' }
-  };
-  const PANEL = {
-    A: { nama: 'Panel Kenyamanan' },
-    B: { nama: 'Panel Akses & Mesin' }
-  };
-  const BATAS = { lengan: { kecepatan: 50, sudut: 90 }, kipas: { level: 3 } };
-
-  const POLA = {
-    lampu:  /\b(lampu|lampunya|lamp|penerangan)\b/,
-    kipas:  /\b(kipas|kipasnya|angin|fan)\b/,
-    pintu:  /\b(pintu|pintunya)\b/,
-    lengan: /\b(lengan|lengannya|robot|arm)\b/
-  };
-
+  /* ---------- kosakata bahasa Indonesia (berlaku di semua ruang) ---------- */
   const V_ON    = /\b(nyalakan|nyalain|nyala|hidupkan|hidupin|aktifkan|aktifin|jalankan|jalanin|putar|putarkan|gerakkan|gerakin|mulai|on)\b/;
   const V_OFF   = /\b(matikan|matiin|mati|padamkan|padamin|stop|berhenti|hentikan|nonaktifkan|off)\b/;
   const V_BUKA  = /\b(buka|bukain|bukakan|bukalah)\b/;
@@ -36,25 +20,30 @@
   const TANYA_DIRI = /(siapa kamu|kamu siapa|kamu bisa apa|bisa apa|terima kasih|makasih|thanks|thx|keren)/;
   const INFO_KERAS = /\b(berapa|status|kondisi|cek|periksa|laporan|apakah|gimana|bagaimana|apa kabar)\b|\b(nyala|hidup|mati|terbuka|tertutup|aktif)\s*(nggak|ngga|gak|ga|enggak|tidak)\s*\??\s*$/;
   const INFO_LUNAK = /\b(suhu|temperatur|cahaya|lux)\b/;
-
-  /* Orkestrasi: tiap perangkat punya agen spesialis. Urutan ("lalu", "setelah") dijalankan sekuensial,
-     sisanya paralel. Pintu tidak boleh sepanggung dengan lengan karena interlock (hindari balapan). */
-  const SPESIALIS = { lampu: 'Cahaya', kipas: 'Suhu', pintu: 'Keamanan', lengan: 'Keamanan' };
   const URUT = /\b(lalu|setelah|sesudah|terus|kemudian|habis itu|baru)\b/;
-  const MANUAL_Q = /\b(manual|sop|aturan|prosedur|jadwal|jam|batas|standar|ketentuan|panduan|boleh|seharusnya|idealnya|ideal|sebaiknya|disarankan)\b|\bsuhu (yang )?(nyaman|ideal)\b/;
-  /* Model fisika di game.js (papan sensor): suhu stabil = 31 - 2.2 x level kipas - 1.5 bila pintu terbuka. */
-  const FISIKA = { ambien: 31, perLevel: 2.2, pintu: 1.5 };
+  const MANUAL_Q_DASAR = '\\b(manual|sop|aturan|prosedur|jadwal|jam|batas|standar|ketentuan|panduan|boleh|seharusnya|idealnya|ideal|sebaiknya|disarankan)\\b|\\bsuhu (yang )?(nyaman|ideal)\\b';
+  const MEMORI = /^\s*(?:tolong\s+)?(?:ingat|inget|catat|simpan)(?:\s+ya|\s+bahwa|\s+dong)?\s*[:,]?\s+(.{3,160})$/i;
+  const LABEL_INTENT = { kontrol: 'kontrol perangkat', info: 'tanya info', bahaya: 'bahaya', obrol: 'obrolan', tidak_paham: 'tidak dikenali' };
 
-  function stateAwal() {
-    return {
-      lampu: { on: false },
-      kipas: { on: false, speed: 2 },
-      pintu: { open: false },
-      lengan: { on: false, speed: 30, angle: 60 },
-      suhu: 31,
-      cahaya: 20
-    };
+  /* ---------- ruang aktif dan turunan yang dihitung sekali ---------- */
+  let R = null, P = {}, POLA = {}, ALIAS = [], KELUHAN = [], MANUAL_Q = null;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function aturRuang(def) {
+    const h = D.periksa(def);
+    if (!h.ok) return h;
+    R = h.ruang; P = R.perangkat; POLA = {};
+    for (const id of Object.keys(P)) POLA[id] = new RegExp('\\b(' + P[id].kata.map(k => esc(k) + '(nya)?').join('|') + ')\\b');
+    ALIAS = Object.keys(R.alias).sort((a, b) => b.length - a.length).map(k => [new RegExp('\\b' + esc(k) + '\\b', 'g'), R.alias[k]]);
+    KELUHAN = R.keluhan.map(k => ({ re: new RegExp('\\b(' + k.kata.map(esc).join('|') + ')\\b'), k }));
+    MANUAL_Q = new RegExp(MANUAL_Q_DASAR + (R.kataManual.length ? '|\\b(' + R.kataManual.map(esc).join('|') + ')\\b' : ''));
+    return h;
   }
+  const ids = () => Object.keys(P);
+  const nm = id => P[id].nama.toLowerCase();
+  const peran = p => ids().find(id => P[id].peran === p) || null;
+  const pertama = tipe => ids().find(id => P[id].tipe === tipe) || null;
+  const daftar = (a, kata) => (a.length > 1 ? a.slice(0, -1).join(', ') + (a.length > 2 ? ',' : '') + ' ' + kata + ' ' + a[a.length - 1] : a[0] || '');
+  const stateAwal = awal => D.stateAwal(R, awal);
 
   function norm(s) {
     return String(s || '')
@@ -66,6 +55,8 @@
       .trim();
   }
   const potong = (s, n) => (s.length > n ? s.slice(0, n - 1) + '...' : s);
+  /* Alias ruang: "seduh kopi" menjadi "nyalakan espresso". Diterapkan SETELAH input guard membaca teks asli. */
+  const pakaiAlias = t => { for (const [re, ke] of ALIAS) t = t.replace(re, ke); return t; };
 
   function cariVerb(c) {
     let best = null, idx = Infinity;
@@ -76,146 +67,160 @@
     return best;
   }
 
-  function levelKipas(c, v, state) {
-    if (v === 'naik') return (state.kipas.on ? state.kipas.speed : 1) + 1;
-    if (v === 'turun') return Math.max((state.kipas.on ? state.kipas.speed : 2) - 1, 1);
-    let m = c.match(/(?:kecepatan|level|tingkat)\s*(\d{1,3})/);
+  /* ---------- angka dari kalimat ---------- */
+  function levelDari(c, v, state, id) {
+    const maks = P[id].maks, s = state[id];
+    if (v === 'naik') return (s.on ? s.speed : 1) + 1;
+    if (v === 'turun') return Math.max((s.on ? s.speed : 2) - 1, 1);
+    let m = c.match(/(?:kecepatan|level|tingkat|volume)\s*(\d{1,3})/);
     if (m) return +m[1];
     m = c.match(/(\d{1,4})\s*%/);
-    if (m) { const p = +m[1]; return p <= 33 ? 1 : p <= 66 ? 2 : p <= 100 ? 3 : 9; }
+    if (m) { const p = +m[1]; return p > 100 ? maks + 6 : Math.max(1, Math.ceil(p / 100 * maks)); }
     if (/\b(pelan|lambat)\b/.test(c)) return 1;
-    if (/\b(sedang)\b/.test(c)) return 2;
-    if (/\b(kencang|maksimal|max|penuh|full)\b/.test(c)) return 3;
-    return 2;
+    if (/\b(sedang)\b/.test(c)) return Math.ceil(maks / 2);
+    if (/\b(kencang|maksimal|max|penuh|full)\b/.test(c)) return maks;
+    return Math.min(2, maks);
   }
-  function kecLengan(c) {
-    let m = c.match(/(\d{1,4})\s*%/) || c.match(/kecepatan\s*(\d{1,4})/);
+  function dayaDari(c, id) {
+    const b = P[id].batasDaya;
+    const m = c.match(/(\d{1,4})\s*%/) || c.match(/(?:kecepatan|daya)\s*(\d{1,4})/);
     if (m) return +m[1];
     if (/\b(maksimal|max|penuh|full)\b/.test(c)) return 100;
-    if (/\b(cepat|kencang)\b/.test(c)) return 45;
-    if (/\b(pelan|lambat)\b/.test(c)) return 20;
-    return 30;
+    if (/\b(cepat|kencang)\b/.test(c)) return Math.round(b * 0.9);
+    if (/\b(pelan|lambat)\b/.test(c)) return Math.round(b * 0.4);
+    return Math.round(b * 0.6);
   }
-  function sudutLengan(c) {
+  function sudutDari(c) {
     const m = c.match(/sudut\s*(\d{1,3})/) || c.match(/(\d{1,3})\s*derajat/);
     return m ? +m[1] : 60;
   }
 
-  function buatAksi(d, v, c, state) {
+  function buatAksi(id, v, c, state) {
     const off = v === 'off' || v === 'tutup';
-    switch (d) {
-      case 'lampu':  return { device: 'lampu', op: off ? 'off' : 'on' };
-      case 'pintu':  return { device: 'pintu', op: off ? 'close' : 'open' };
-      case 'kipas':
-        if (off) return { device: 'kipas', op: 'off' };
-        return { device: 'kipas', op: 'on', speed: levelKipas(c, v, state) };
-      case 'lengan':
-        if (off) return { device: 'lengan', op: 'off' };
+    switch (P[id].tipe) {
+      case 'saklar': return { device: id, op: off ? 'off' : 'on' };
+      case 'buka': return { device: id, op: off ? 'close' : 'open' };
+      case 'level':
+        if (off) return { device: id, op: 'off' };
+        return { device: id, op: 'on', speed: levelDari(c, v, state, id) };
+      case 'mesin':
+        if (off) return { device: id, op: 'off' };
         if (v === 'naik' || v === 'turun') return null;
-        return { device: 'lengan', op: 'on', speed: kecLengan(c), angle: sudutLengan(c) };
+        return { device: id, op: 'on', speed: dayaDari(c, id), angle: sudutDari(c) };
     }
     return null;
   }
 
   function aksiKlausa(c, verbWarisan, state) {
-    let list = Object.keys(POLA).filter(k => POLA[k].test(c));
+    let list = ids().filter(k => POLA[k].test(c));
     const semua = /\bsemua(nya)?\b/.test(c);
     const verbSendiri = cariVerb(c);
-    if (!list.length && (verbSendiri === 'buka' || verbSendiri === 'tutup')) list = ['pintu'];
-    if (!list.length && semua) list = Object.keys(PERANGKAT);
+    if (!list.length && (verbSendiri === 'buka' || verbSendiri === 'tutup') && pertama('buka')) list = [pertama('buka')];
+    if (!list.length && semua) list = ids();
     const v = verbSendiri || (list.length ? verbWarisan : null);
     const aksi = [];
     if (v) for (const d of list) { const a = buatAksi(d, v, c, state); if (a) aksi.push(a); }
     return { verb: verbSendiri || verbWarisan, aksi };
   }
 
-  /* Paket "nyaman" yang angkanya dibaca dari manual (RAG). Mengubah teks manual mengubah perilaku agen. */
+  /* Paket "nyaman": angkanya dibaca dari manual (RAG) dan dihitung dengan fisika ruang.
+     Mengubah teks manual, atau menitip catatan memori, mengubah perilaku agen. */
   function paketNyaman(state, M, manual) {
     const sh = M.nilaiSuhu(manual), cy = M.nilaiCahaya(manual);
     const lux = cy ? cy.min : 200;
-    const aksi = []; const catatan = [];
-    if (sh) {
+    const iD = peran('dingin'), iU = peran('udara'), iC = peran('cahaya');
+    const aksi = [], catatan = [];
+    if (sh && iD) {
+      const amb = R.ambien.suhu, per = -P[iD].efek.suhu, maks = P[iD].tipe === 'level' ? P[iD].maks : 1, bu = iU ? -P[iU].efek.suhu : 0;
       if (state.suhu > sh.maks) {
-        let level = 0, pintu = false;
-        for (let s = 1; s <= 3 && !level; s++) if (FISIKA.ambien - FISIKA.perLevel * s <= sh.maks) level = s;
-        for (let s = 1; s <= 3 && !level; s++) if (FISIKA.ambien - FISIKA.perLevel * s - FISIKA.pintu <= sh.maks) { level = s; pintu = true; }
-        if (!level) { level = 3; pintu = true; }
-        const stabil = FISIKA.ambien - FISIKA.perLevel * level - (pintu ? FISIKA.pintu : 0);
-        aksi.push({ device: 'kipas', op: 'on', speed: level });
-        if (pintu) aksi.push({ device: 'pintu', op: 'open' });
-        catatan.push(`manual: suhu nyaman ${sh.min} sampai ${sh.maks} C, suhu sekarang ${state.suhu.toFixed(1)} C, jadi kipas level ${level}${pintu ? ' dan pintu dibuka' : ''} (perkiraan stabil ${stabil.toFixed(1)} C)`);
+        let level = 0, buka = false;
+        for (let s = 1; s <= maks && !level; s++) if (amb - per * s <= sh.maks) level = s;
+        if (iU) for (let s = 1; s <= maks && !level; s++) if (amb - per * s - bu <= sh.maks) { level = s; buka = true; }
+        if (!level) { level = maks; buka = !!iU; }
+        const stabil = amb - per * level - (buka ? bu : 0);
+        aksi.push(P[iD].tipe === 'level' ? { device: iD, op: 'on', speed: level } : { device: iD, op: 'on' });
+        if (buka) aksi.push({ device: iU, op: 'open' });
+        catatan.push(`manual: suhu nyaman ${sh.min} sampai ${sh.maks} C, suhu sekarang ${state.suhu.toFixed(1)} C, jadi ${nm(iD)} level ${level}${buka ? ' dan ' + nm(iU) + ' dibuka' : ''} (perkiraan stabil ${stabil.toFixed(1)} C)`);
       } else catatan.push(`manual: suhu nyaman ${sh.min} sampai ${sh.maks} C, suhu sekarang ${state.suhu.toFixed(1)} C, sudah cukup sejuk`);
-    } else catatan.push('batas suhu di manual tidak terbaca, suhu dibiarkan');
-    if (state.cahaya < lux) { aksi.push({ device: 'lampu', op: 'on' }); catatan.push(`cahaya ${Math.round(state.cahaya)} lux di bawah ${lux} lux, lampu dinyalakan`); }
-    else catatan.push(`cahaya ${Math.round(state.cahaya)} lux sudah cukup`);
-    return { aksi, catatan: catatan.join('; ') };
+    } else catatan.push(sh ? 'ruang ini tidak punya pendingin, suhu dibiarkan' : 'batas suhu di manual tidak terbaca, suhu dibiarkan');
+    if (iC) {
+      if (state.cahaya < lux) { aksi.push({ device: iC, op: 'on' }); catatan.push(`cahaya ${Math.round(state.cahaya)} lux di bawah ${lux} lux, ${nm(iC)} dinyalakan`); }
+      else catatan.push(`cahaya ${Math.round(state.cahaya)} lux sudah cukup`);
+    }
+    return { aksi, catatan: catatan.join('; '), sumber: [sh ? sh.sumber : 'suhu', 'cahaya'] };
   }
 
+  /* Keluhan sehari-hari. Yang bawaan memakai PERAN perangkat (cahaya, dingin, udara), sisanya dari "keluhan" milik ruang. */
   function cariGaul(teks, state, ctx) {
-    const h = [];
-    const suhu = state.suhu;
-    if (/\b(gerah|gerahh+|panas|sumuk|kepanasan)\b/.test(teks))
-      h.push({ kata: 'gerah', alasan: `suhu terakhir ${suhu.toFixed(1)} C`, aksi: [{ device: 'kipas', op: 'on', speed: suhu >= 28 ? 2 : 1 }] });
-    if (/\b(gelap|redup|remang|suram)\b/.test(teks))
-      h.push({ kata: 'gelap', alasan: 'ruangan kurang cahaya', aksi: [{ device: 'lampu', op: 'on' }] });
-    if (/\b(silau|terlalu terang)\b/.test(teks))
-      h.push({ kata: 'silau', alasan: 'cahaya berlebih', aksi: [{ device: 'lampu', op: 'off' }] });
-    if (/\b(pengap|sesak|sumpek|kurang udara)\b/.test(teks))
-      h.push({ kata: 'pengap', alasan: 'butuh sirkulasi udara', aksi: [{ device: 'pintu', op: 'open' }, { device: 'kipas', op: 'on', speed: 1 }] });
-    if (/\b(nyaman|adem|sejuk|enak)\b/.test(teks)) {
+    const h = [], iD = peran('dingin'), iU = peran('udara'), iC = peran('cahaya');
+    const onD = sp => (P[iD].tipe === 'level' ? { device: iD, op: 'on', speed: Math.min(sp, P[iD].maks) } : { device: iD, op: 'on' });
+    if (iD && /\b(gerah|gerahh+|panas|sumuk|kepanasan)\b/.test(teks))
+      h.push({ kata: 'gerah', alasan: `suhu terakhir ${state.suhu.toFixed(1)} C`, aksi: [onD(state.suhu >= 28 ? 2 : 1)] });
+    if (iC && /\b(gelap|redup|remang|suram)\b/.test(teks))
+      h.push({ kata: 'gelap', alasan: 'ruangan kurang cahaya', aksi: [{ device: iC, op: 'on' }] });
+    if (iC && /\b(silau|terlalu terang)\b/.test(teks))
+      h.push({ kata: 'silau', alasan: 'cahaya berlebih', aksi: [{ device: iC, op: 'off' }] });
+    if ((iU || iD) && /\b(pengap|sesak|sumpek|kurang udara)\b/.test(teks))
+      h.push({ kata: 'pengap', alasan: 'butuh sirkulasi udara', aksi: [].concat(iU ? [{ device: iU, op: 'open' }] : [], iD ? [onD(1)] : []) });
+    if ((iD || iC) && /\b(nyaman|adem|sejuk|enak)\b/.test(teks)) {
       if (ctx && ctx.manual) {
         const p = paketNyaman(state, ctx.M, ctx.manual);
-        h.push({ kata: 'nyaman', alasan: p.catatan, aksi: p.aksi, manual: true });
-      } else h.push({ kata: 'nyaman', alasan: 'tanpa manual, angkanya kukarang sendiri: kipas level 2 dan lampu', aksi: [{ device: 'kipas', op: 'on', speed: 2 }, { device: 'lampu', op: 'on' }] });
+        h.push({ kata: 'nyaman', alasan: p.catatan, aksi: p.aksi, manual: true, sumber: p.sumber });
+      } else {
+        const aksi = [].concat(iD ? [onD(2)] : [], iC ? [{ device: iC, op: 'on' }] : []);
+        h.push({ kata: 'nyaman', alasan: `tanpa manual, angkanya kukarang sendiri: ${aksi.map(a => nm(a.device) + (a.speed ? ' level ' + a.speed : '')).join(' dan ')}`, aksi });
+      }
     }
-    if (/\b(dingin|kedinginan|menggigil)\b/.test(teks))
-      h.push({ kata: 'dingin', alasan: 'suhu terasa rendah', aksi: [{ device: 'kipas', op: 'off' }] });
+    if (iD && /\b(dingin|kedinginan|menggigil)\b/.test(teks))
+      h.push({ kata: 'dingin', alasan: 'suhu terasa rendah', aksi: [{ device: iD, op: 'off' }] });
+    for (const { re, k } of KELUHAN) if (re.test(teks)) h.push({ kata: k.kata[0], alasan: k.alasan, aksi: k.aksi.map(a => Object.assign({}, a)) });
     return h;
   }
 
   function terapkan(s, a) {
-    switch (a.device) {
-      case 'lampu': s.lampu.on = a.op === 'on'; break;
-      case 'kipas': s.kipas.on = a.op === 'on'; if (a.op === 'on') s.kipas.speed = a.speed; break;
-      case 'pintu': s.pintu.open = a.op === 'open'; break;
-      case 'lengan': s.lengan.on = a.op === 'on'; if (a.op === 'on') { s.lengan.speed = a.speed; s.lengan.angle = a.angle; } break;
+    const x = s[a.device];
+    switch (P[a.device].tipe) {
+      case 'saklar': x.on = a.op === 'on'; break;
+      case 'level': x.on = a.op === 'on'; if (x.on) x.speed = a.speed; break;
+      case 'buka': x.open = a.op === 'open'; break;
+      case 'mesin': x.on = a.op === 'on'; if (x.on) { x.speed = a.speed; x.angle = a.angle; } break;
     }
     return s;
   }
 
   function deskripsi(a) {
-    switch (a.device) {
-      case 'lampu': return a.op === 'on' ? 'lampu menyala' : 'lampu mati';
-      case 'kipas': return a.op === 'on' ? `kipas berputar (level ${a.speed})` : 'kipas mati';
-      case 'pintu': return a.op === 'open' ? 'pintu terbuka' : 'pintu tertutup';
-      case 'lengan': return a.op === 'on' ? `lengan bergerak (${a.speed}%, sudut ${a.angle} derajat)` : 'lengan berhenti';
+    const n = nm(a.device), d = P[a.device];
+    switch (d.tipe) {
+      case 'saklar': return a.op === 'on' ? `${n} menyala` : `${n} mati`;
+      case 'level': return a.op === 'on' ? `${n} menyala (level ${a.speed})` : `${n} mati`;
+      case 'buka': return a.op === 'open' ? `${n} terbuka` : `${n} tertutup`;
+      case 'mesin': return a.op === 'on' ? `${n} bekerja (${a.speed}%${d.batasSudut ? ', sudut ' + a.angle + ' derajat' : ''})` : `${n} berhenti`;
     }
     return '';
   }
 
-  /* Guardrail lapis aksi: dijalankan di kode, tidak bergantung pada LLM. */
+  /* Guardrail lapis aksi: dijalankan di kode, tidak bergantung pada LLM. Batasnya dibaca dari definisi ruang. */
   function validasi(aksi, state) {
     const sim = JSON.parse(JSON.stringify(state));
     const ok = [], tolak = [];
     for (const a of aksi) {
-      if (a.device === 'kipas' && a.op === 'on' && (a.speed > BATAS.kipas.level || a.speed < 1)) {
-        tolak.push({ device: 'kipas', aturan: 'batas_kipas', pesan: `Kipas hanya punya level 1 sampai ${BATAS.kipas.level}, bukan ${a.speed}.` });
+      const d = P[a.device], N = d.nama;
+      if (d.tipe === 'level' && a.op === 'on' && !(a.speed >= 1 && a.speed <= d.maks)) {
+        tolak.push({ device: a.device, aturan: 'batas_level', pesan: `${N} hanya punya level 1 sampai ${d.maks}, bukan ${a.speed}.` });
         continue;
       }
-      if (a.device === 'lengan' && a.op === 'on') {
-        if (a.speed > BATAS.lengan.kecepatan) {
-          tolak.push({ device: 'lengan', aturan: 'batas_kecepatan', pesan: `Kecepatan lengan ${a.speed}% melebihi batas aman ${BATAS.lengan.kecepatan}%.` });
+      if (d.tipe === 'mesin' && a.op === 'on') {
+        if (!(a.speed <= d.batasDaya)) {
+          tolak.push({ device: a.device, aturan: 'batas_kecepatan', pesan: `${d.satuan === 'daya' ? 'Daya' : 'Kecepatan'} ${nm(a.device)} ${a.speed}% melebihi batas aman ${d.batasDaya}%.`, saran: `Mau kupakai ${d.batasDaya}%?` });
           continue;
         }
-        if (a.angle > BATAS.lengan.sudut) {
-          tolak.push({ device: 'lengan', aturan: 'batas_sudut', pesan: `Sudut ${a.angle} derajat melebihi batas ${BATAS.lengan.sudut} derajat.` });
+        if (d.batasSudut && !(a.angle <= d.batasSudut)) {
+          tolak.push({ device: a.device, aturan: 'batas_sudut', pesan: `Sudut ${nm(a.device)} ${a.angle} derajat melebihi batas ${d.batasSudut} derajat.` });
           continue;
         }
       }
-      if (a.device === 'pintu' && a.op === 'open' && sim.lengan.on) {
-        tolak.push({ device: 'pintu', aturan: 'interlock', pesan: 'Interlock keselamatan: pintu tidak boleh dibuka saat lengan robot aktif.' });
-        continue;
-      }
+      const il = (a.op === 'open' || a.op === 'on') && R.interlock.find(x => x.larang === a.device && D.aktif(sim[x.saat]));
+      if (il) { tolak.push({ device: a.device, aturan: 'interlock', pesan: il.pesan, saran: il.saran }); continue; }
       terapkan(sim, a);
       ok.push(a);
     }
@@ -228,16 +233,17 @@
     const cahaya = `cahaya ${lux} lux (${lux < 100 ? 'gelap' : lux < 250 ? 'redup' : 'terang'})`;
     if (fokus === 'suhu') return `Papan sensor menunjukkan ${suhu}.`;
     if (fokus === 'cahaya') return `Papan sensor menunjukkan ${cahaya}.`;
-    const per = [
-      state.lampu.on ? 'lampu nyala' : 'lampu mati',
-      state.kipas.on ? `kipas level ${state.kipas.speed}` : 'kipas mati',
-      state.pintu.open ? 'pintu terbuka' : 'pintu tertutup',
-      state.lengan.on ? 'lengan aktif' : 'lengan diam'
-    ].join(', ');
+    const per = ids().map(id => {
+      const x = state[id], n = nm(id);
+      switch (P[id].tipe) {
+        case 'saklar': return `${n} ${x.on ? 'nyala' : 'mati'}`;
+        case 'level': return x.on ? `${n} level ${x.speed}` : `${n} mati`;
+        case 'buka': return `${n} ${x.open ? 'terbuka' : 'tertutup'}`;
+        default: return `${n} ${x.on ? 'aktif' : 'diam'}`;
+      }
+    }).join(', ');
     return `Papan sensor: ${suhu}, ${cahaya}. Perangkat: ${per}.`;
   }
-
-  const LABEL_INTENT = { kontrol: 'kontrol perangkat', info: 'tanya info', bahaya: 'bahaya', obrol: 'obrolan', tidak_paham: 'tidak dikenali' };
 
   function unik(aksi) {
     const out = [];
@@ -249,22 +255,25 @@
     return out;
   }
 
-  /* Membagi aksi menjadi tahap (sekuensial) berisi tugas per spesialis (paralel dalam satu tahap). */
+  /* ---------- orkestrasi: aksi dibagi menjadi tahap (berurutan) berisi tugas per spesialis (paralel) ---------- */
   /* Perintah dipecah di kata urutan. "A setelah B" berarti B dulu. Perangkat yang disebut tiap segmen menentukan tahapnya. */
   function segmenUrut(teks) {
     const m = teks.match(/^(.*?)\s+(?:setelah|sesudah)\s+(.*)$/);
     const t2 = m ? `${m[2]} lalu ${m[1]}` : teks;
     return t2.split(/\s+(?:lalu|terus|kemudian|habis itu|setelah itu|baru)\s+/).map(c => {
-      const d = new Set(Object.keys(POLA).filter(k => POLA[k].test(c)));
-      if (/\b(buka|bukain|bukakan|tutup|tutupin|tutupkan)\b/.test(c)) d.add('pintu');
-      if (/\bsemua(nya)?\b/.test(c)) Object.keys(POLA).forEach(k => d.add(k));
+      const d = new Set(ids().filter(k => POLA[k].test(c)));
+      if (pertama('buka') && /\b(buka|bukain|bukakan|tutup|tutupin|tutupkan)\b/.test(c)) d.add(pertama('buka'));
+      if (/\bsemua(nya)?\b/.test(c)) ids().forEach(k => d.add(k));
       return d;
     });
   }
-  function bagiTugas(aksi, teks) {
+  function bagiTugas(aksi, teksPesan) {
     if (!aksi.length) return null;
+    const teks = pakaiAlias(norm(teksPesan));
     const urut = URUT.test(teks);
-    const bentrok = (st, a) => st.some(x => (x.device === 'pintu' && x.op === 'open' && a.device === 'lengan') || (a.device === 'pintu' && a.op === 'open' && x.device === 'lengan'));
+    // dua aksi yang terikat interlock tidak boleh satu tahap (hindari balapan antar spesialis)
+    const terikat = (x, a) => R.interlock.some(il => (x.device === il.larang && (x.op === 'open' || x.op === 'on') && a.device === il.saat) || (a.device === il.larang && (a.op === 'open' || a.op === 'on') && x.device === il.saat));
+    const bentrok = (st, a) => st.some(x => terikat(x, a));
     let kelompok = null;
     if (urut) {
       const seg = segmenUrut(teks);
@@ -283,7 +292,7 @@
     }
     const tugas = [];
     tahap.forEach((st, i) => {
-      for (const nama of [...new Set(st.map(a => SPESIALIS[a.device]))]) tugas.push({ agen: nama, tahap: i, aksi: st.filter(a => SPESIALIS[a.device] === nama) });
+      for (const nama of [...new Set(st.map(a => P[a.device].spesialis))]) tugas.push({ agen: nama, tahap: i, aksi: st.filter(a => P[a.device].spesialis === nama) });
     });
     return tugas;
   }
@@ -300,8 +309,8 @@
 
   function kerangka(pesan) {
     const asli = String(pesan || '').trim();
-    const teks = norm(asli);
-    const out = { intent: 'tidak_paham', sub: '', diambil: [], didelegasikan_ke: null, pikiran: '', aksi: [], ditolak: [], baca: false, fokus: 'semua', balasan: '', jejak: [] };
+    const mentah = norm(asli), teks = pakaiAlias(mentah);
+    const out = { intent: 'tidak_paham', sub: '', diambil: [], didelegasikan_ke: null, memori: null, pikiran: '', aksi: [], ditolak: [], baca: false, fokus: 'semua', balasan: '', jejak: [] };
     const J = out.jejak;
     J.push({ k: 'terima', t: `Pesan masuk: "${potong(asli, 70)}"` });
     const selesai = (tujuan) => {
@@ -310,17 +319,18 @@
       let i = 2;
       if (out.pikiran) J.splice(i++, 0, { k: 'pikir', t: out.pikiran });
       if (out.diambil.length) J.splice(i++, 0, { k: 'ambil', t: 'Membuka rak manual: ' + out.diambil.map(d => `${d.judul} (skor ${d.skor})`).join('; ') });
+      if (out.memori) J.splice(i++, 0, { k: 'catat', t: `Menulis catatan baru ke rak manual: "${potong(out.memori.teks, 80)}"` });
       for (const d of delegasiJejak(out.didelegasikan_ke)) J.splice(i++, 0, { k: 'delegasi', t: d });
       for (const t of out.ditolak) J.push({ k: 'guard', t: `Guard (${t.aturan}): ${t.pesan}` });
       return out;
     };
-    return { asli, teks, out, J, selesai };
+    return { asli, mentah, teks, out, J, selesai };
   }
 
-  /* Input guard: berjalan di kode, sebelum LLM dipanggil (hemat kuota dan lebih aman). */
+  /* Input guard: berjalan di kode, sebelum LLM dipanggil (hemat kuota dan lebih aman). Membaca teks sebelum alias. */
   function cekInjeksi(pesan) {
-    const { teks, out, selesai } = kerangka(pesan);
-    const inj = teks.match(INJEKSI);
+    const { mentah, out, selesai } = kerangka(pesan);
+    const inj = mentah.match(INJEKSI);
     if (!inj) return null;
     out.intent = 'bahaya'; out.sub = 'injeksi';
     out.pikiran = `Ada pola "${inj[0]}" yang mencoba mengubah aturanku. Itu tidak kuikuti.`;
@@ -328,33 +338,41 @@
     out.balasan = 'Aku tidak bisa mengabaikan aturan keselamatan. Kalau mau mengendalikan perangkat, sebut saja namanya ya.';
     return selesai('tidak ada aksi');
   }
+  const adaInjeksi = teks => INJEKSI.test(norm(teks));
+  const adaMemori = pesan => MEMORI.test(String(pesan || '').trim());
 
   function susunBalasan(v) {
     const bagian = [];
-    if (v.ok.length) {
-      const d = v.ok.map(deskripsi);
-      bagian.push('Siap! ' + (d.length > 1 ? d.slice(0, -1).join(', ') + ' dan ' + d[d.length - 1] : d[0]) + '.');
-    }
-    for (const t of v.tolak) {
-      let s = 'Aku tolak: ' + t.pesan;
-      if (t.aturan === 'batas_kecepatan') s += ` Mau kupakai ${BATAS.lengan.kecepatan}%?`;
-      if (t.aturan === 'interlock') s += ' Matikan lengan dulu, baru pintu boleh dibuka.';
-      bagian.push(s);
-    }
+    if (v.ok.length) bagian.push('Siap! ' + daftar(v.ok.map(deskripsi), 'dan').replace(/, dan /, ' dan ') + '.');
+    for (const t of v.tolak) bagian.push('Aku tolak: ' + t.pesan + (t.saran ? ' ' + t.saran : ''));
     return bagian.join(' ');
   }
+  const tujuanSpesialis = out => (out.didelegasikan_ke ? 'spesialis ' + [...new Set(out.didelegasikan_ke.map(t => t.agen))].join(', ') : 'tidak ada aksi');
 
   function pikir(pesan, state, opsi) {
     opsi = opsi || {};
     const M = root.Manual;
     const manual = M && opsi.rag !== false && Array.isArray(opsi.manual) ? opsi.manual : null;
+    const k = Math.max(1, Math.min(3, opsi.k | 0 || 2));
     const ctx = manual ? { M, manual } : null;
-    const { asli, teks, out, J, selesai } = kerangka(pesan);
+    const { asli, teks, out, selesai } = kerangka(pesan);
     const plIn = cekInjeksi(pesan);
     if (plIn) return plIn;
+    const nama = ids().map(nm);
 
-    const perangkatAda = Object.keys(POLA).filter(k => POLA[k].test(teks));
-    const punyaAngka = perangkatAda.length && /(kecepatan|level|tingkat|sudut|derajat|\d+\s*%)/.test(teks);
+    // 1. Memori: "ingat ..." menulis catatan baru ke rak manual (RAG sebagai ingatan jangka panjang)
+    const mm = asli.match(MEMORI);
+    if (mm) {
+      out.intent = 'obrol'; out.sub = 'simpan memori';
+      if (!manual) { out.pikiran = 'Kamu memintaku mengingat sesuatu, tapi akses ke rak manual sedang dimatikan.'; out.balasan = 'Aku tidak bisa mencatat karena rak manual (RAG) sedang dimatikan.'; return selesai('tidak perlu berjalan'); }
+      out.memori = { teks: mm[1].replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim() };
+      out.pikiran = 'Ini bukan perintah perangkat. Kamu menitip informasi, jadi kutulis sebagai catatan di rak manual supaya bisa kubaca lagi nanti.';
+      out.balasan = `Oke, kucatat di rak manual: "${potong(out.memori.teks, 120)}"`;
+      return selesai('Rak Manual');
+    }
+
+    const perangkatAda = ids().filter(id => POLA[id].test(teks));
+    const punyaAngka = perangkatAda.length && /(kecepatan|daya|level|tingkat|volume|sudut|derajat|\d+\s*%)/.test(teks);
     const verbAda = cariVerb(teks) || (punyaAngka ? 'on' : null);
 
     // 2. Obrolan
@@ -362,20 +380,21 @@
       out.intent = 'obrol';
       out.pikiran = 'Ini sapaan atau pertanyaan umum, tidak perlu menyentuh perangkat.';
       out.balasan = TANYA_DIRI.test(teks) && !SAPA.test(teks)
-        ? 'Aku agen penjaga ruangan ini. Aku bisa mengatur lampu, kipas, pintu, dan lengan robot, atau membaca papan sensor.'
-        : 'Halo! Aku siap menerima perintah. Coba: "nyalakan lampu" atau "gerah nih".';
+        ? `Aku agen penjaga ${R.nama}. Aku bisa mengatur ${daftar(nama, 'dan')}, membaca papan sensor, atau membuka rak manual.`
+        : `Halo! Aku siap menerima perintah. Coba: "nyalakan ${nama[0]}" atau "gerah nih".`;
       return selesai('tidak perlu berjalan');
     }
 
     // 2b. Pertanyaan tentang manual (SOP): agen ke rak manual, bukan ke papan sensor
+    const jawabManual = (hit) => {
+      out.intent = 'info'; out.sub = 'baca manual'; out.fokus = 'manual'; out.diambil = hit;
+      out.pikiran = 'Ini pertanyaan tentang aturan atau pengetahuan ruangan. Aku cari jawabannya di rak manual, bukan menebak.';
+      out.balasan = potong(`Menurut manual, ${hit[0].judul}: ${hit[0].teks}`, 260);
+      return selesai('Rak Manual');
+    };
     if (manual && !cariVerb(teks) && MANUAL_Q.test(teks)) {
-      const hit = M.cari(teks, manual, 2, 0.8);
-      if (hit.length) {
-        out.intent = 'info'; out.sub = 'baca manual'; out.fokus = 'manual'; out.diambil = hit;
-        out.pikiran = 'Ini pertanyaan tentang aturan ruangan. Aku cari jawabannya di rak manual, bukan menebak.';
-        out.balasan = potong(`Menurut manual, ${hit[0].judul}: ${hit[0].teks}`, 260);
-        return selesai('Rak Manual');
-      }
+      const hit = M.cari(teks, manual, k, 0.8);
+      if (hit.length) return jawabManual(hit);
     }
 
     // 3. Tentukan jenis
@@ -398,13 +417,15 @@
     }
     if (jenis === 'tanya') {
       out.intent = 'tidak_paham'; out.sub = 'perlu klarifikasi';
-      out.pikiran = `Kamu menyebut ${perangkatAda.map(d => PERANGKAT[d].nama.toLowerCase()).join(' dan ')} tapi tidak bilang mau diapakan.`;
-      out.balasan = `Mau diapakan ${PERANGKAT[perangkatAda[0]].nama.toLowerCase()}-nya? Misalnya: "nyalakan", "matikan", atau "buka".`;
+      out.pikiran = `Kamu menyebut ${perangkatAda.map(nm).join(' dan ')} tapi tidak bilang mau diapakan.`;
+      out.balasan = `Mau diapakan ${nm(perangkatAda[0])}-nya? Misalnya: "nyalakan", "matikan", atau "buka".`;
       return selesai('bertanya balik');
     }
     if (jenis === 'tidak_paham') {
+      // tidak ada kata perintah atau perangkat, tapi mungkin jawabannya ada di rak manual (ambang skor lebih ketat)
+      if (manual) { const hit = M.cari(teks, manual, k, 1.2); if (hit.length) return jawabManual(hit); }
       out.pikiran = 'Tidak ada kata perintah, nama perangkat, atau keluhan yang kukenali.';
-      out.balasan = 'Hmm, aku belum paham. Sebut perangkatnya (lampu, kipas, pintu, lengan robot) atau bilang keluhanmu, misalnya "gerah" atau "gelap".';
+      out.balasan = `Hmm, aku belum paham. Sebut perangkatnya (${nama.join(', ')}) atau bilang keluhanmu, misalnya "gerah" atau "gelap".`;
       return selesai('bertanya balik');
     }
 
@@ -428,8 +449,9 @@
       const peta = new Map();
       for (const g of gaul) for (const a of g.aksi) peta.set(a.device, a);
       rencana = [...peta.values()];
-      if (gaul.some(g => g.manual)) out.diambil = M.ambilId(manual, ['suhu', 'cahaya']);
-      if (!rencana.length && gaul.some(g => g.manual)) {
+      const gm = gaul.find(g => g.manual);
+      if (gm) out.diambil = M.ambilId(manual, gm.sumber);
+      if (!rencana.length && gm) {
         out.intent = 'info'; out.sub = 'sudah nyaman (manual)';
         out.pikiran = gaul.map(g => g.alasan).join('; ') + '.';
         out.balasan = 'Ruangan sudah nyaman menurut manual, tidak ada yang perlu diubah.';
@@ -440,7 +462,7 @@
 
     if (!rencana.length) {
       out.intent = 'tidak_paham'; out.sub = 'perlu klarifikasi';
-      out.balasan = 'Perangkat apa yang dimaksud? Pilih: lampu, kipas, pintu, atau lengan robot.';
+      out.balasan = `Perangkat apa yang dimaksud? Pilih: ${daftar(nama, 'atau')}.`;
       return selesai('bertanya balik');
     }
 
@@ -449,13 +471,10 @@
     out.ditolak = v.tolak;
     out.intent = v.ok.length ? 'kontrol' : 'bahaya';
     if (!v.ok.length) out.sub = 'ditolak oleh aturan';
-
     out.balasan = susunBalasan(v);
-    out.didelegasikan_ke = bagiTugas(v.ok, teks);
+    out.didelegasikan_ke = bagiTugas(v.ok, pesan);
     return selesai(tujuanSpesialis(out));
   }
-
-  const tujuanSpesialis = out => (out.didelegasikan_ke ? 'spesialis ' + [...new Set(out.didelegasikan_ke.map(t => t.agen))].join(', ') : 'tidak ada aksi');
 
   /* Mengubah usulan dari LLM (sudah dinormalisasi) menjadi rencana yang sama bentuknya dengan parser.
      Guardrail aksi tetap dijalankan di kode: LLM hanya mengusulkan, tidak memutuskan. */
@@ -465,7 +484,7 @@
     out.pikiran = u.pikiran || '';
     out.diambil = Array.isArray(opsi.diambil) ? opsi.diambil : [];
     const ada = (u.aksi || []).length;
-    if (u.intent === 'info' && u.fokus === 'manual' && u.balasan && out.diambil.length && MANUAL_Q.test(teks)) {
+    if (u.intent === 'info' && u.fokus === 'manual' && u.balasan && out.diambil.length && (MANUAL_Q.test(teks) || !INFO_LUNAK.test(teks))) {
       out.intent = 'info'; out.sub = 'baca manual (LLM)'; out.fokus = 'manual'; out.balasan = u.balasan;
       return selesai('Rak Manual');
     }
@@ -488,12 +507,12 @@
     out.intent = v.ok.length ? 'kontrol' : 'bahaya';
     out.sub = v.ok.length ? 'kontrol (LLM)' : 'ditolak oleh aturan';
     out.balasan = v.tolak.length || !u.balasan ? susunBalasan(v) : u.balasan;
-    out.didelegasikan_ke = bagiTugas(v.ok, teks);
+    out.didelegasikan_ke = bagiTugas(v.ok, pesan);
     return selesai(tujuanSpesialis(out));
   }
 
-  const adaInjeksi = teks => INJEKSI.test(norm(teks));
-  const api = { pikir, cekInjeksi, adaInjeksi, bagiTugas, SPESIALIS, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, PERANGKAT, PANEL, BATAS };
+  aturRuang(D.RUANG.lab);
+  const api = { pikir, cekInjeksi, adaInjeksi, adaMemori, bagiTugas, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, aturRuang, ruang: () => R };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Otak = api;
 })(typeof window !== 'undefined' ? window : globalThis);
