@@ -168,6 +168,8 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   await page.waitForTimeout(300);
   const lebar = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth, tabs: [...document.querySelectorAll('.tabs button')].every(b => b.getBoundingClientRect().right <= window.innerWidth + 1) }));
   cek('mobile 390px: tanpa scroll horizontal dan semua tab terlihat', lebar.sw <= lebar.iw && lebar.tabs, lebar);
+  const sp3 = await page.evaluate(() => { const r = document.querySelector('[data-sp="3"]').getBoundingClientRect(); return { kanan: r.right, kiri: r.left, lebar: window.innerWidth }; });
+  cek('mobile 390px: tombol 3x ada di dalam layar', sp3.kiri >= 0 && sp3.kanan <= sp3.lebar, sp3);
   await page.screenshot({ path: process.env.SHOT || 'layar-mobile.png' });
 
   cek('tanpa galat JS selama seluruh alur', galatHalaman.length === 0, galatHalaman);

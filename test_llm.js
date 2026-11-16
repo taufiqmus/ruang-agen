@@ -158,7 +158,7 @@ const reset = (...r) => { antrean = r; panggilan = []; };
   cek('prompt: delimiter dibersihkan dan panjang dibatasi', !/<<<>>>/.test(pr[1].content) && pr[1].content.length < 300, pr[1].content.length);
 
   const semua = JSON.stringify(pr) + fs.readFileSync('brain-llm.js', 'utf8');
-  cek('tanpa em dash', !/—/.test(semua));
+  cek('tanpa em dash', !/\u2014/.test(semua));
 
   console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
   process.exit(gagal ? 1 : 0);

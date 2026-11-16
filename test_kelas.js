@@ -72,7 +72,7 @@ cek('validasi: nama asli berlebihan', /Nama panggilan/.test(galat(() => buat(cfg
   cek('SQL: insert dan update terikat auth.uid()', /with check \(auth\.uid\(\) = id\)/.test(sql) && /pemain_id = auth\.uid\(\)/.test(sql));
   cek('SQL: tanpa kolom email atau data pribadi', !/email|telepon|phone|bnimb\b/i.test(sql.replace(/auth\.users/g, '')));
   cek('badge punya deskripsi', Object.keys(BADGE).length === 7);
-  cek('tanpa em dash', !/—/.test(sql + fs.readFileSync('kelas.js', 'utf8')));
+  cek('tanpa em dash', !/\u2014/.test(sql + fs.readFileSync('kelas.js', 'utf8')));
 
   console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
   process.exit(gagal ? 1 : 0);

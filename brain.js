@@ -250,15 +250,36 @@
   }
 
   /* Membagi aksi menjadi tahap (sekuensial) berisi tugas per spesialis (paralel dalam satu tahap). */
+  /* Perintah dipecah di kata urutan. "A setelah B" berarti B dulu. Perangkat yang disebut tiap segmen menentukan tahapnya. */
+  function segmenUrut(teks) {
+    const m = teks.match(/^(.*?)\s+(?:setelah|sesudah)\s+(.*)$/);
+    const t2 = m ? `${m[2]} lalu ${m[1]}` : teks;
+    return t2.split(/\s+(?:lalu|terus|kemudian|habis itu|setelah itu|baru)\s+/).map(c => {
+      const d = new Set(Object.keys(POLA).filter(k => POLA[k].test(c)));
+      if (/\b(buka|bukain|bukakan|tutup|tutupin|tutupkan)\b/.test(c)) d.add('pintu');
+      if (/\bsemua(nya)?\b/.test(c)) Object.keys(POLA).forEach(k => d.add(k));
+      return d;
+    });
+  }
   function bagiTugas(aksi, teks) {
     if (!aksi.length) return null;
     const urut = URUT.test(teks);
-    const tahap = [];
     const bentrok = (st, a) => st.some(x => (x.device === 'pintu' && x.op === 'open' && a.device === 'lengan') || (a.device === 'pintu' && a.op === 'open' && x.device === 'lengan'));
-    for (const a of aksi) {
-      let st = tahap[tahap.length - 1];
-      if (!st || urut || bentrok(st, a)) { st = []; tahap.push(st); }
-      st.push(a);
+    let kelompok = null;
+    if (urut) {
+      const seg = segmenUrut(teks);
+      if (aksi.every(a => seg.some(d => d.has(a.device)))) {
+        kelompok = seg.map(() => []);
+        for (const a of aksi) kelompok[seg.findIndex(d => d.has(a.device))].push(a);
+        kelompok = kelompok.filter(k => k.length);
+      }
+    }
+    // shortcut: bila perangkat tidak disebut di teks (misalnya keluhan "gerah lalu gelap"), tiap aksi menjadi tahap sendiri
+    if (!kelompok) kelompok = urut ? aksi.map(a => [a]) : [aksi];
+    const tahap = [];
+    for (const k of kelompok) {
+      let st = null;
+      for (const a of k) { if (!st || bentrok(st, a)) { st = []; tahap.push(st); } st.push(a); }
     }
     const tugas = [];
     tahap.forEach((st, i) => {

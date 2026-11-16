@@ -69,13 +69,16 @@ cek('sekuensial: lalu = dua tahap', ringTg(tg('nyalakan lampu lalu kipas')) === 
 s = baru(); s.lengan.on = true;
 cek('setelah: lengan mati dulu, pintu tahap berikut', ringTg(tg('buka pintu setelah matikan lengan', s)) === 'Keamanan@0 Keamanan@1', ringTg(tg('buka pintu setelah matikan lengan', s)));
 cek('interlock: pintu buka dan lengan tidak sepanggung walau tanpa kata urut', (() => { const t = O.bagiTugas([{ device: 'lengan', op: 'off' }, { device: 'pintu', op: 'open' }], 'matikan lengan dan buka pintu'); return t.length === 2 && t[0].tahap === 0 && t[1].tahap === 1; })());
+cek('campuran: (lampu dan kipas) lalu pintu = dua tahap, tahap 1 paralel', ringTg(tg('nyalakan lampu dan kipas lalu buka pintu')) === 'Cahaya@0 Suhu@0 Keamanan@1', ringTg(tg('nyalakan lampu dan kipas lalu buka pintu')));
+cek('campuran dengan setelah: pintu setelah (lampu dan kipas)', ringTg(tg('buka pintu setelah nyalakan lampu dan kipas')) === 'Cahaya@0 Suhu@0 Keamanan@1', ringTg(tg('buka pintu setelah nyalakan lampu dan kipas')));
+cek('urutan tanpa perangkat tersebut: tiap aksi tahap sendiri', tg('gerah lalu gelap').map(t => t.tahap).join() === '0,1', ringTg(tg('gerah lalu gelap')));
 cek('matikan semua: tiga spesialis paralel', new Set(tg('matikan semua').map(x => x.agen)).size === 3);
 cek('tanpa aksi: didelegasikan_ke null', O.pikir('halo', baru()).didelegasikan_ke === null && O.pikir('berapa suhu sekarang?', baru()).didelegasikan_ke === null);
 cek('jejak DELEGASI ada', O.pikir('nyalakan lampu dan kipas', baru()).jejak.some(j => j.k === 'delegasi' && /paralel/.test(j.t)));
 cek('aksi ditolak tidak didelegasikan', O.pikir('putar lengan robot 200%', baru()).didelegasikan_ke === null);
 
 const semua = JSON.stringify([O.pikir('bikin nyaman', baru(), { manual: M.MANUAL_AWAL }), O.pikir('berapa suhu nyaman?', baru(), { manual: M.MANUAL_AWAL })]);
-cek('tanpa em dash', !/—/.test(semua) && !/—/.test(fs.readFileSync('manual.js', 'utf8')));
+cek('tanpa em dash', !/\u2014/.test(semua) && !/\u2014/.test(fs.readFileSync('manual.js', 'utf8')));
 
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

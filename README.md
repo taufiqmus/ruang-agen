@@ -76,7 +76,7 @@ Lalu di game, tab **Otak**, pilih "LLM lewat proxy kelas", isi URL
 Pengaman di proxy:
 - Kunci OpenRouter hanya ada di server, tidak pernah dikirim ke browser.
 - Kode kelas wajib (header `x-kode-kelas`). Tanpa kode yang benar, permintaan ditolak sebelum menyentuh OpenRouter.
-- Prompt dibangun di server dari `{pesan, state}`. Klien tidak bisa menyuntikkan `messages` atau memilih model, jadi endpoint ini bukan LLM bebas.
+- Prompt dibangun di server. Klien tidak bisa menyuntikkan `messages` atau memilih model. Klien memang mengirim `potongan` manual (maksimal 3 potongan, 300 karakter tiap potongan, 900 total), dan server membatasi serta membuang potongan berpola injeksi sebelum masuk prompt. Potongan tetap bisa memengaruhi teks jawaban model, tetapi tidak bisa melewati guard aksi di kode, jadi endpoint ini tetap bukan LLM bebas untuk perangkat.
 - Batas per klien (6 per menit), batas global per menit (18, di bawah 20 milik OpenRouter), dan batas global per hari.
 - Penghitung berada di memori isolate. Itu cukup untuk satu kelas tetapi bukan jaminan mutlak. Untuk batas ketat, pindahkan ke tabel Postgres.
 

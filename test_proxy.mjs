@@ -113,6 +113,6 @@ cek('proxy: potongan dipotong 300 karakter', !/z{301}/.test(bp));
 upstream = [ok('{"intent":"obrol","aksi":[]}')];
 x = await status(await handle(req({ pesan: 'halo', state, potongan: 'bukan array' }), ENV, hari()));
 cek('proxy: potongan bukan array diabaikan', x.s === 200);
-cek('tanpa em dash di sumber proxy', !/—/.test((await import('node:fs')).readFileSync('supabase/functions/agent-brain/index.ts', 'utf8')));
+cek('tanpa em dash di sumber proxy', !/\u2014/.test((await import('node:fs')).readFileSync('supabase/functions/agent-brain/index.ts', 'utf8')));
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

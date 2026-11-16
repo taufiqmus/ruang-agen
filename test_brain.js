@@ -71,7 +71,7 @@ cek('jejak berurutan', /^terima,router/.test(urutan), urutan);
 
 const sem = JSON.stringify(O.pikir('nyalakan lampu', baru()));
 cek('pertanyaan "nyala nggak?" = info, bukan kontrol', O.pikir('lampunya nyala nggak?', baru()).intent === 'info');
-cek('tanpa em dash di keluaran', !/—/.test(sem));
+cek('tanpa em dash di keluaran', !/\u2014/.test(sem));
 
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);
