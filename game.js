@@ -163,7 +163,7 @@
   function nyalaPipe(plan) {
     const asalLLM = plan.otak && plan.otak.asal === 'llm';
     const st = { input: plan.sub === 'injeksi' ? 'tolak' : 'on', memori: plan.memori ? 'on' : '', router: plan.rute && plan.intent === 'bahaya' ? 'tolak' : 'on', rag: plan.diambil.length ? 'on' : '',
-      otak: asalLLM ? 'llm' : 'on', guard: plan.ditolak.some(t => t.aturan !== 'injeksi') ? 'tolak' : plan.aksi.length ? 'on' : '', orkestrator: plan.didelegasikan_ke ? 'on' : '',
+      otak: asalLLM ? 'llm' : 'on', guard: plan.ditolak.some(t => t.aturan !== 'injeksi' && !String(t.aturan).startsWith('rute_')) ? 'tolak' : plan.aksi.length ? 'on' : '', orkestrator: plan.didelegasikan_ke ? 'on' : '',
       spesialis: plan.didelegasikan_ke ? 'on' : '', keluaran: plan.catatanGuard && plan.catatanGuard.length ? 'on' : '' };
     gambarPipe(st);
   }

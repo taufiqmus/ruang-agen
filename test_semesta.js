@@ -177,6 +177,6 @@ pasang(KAMPUS());
 cek('semesta tidak sah tidak mengganti semesta aktif', !O.aturSemesta({ id: 'x' }).ok && O.semesta().id === 'kampus');
 
 const semua = ['semesta.js', 'brain.js', 'prompt.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(D.SEMESTA);
-cek('tanpa em dash', !/—/.test(semua));
+cek('tanpa em dash', !/\u2014/.test(semua));
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

@@ -12,41 +12,70 @@ Dokumen lain:
 
 1. Buka `index.html` di Chrome atau Edge. Game langsung jalan dengan **parser aturan** (gratis, tanpa internet kecuali memuat three.js dari CDN).
 2. Ketik perintah di tab **Chat**, misalnya `nyalakan lampu dan kipas`, `gerah nih`, `bikin nyaman`, atau `berapa suhu nyaman?`.
-3. Buka tab **Jejak** untuk melihat langkah agen. Selesaikan misi di tab **Misi**. Pindah ruang di tab **Dunia**.
+3. Buka tab **Jejak** untuk melihat jalur pesan melewati pipeline agen. Selesaikan misi di tab **Misi**. Pindah ruang atau semesta di tab **Dunia**, dan ubah isi kepala agen di tab **Agen**.
 
 Untuk kelas, unggah `index.html` ke GitHub Pages (Settings, Pages). Pratinjau artifact di claude.ai memblokir koneksi keluar, jadi mode LLM hanya bekerja di halaman yang Anda host sendiri.
 
-## Dunia
+## Semesta dan dunia
 
-Semua ruang adalah **data**, bukan kode (`dunia.js`). Otak, prompt LLM, dan adegan 3D dirakit dari definisi yang sama, jadi menambah ruang tidak menyentuh kode.
+Semuanya **data, bukan kode**. Satu **semesta** (universe) memuat ruang-ruang beserta seluruh perilaku agennya. Otak, prompt AI, dan adegan 3D dirakit dari definisi yang sama, jadi menambah atau mengubah apa pun tidak menyentuh kode.
+
+### Semesta bawaan: Kampus Nusantara
+
+Enam ruang, 24 bab pengetahuan bersama (kampus dan akademik), 4 rute router buatan, 3 kejadian, dan 5 misi lintas ruang. Total sekitar 74 bab di rak.
 
 | Ruang | Tema | Perangkat dan spesialis | Yang dipelajari |
 |---|---|---|---|
-| **Lab Robotika** | Dasar agen | Lampu, kipas, pintu, lengan robot. Spesialis Cahaya, Suhu, Keamanan | Parser, guard, RAG, orkestrasi, serangan Trickster (6 misi) |
-| **Kafe Senja** | Barista dan vibes | Lampu gantung, AC, speaker, pintu, mesin espresso. Spesialis Cahaya, Suhu, Vibes, Barista | Kata gaul ("sepi", "ngantuk"), alias ("seduh kopi"), RAG sebagai resep dan menu, batas daya mesin (4 misi) |
-| **Studio Konten** | Live streaming | Ring light, AC, pintu, tanda ON AIR, gimbal kamera. Spesialis Cahaya, Suhu, Keamanan, Siaran | Interlock pintu saat ON AIR, urutan sebelum live, RAG sebagai tips konten (4 misi) |
-| **Ruangmu sendiri** | Bebas | Sampai 6 perangkat dan 4 spesialis | Merancang agen: perangkat, batas guard, kata gaul, manual, misi |
+| **Lab Robotika** | Dasar agen | Lampu, kipas, pintu, lengan robot. Cahaya, Suhu, Keamanan | Parser, guard, RAG, orkestrasi, serangan Trickster (6 misi) |
+| **Kafe Senja** | Barista dan vibes | Lampu gantung, AC, speaker, pintu, mesin espresso. Cahaya, Suhu, Vibes, Barista | Kata gaul, alias ("seduh kopi"), RAG sebagai resep, batas daya mesin (4 misi) |
+| **Studio Konten** | Live streaming | Ring light, AC, pintu, tanda ON AIR, gimbal. Cahaya, Suhu, Keamanan, Siaran | Interlock pintu saat ON AIR, urutan sebelum live (4 misi) |
+| **Perpustakaan Cahaya** | RAG berat | Lampu baca, AC, pintu, tirai, robot pustakawan. Cahaya, Suhu, Petugas, Pustakawan | Katalog, denda, jam layanan, jurnal, plagiasi. Robot hanya jalan saat pintu tertutup (4 misi) |
+| **Dapur Kantin** | Listrik terbatas | Lampu, exhaust, pintu pantry, kompor (level 1 sampai 5), oven. Cahaya, Udara, Koki | Interlock timbal balik kompor dan oven, resep, menu, alergen (4 misi) |
+| **Kebun Hidroponik** | Rumah kaca | Lampu tumbuh, kipas, pintu, pompa nutrisi, naungan. Cahaya, Udara, Air | pH, jadwal pompa, hama, panen. Pompa tidak boleh menyala saat pintu terbuka (4 misi) |
 
-Empat **tipe perangkat** cukup untuk semuanya, karena keadaan dan aksinya tetap sehingga guard di kode bisa memeriksa:
+### Yang bisa dikustom (semuanya)
+
+| Bagian | Apa yang bisa diubah | Di mana |
+|---|---|---|
+| **Agen** | Nama, warna, persona (masuk prompt AI), sapaan, kata setuju, kata menolak, gaya bahasa | Tab Agen |
+| **Orkestrator** | Nama, strategi (otomatis, selalu paralel, selalu berurutan), warna dan nama spesialis | Tab Agen, JSON |
+| **Router** | Rute buatan: kata pemicu, lalu jawab dari koleksi rak, balas teks tetap, atau tolak. Muncul di totem router 3D | Tab Agen |
+| **RAG** | Pengetahuan bersama dan per ruang, koleksi, jumlah potongan (k), ambang skor, sinonim, kata henti, memori | Tab Manual, Agen, JSON |
+| **Guardrails** | Guard masukan (+ pola sendiri), batas aksi, interlock, memori, guard keluaran (kata terlarang). Semua bisa dimatikan untuk belajar (mode rentan) | Tab Agen |
+| **Tugas (misi)** | Misi ruang dan misi lintas ruang dengan target: perangkat, suhu, cahaya, penolakan, paralel, tahap, urutan aksi, bab dibuka, memori, intent, rute, kejadian, batas pesan, jumlah ruang dikunjungi, bab unik, XP, badge | JSON |
+| **Kejadian** | Pemicu pada pesan ke-N, saat masuk ruang, atau acak. Efek: ubah suhu atau cahaya, matikan atau nyalakan perangkat | JSON |
+| **Ruang** | Perangkat (maks 6), spesialis (maks 4), bentuk 3D, fisika, interlock, kata gaul, alias, manual, tema | Tab Dunia |
+| **Cerita** | Teks pengantar semesta | JSON |
+
+Hal yang tetap di kode demi keamanan dan keterbacaan: empat tipe perangkat (`saklar`, `level`, `buka`, `mesin`), bentuk 3D dari daftar tetap, dan dua sensor (suhu dan cahaya). Rinciannya di [PANDUAN.md](PANDUAN.md).
+
+Empat **tipe perangkat** cukup untuk semuanya:
 
 | Tipe | Keadaan | Aksi | Contoh |
 |---|---|---|---|
 | `saklar` | on | on, off | Lampu, ring light, tanda ON AIR |
-| `level` | on, speed | on dengan speed 1 sampai maks, off | Kipas, AC, speaker |
-| `buka` | open | open, close | Pintu, tirai |
-| `mesin` | on, speed, angle | on dengan speed (persen) dan angle (derajat), off, dijaga `batasDaya` dan `batasSudut` | Lengan robot, mesin espresso, gimbal |
+| `level` | on, speed | on dengan speed 1 sampai maks, off | Kipas, AC, speaker, kompor, pompa |
+| `buka` | open | open, close | Pintu, tirai, naungan |
+| `mesin` | on, speed, angle | on dengan speed (persen) dan angle (derajat), off, dijaga `batasDaya` dan `batasSudut` | Lengan robot, mesin espresso, oven, gimbal |
 
-Tab **Dunia** memungkinkan mahasiswa mengajari kata gaul ("mager" menyalakan speaker), menyunting seluruh definisi ruang sebagai JSON (dengan pesan galat yang menjelaskan apa yang salah), membuat ruang baru dari templat, serta ekspor dan impor berkas JSON. Aturan, batas, dan interlock buatan sendiri tetap dijaga oleh kode.
+### Pipeline agen (terlihat di tab Jejak)
+
+```
+MASUKAN -> MEMORI -> ROUTER -> RAG -> OTAK -> GUARD -> ORKESTRATOR -> SPESIALIS -> KELUARAN
+```
+
+Tiap pesan menyalakan tahap yang dilalui dan memerahkan yang menolak. Ini cara melihat bahwa agen bukan satu "otak" saja, melainkan rangkaian komponen yang masing-masing bisa diganti.
 
 ## Isi folder
 
 | Berkas | Fungsi |
 |---|---|
 | `index.html` | Hasil build, satu berkas, siap diunggah ke GitHub Pages |
-| `index.src.html`, `game.js` | Template halaman, alur permainan, misi, badge, tab Dunia dan Manual |
+| `index.src.html`, `game.js` | Template halaman, alur permainan, misi ruang dan semesta, kejadian, pipeline, tab Dunia, Agen, dan Manual |
 | `dunia.js` | Definisi ruang (data), pemeriksa definisi, fisika suhu dan cahaya, misi deklaratif |
-| `adegan.js` | Adegan 3D: material realistis, bayangan, pantulan, mode ringan |
-| `brain.js` | Parser aturan, router intent, guardrail aksi, input guard, memori, pembagian tugas. Membaca ruang aktif |
+| `semesta.js` | Semesta: Kampus Nusantara, tiga ruang tambahan (perpustakaan, dapur, kebun), pemeriksa semesta, misi lintas ruang |
+| `adegan.js` | Adegan 3D: material realistis, bayangan, pantulan, mode ringan, totem router dan label agen dari data |
+| `brain.js` | Parser aturan, router (bawaan dan buatan), guardrails (masukan, aksi, interlock, keluaran), memori, pembagian tugas. Membaca semesta dan ruang aktif |
 | `manual.js` | Rak manual: retrieval TF-IDF tanpa API, angka dari teks manual, catatan memori, penjelasan skor |
 | `prompt.js` | Prompt LLM (lengkap dan ringkas) dirakit dari ruang aktif |
 | `brain-llm.js` | Memanggil LLM (server lokal Python, OpenRouter, atau Ollama), validasi skema, retry, router hemat, fallback |
@@ -145,9 +174,9 @@ Agen tidak bersuara. Tombol **Bicara** memakai Web Speech API (`id-ID`), menguba
 
 ## Misi, XP, dan badge
 
-Lab punya enam misi, Kafe dan Studio masing-masing empat, dan ruang buatan sendiri bisa menambah misi di JSON ("target": perangkat, suhu, cahaya, jumlah penolakan, paralel, tahap, bab manual yang dibuka, jumlah memori). Bintang bergantung pada jumlah pesan, dan petunjuk mengurangi XP. Level: Rookie, Handler, Orchestrator, Architect, Grandmaster, World Builder.
+Lab punya enam misi, ruang lain masing-masing empat, semesta punya misi lintas ruang (Tur Kampus, Ahli Pengetahuan, Jagoan Router, Tahan Banting, Mahasiswa Teladan), dan semesta atau ruang buatan sendiri bisa menambah misi di JSON ("target": perangkat, suhu, cahaya, jumlah penolakan, paralel, tahap, bab manual yang dibuka, jumlah memori). Bintang bergantung pada jumlah pesan, dan petunjuk mengurangi XP. Level: Rookie, Handler, Orchestrator, Architect, Grandmaster, World Builder.
 
-Badge per misi, ditambah **Penipu LLM**, **Pengingat** (menitip memori), dan **Arsitek Dunia** (membuat ruang sendiri). XP, badge, dan ruang buatan hanya tersimpan di browser masing-masing. Tidak ada ranking atau data yang dikirim ke server.
+Badge per misi, ditambah **Penipu LLM**, **Pengingat** (menitip memori), **Arsitek Dunia** (membuat ruang atau semesta sendiri), dan **Perancang Agen** (mengubah kepribadian, router, atau guard). XP, badge, dan ruang buatan hanya tersimpan di browser masing-masing. Tidak ada ranking atau data yang dikirim ke server.
 
 ## Arsitektur dan prinsip
 
@@ -169,10 +198,12 @@ python build.py            # menghasilkan index.html
 node test_brain.js         # parser dan guardrail
 node test_manual.js        # RAG dan orkestrasi
 node test_dunia.js         # ruang, pemeriksa definisi, fisika, misi deklaratif, memori
+node test_semesta.js       # semesta: agen, orkestrator, router, RAG, guardrails, kejadian, misi lintas ruang
 node test_llm.js           # otak LLM dengan fetch tiruan, model lokal, Ollama, router hemat
 
 # uji browser (jaringan ditiru). Butuh playwright-core, Chrome, dan salinan lokal three@0.128.0:
 PW=<jalur playwright-core> THREE=<jalur three.min.js> CHROME=<jalur chrome> node test_browser.js
+PW=... THREE=... CHROME=... node test_browser_semesta.js   # Studio Agen, router, kejadian, semesta buatan, ekspor dan impor
 PW=... THREE=... CHROME=... [LAMBAT=6] node test_resource_rendah.js   # simulasi perangkat lemah
 
 # uji nyata (kunci lewat variabel lingkungan, jangan simpan di berkas):
