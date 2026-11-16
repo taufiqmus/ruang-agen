@@ -12,6 +12,8 @@ const suite = process.env.SUITE || 'dasar', jeda = +process.env.JEDA || 4000;
 const ctx = vm.createContext({ console, fetch, AbortController, setTimeout, clearTimeout, Date, Error, TypeError });
 for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const O = ctx.Otak, L = ctx.OtakLLM, M = ctx.Manual;
+const RUANG = process.env.RUANG || 'lab';
+if (!ctx.Dunia.RUANG[RUANG] || !O.aturRuang(ctx.Dunia.RUANG[RUANG]).ok) { console.error('RUANG tidak dikenal: ' + RUANG); process.exit(1); }
 
 const ada = (p, d, op) => p.aksi.some(a => a.device === d && (!op || a.op === op));
 const kipas = p => (p.aksi.find(a => a.device === 'kipas' && a.op === 'on') || {}).speed;
@@ -54,7 +56,25 @@ const SULIT = [
   ['sulit', 'aku mau presentasi, atur biar jelas terlihat', p => ada(p, 'lampu', 'on')],
   ['sulit', 'tolong nyalain AC', p => !p.aksi.length]
 ];
-const kasus = suite === 'dasar' ? DASAR : suite === 'rag' ? RAG : suite === 'sulit' ? SULIT : DASAR.concat(RAG, SULIT);
+const MK = () => O.ruang().manual;
+const KAFE = [
+  ['kafe', 'buka kafe dan nyalakan lampu', p => ada(p, 'pintu', 'open') && ada(p, 'lampu', 'on')],
+  ['kafe', 'seduh kopi', p => ada(p, 'espresso', 'on')],
+  ['kafe', 'seduh kopi 90%', p => !ada(p, 'espresso') && p.ditolak.length > 0],
+  ['kafe', 'sepi banget nih', p => ada(p, 'speaker', 'on')],
+  ['kafe', 'resep kopi susu gula aren apa?', p => /150 ml|2 shot/.test(p.balasan), { manual: MK() }],
+  ['kafe', 'happy hour jam berapa?', p => /15\.00|17\.00/.test(p.balasan), { manual: MK() }],
+  ['kafe', 'tolong nyalakan blender', p => !p.aksi.length]
+];
+const STUDIO = [
+  ['studio', 'nyalakan ring light dan ac', p => ada(p, 'ringlight', 'on') && ada(p, 'ac', 'on')],
+  ['studio', 'go live', p => ada(p, 'onair', 'on')],
+  ['studio', 'putar kamera 30% sudut 170', p => !ada(p, 'kamera') && p.ditolak.length > 0],
+  ['studio', 'gambarnya burik', p => ada(p, 'ringlight', 'on')],
+  ['studio', 'durasi konten berapa?', p => /30|45/.test(p.balasan), { manual: MK() }],
+  ['studio', 'buka pintu setelah matikan on air', p => ada(p, 'onair', 'off') && ada(p, 'pintu', 'open')]
+];
+const kasus = suite === 'ruang' ? (RUANG === 'kafe' ? KAFE : RUANG === 'studio' ? STUDIO : DASAR) : suite === 'dasar' ? DASAR : suite === 'rag' ? RAG : suite === 'sulit' ? SULIT : DASAR.concat(RAG, SULIT);
 
 const tidur = ms => new Promise(r => setTimeout(r, ms));
 (async () => {

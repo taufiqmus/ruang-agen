@@ -1,92 +1,95 @@
 # Laporan pengujian Ruang Agen
 
-Tanggal uji: 16 November 2026. Lingkungan: Windows 11, Node 24.18.1, Chrome (Playwright 1.49 dengan Chrome terpasang), Python 3.12 dengan llama-cpp-python 0.3.36 (CPU), Ollama 0.40.16 (sudah dihapus dari mesin uji), CPU i5-12400F (6 inti), GPU tidak dipakai untuk model lokal Python.
+Tanggal uji: 16 sampai 17 November 2026. Lingkungan: Windows 11, Node 24.18.1, Chrome (Playwright 1.49 dengan Chrome terpasang, software rendering untuk WebGL), Python 3.12 dengan llama-cpp-python 0.3.36 (CPU), CPU i5-12400F (6 inti). Ollama pernah diuji lalu dihapus dari mesin uji.
 
 ## 1. Uji otomatis tanpa jaringan
 
 Dijalankan sebelum dan sesudah setiap perubahan. Semua lulus.
 
-| Berkas | Jumlah cek | Cakupan |
+| Berkas | Cek | Cakupan |
 |---|---|---|
-| `test_brain.js` | 23 | Parser bahasa Indonesia, router intent, batas kecepatan lengan, interlock pintu, batas level kipas, input guard, urutan "setelah", tanpa em dash |
-| `test_manual.js` | 40 | Retrieval TF-IDF, sinonim, ambang skor, angka dari teks manual, "nyaman" mengikuti manual (24-26, 28-30, 22-24), tanpa RAG, pertanyaan SOP, pembagian tugas paralel dan berurutan, interlock antar tahap |
-| `test_llm.js` | 49 | OpenRouter, model lokal Python, dan Ollama dengan fetch tiruan: JSON dalam pagar kode, blok think, retry, fallback (429, jaringan, timeout, JSON rusak), skema, guard menolak usulan LLM, RAG masuk prompt, manual berisi injeksi dibuang, prompt ringkas, grammar skema, router hemat (pesan dikenal tidak memanggil model, pesan baru diteruskan, klarifikasi dan injeksi tetap di kode) |
+| `test_brain.js` | 23 | Parser bahasa Indonesia di ruang Lab, router intent, batas guard, interlock, input guard, urutan "setelah" |
+| `test_manual.js` | 40 | Retrieval TF-IDF, sinonim, angka dari teks manual, "nyaman" mengikuti manual (fisika ruang), pertanyaan SOP, pembagian tugas paralel dan berurutan |
+| `test_dunia.js` | 60 | Semua ruang bawaan dan templat lolos pemeriksa. Kafe (kata gaul, alias, resep dari rak, batas daya, volume), Studio (alias "go live", interlock ON AIR, urutan aman, batas gimbal), prompt lengkap dan ringkas dirakit dari ruang aktif, memori ("ingat"), catatan mengalahkan bab suhu, injeksi lewat memori ditolak, `jelaskan` dan top-k, 12 jenis galat definisi ruang, ruang buatan dipakai otak (kata gaul dan interlock baru), fisika menuju nilai stabil dan stabil untuk langkah waktu besar, misi deklaratif |
+| `test_llm.js` | 49 | OpenRouter, model lokal Python, dan Ollama dengan fetch tiruan: fallback (429, jaringan, timeout, JSON rusak), skema, guard menolak usulan LLM, RAG masuk prompt, manual berisi injeksi dibuang, prompt ringkas, grammar skema, router hemat |
 
-## 2. Uji alur browser dengan jaringan ditiru
+## 2. Uji alur browser (jaringan ditiru)
 
-`test_browser.js`: 38 cek, semua lulus. Playwright dengan Chrome, three.js dari salinan lokal, OpenRouter, server lokal, dan Ollama ditiru lewat route.
+`test_browser.js`: 62 cek, semua lulus. Playwright dengan Chrome, three.js dari salinan lokal, OpenRouter, server lokal, dan Ollama ditiru lewat route. Dijalankan dengan `?grafis=ringan`.
 
-Cakupan: halaman termuat tanpa galat JS, lima tab, tiga spesialis; misi 4 (ubah manual lewat UI, kipas level 3 ke 1, tanpa RAG level 2, reset manual, pertanyaan SOP); misi 5 (paralel lalu berurutan, tag DELEGASI); misi 6 (serangan contoh, lengan tetap aman); LLM tiruan yang tertipu ditolak guard dan badge Penipu LLM; potongan manual sampai ke prompt; Ollama tiruan dengan skema terstruktur dan prompt ringkas; model lokal dengan router hemat (pesan dikenal tanpa panggilan model, pesan baru ke model dengan grammar skema); input suara dengan stub (ucapan menjadi pesan, agen tidak memanggil `speechSynthesis`, tidak ada kontrol suara keluar); layar 390 px tanpa scroll horizontal dan semua tombol terlihat.
+Cakupan: halaman termuat tanpa galat JS, enam tab, spesialis tiap ruang. Lab: misi 4 (ubah manual lewat UI), misi 5, misi 6, LLM tiruan yang tertipu ditolak guard. **Dunia**: pindah ke Kafe (spesialis, misi, dan contoh berganti), misi deklaratif Kafe 1, 3, 4 (guard menolak 90% lalu 60% jalan, resep dari rak, memori), badge, catatan lewat chat bertag CATAT dan bisa ditanyakan lagi, uji pencarian menampilkan skor, catatan berpola injeksi ditolak, ajari kata gaul langsung dipakai, ruang bawaan bisa dikembalikan, definisi salah dan JSON rusak memberi pesan ramah tanpa mengganti ruang aktif, ruang baru dari templat, ruang buatan disunting lewat JSON (perangkat, interlock, misi baru) lalu dimainkan sampai selesai, ruang buatan bertahan setelah halaman dimuat ulang, Studio misi 2 dan 4 (keadaan awal dari data, dua tahap), grafis realistis dan ringan bisa dipilih tanpa galat, layar 390 px tanpa scroll horizontal.
 
-## 3. Uji nyata
+## 3. Simulasi sumber daya komputasi rendah
 
-### 3.1 OpenRouter dari Node (`live_check.js`, model `openrouter/free`)
+`test_resource_rendah.js`: semua lulus. Chrome dengan CPU diperlambat 6x lewat CDP, `hardwareConcurrency` dilaporkan 2, `deviceMemory` 2 GB.
+
+| Skenario | Hasil |
+|---|---|
+| Perangkat 2 inti, RAM 2 GB, CPU 6x lebih lambat, mode Otomatis | Grafis otomatis ringan sejak awal. Halaman siap 1,0 detik. Misi 1 selesai, pindah ke Kafe, seduh kopi, dan RAG jalan. Memori JS 15 MB. Tanpa galat JS |
+| Perangkat kuat dipaksa mulai realistis, lalu CPU 6x lebih lambat | Penjaga kinerja menurunkan ke ringan, pemain diberi tahu lewat chat, permainan tetap jalan |
+| `?grafis=ringan` | Pilihan manual dihormati |
+
+Catatan: pengukuran laju frame di headless dengan software rendering tidak mewakili GPU sungguhan, jadi angka fps hanya indikatif. Simulasi CPU tidak meniru memori fisik terbatas.
+
+Model lokal dengan 2 thread (simulasi CPU lemah), Qwen2.5 1.5B, prompt ringkas dirakit dari ruang:
+
+| Ruang | Tanpa router hemat | Dengan router hemat |
+|---|---|---|
+| Kafe (7 pesan) | 5 dari 7 benar, 5,4 detik per panggilan model | 7 dari 7, tanpa panggilan model (semua dikenal parser) |
+| Studio (6 pesan) | 5 dari 6 benar, 4,7 detik per panggilan model | 6 dari 6, tanpa panggilan model |
+
+Pada pengujian sebelumnya (Lab, 28 pesan): 1,5B prompt ringkas dengan router hemat 27 dari 28 benar dengan 5 panggilan model, tanpa router hemat 18 dari 28. Model 0,5B tidak menambah nilai (0 dari 6 pada pesan sulit). Memori proses server sekitar 1,8 sampai 1,9 GB.
+
+## 4. Uji nyata
+
+### 4.1 OpenRouter dari Node (`live_check.js`, `openrouter/free`, di Lab)
 
 | Suite | Hasil |
 |---|---|
-| Dasar, 15 pesan (jelas, gaul, ambigu, info, berbahaya, injeksi) | Perilaku benar 15 dari 15. LLM menjawab 11 dari 13 panggilan, dua pesan injeksi ditangkap input guard, satu panggilan 429 jatuh ke parser dan tetap benar |
-| RAG, 7 pesan dengan manual | Perilaku benar 7 dari 7. LLM memakai angka manual (batas 24-26 menjadi kipas level 3, 28-30 menjadi level 1) |
+| Dasar, 15 pesan | Perilaku benar 15 dari 15 |
+| RAG, 7 pesan dengan manual | Perilaku benar 7 dari 7. LLM memakai angka manual setelah aturan prompt "nyaman" diganti |
 
-Temuan yang diperbaiki: Gemma bawaan lama selalu 429 (diganti `openrouter/free`); `max_tokens` 400 membuat 5 dari 13 jawaban kosong (dinaikkan ke 1500); aturan prompt yang mengunci "bikin nyaman" ke kipas level 2 membuat LLM mengabaikan manual (aturan diganti); parser salah membaca "lampunya nyala nggak?" (diperbaiki).
+Dari browser (`file://` dan `http://localhost`): Tes koneksi berhasil, alur penuh jalan, injeksi ditolak. **Catatan**: uji OpenRouter nyata dijalankan sebelum refactor "dunia berbasis data". Prompt sekarang dirakit dari data ruang dan belum diuji ulang ke OpenRouter sungguhan. Perilaku prompt untuk Lab dicek identik dengan isi sebelumnya lewat uji (`test_dunia.js`).
 
-Kualitas bahasa Indonesia: balasan natural dan singkat ("Siap, lampu dan kipas kunyalakan."), kadang bercampur kata gaul ("kucetin"). Balasan info sensor sengaja diganti agen dengan pembacaan papan sensor.
+### 4.2 Model lokal Python dari browser (sebelum refactor dunia)
 
-### 3.2 OpenRouter dari browser (`test_browser_live.js`)
+`test_browser_live.js` dengan `LOKAL=1`, dari `file://` dan `http://localhost`: semua lulus (CORS server mengizinkan, grammar JSON, router hemat). Belum diulang setelah refactor dunia.
 
-Dari `file://` (origin null) dan `http://localhost`: semua cek lulus. Tes koneksi berhasil (tidak ada masalah CORS), alur penuh AMBIL dan DELEGASI jalan, pertanyaan SOP dijawab, injeksi ditolak dan lengan tetap mati, tanpa galat JS.
+### 4.3 Perbandingan model kecil (Lab, 28 pesan)
 
-### 3.3 Model lokal kecil berbasis Python (`server_lokal.py`, CPU)
+| Model | Prompt | Router | Benar |
+|---|---|---|---|
+| 0,5B | penuh | mati | 9 dari 22 |
+| 1,5B | penuh | mati | 13 dari 28 |
+| 1,5B | ringkas | mati | 18 dari 28 |
+| 1,5B | ringkas | hemat | 25 dari 28 |
+| **1,5B** | **ringkas** | **hemat, klarifikasi ke parser** | **27 dari 28** |
+| 0,5B | ringkas | hemat | 23 dari 28 |
 
-Target: laptop mahasiswa berspesifikasi rendah. Server llama-cpp-python (tanpa GPU, tanpa Docker), model Qwen2.5 Instruct Q4_K_M, keluaran dipaksa lewat grammar skema JSON. Suite 28 pesan: 15 dasar, 7 RAG, 6 pesan sulit yang parser tidak kenal.
+JSON valid 100 persen berkat grammar.
 
-Perbandingan konfigurasi (perilaku benar dari 28, rata-rata per panggilan model):
+### 4.4 Ollama (`qwen2.5:3b`, pernah diuji)
 
-| Model | Prompt | Router | Benar | Panggilan model | Waktu per panggilan |
-|---|---|---|---|---|---|
-| 0.5B | penuh (22 pesan, tanpa suite sulit) | mati | 9 dari 22 | 20 | 2.8 detik |
-| 1.5B | penuh | mati | 13 dari 28 | 26 | 4.0 detik |
-| 1.5B | ringkas | mati | 18 dari 28 | 26 | 3.7 detik |
-| 1.5B | ringkas | hemat | 25 dari 28 | 7 | 3.5 detik |
-| **1.5B** | **ringkas** | **hemat, klarifikasi ke parser** | **27 dari 28** | **5** | **3.7 detik** |
-| 0.5B | ringkas | hemat | 23 dari 28 | 5 | 3.7 detik |
+JSON valid 20 dari 20, perilaku benar 19 dari 22. Tanpa `OLLAMA_ORIGINS`, halaman `file://` dan `https://*.github.io` ditolak HTTP 403 (hanya origin `localhost` diterima).
 
-- JSON valid 100 persen pada semua konfigurasi (grammar), perilaku benar bergantung model dan prompt.
-- Pada 6 pesan sulit tanpa router: 1.5B benar 4 dari 6 pada versi ringkas, 0.5B 0 dari 6. Model 0.5B praktis tidak menambah nilai di atas parser, 1.5B dipilih sebagai bawaan.
-- Satu-satunya salah pada konfigurasi terbaik: "hawanya bikin ngantuk" ditafsirkan sebagai pertanyaan sensor. Guard aksi tidak pernah dilewati.
-- Dibatasi 2 thread (simulasi laptop lemah): 4.7 detik per panggilan model (1.5B, 6 pesan sulit).
-- Memori proses server sekitar 1.8 sampai 1.9 GB pada kedua model, unduhan 0.47 GB (0.5B) dan 1.07 GB (1.5B).
-- Browser nyata (`test_browser_live.js` dengan `LOKAL=1`), dari `file://` dan `http://localhost`: semua lulus. Server mengizinkan CORS. "bikin nyaman" dikerjakan parser dari manual tanpa memanggil model, dan "hawanya bikin ngantuk" diteruskan ke model lokal nyata dan dijawab.
-- `server_lokal.py` diuji: menemukan berkas model yang sudah ada, menjalankan server, dan melayani permintaan.
+### 4.5 Tampilan
 
-### 3.4 Ollama sungguhan (`qwen2.5:3b`, sebelum diganti ke model lokal Python)
-
-- `live_check.js` suite semua (22 pesan): JSON valid 20 dari 20 panggilan, perilaku benar 19 dari 22. Salah pada pesan ambigu ("yang itu dong", "nyalakan") dan hitungan level kipas dari manual default. Aksi berbahaya tetap ditolak guard.
-- Browser dengan `OLLAMA_ORIGINS=*` dari `file://` dan `http://localhost`: semua lulus.
-- CORS bawaan Ollama 0.40.16 (tanpa `OLLAMA_ORIGINS`): origin `http://localhost:<port>` diterima. Origin `null` (`file://`) dan `https://*.github.io` ditolak dengan HTTP 403, termasuk preflight.
-- Ollama kemudian dihapus dari mesin uji (sekitar 5 GB dipulihkan di drive C).
-
-### 3.5 Input suara
-
-- Tombol Bicara dan alur ucapan menjadi pesan teruji dengan stub di uji browser. Agen tidak bersuara: kontrol keluaran dihapus dan uji memastikan `speechSynthesis` tidak dipanggil.
-- Chrome sungguhan menyediakan `SpeechRecognition`. Pengenalan suara sungguhan dari mikrofon belum diuji.
-
-## 4. Dihapus dari cakupan
-
-Atas keputusan pemilik proyek: proxy kelas, papan skor kelas (Supabase), dan suara keluaran agen. Badge dan XP kini lokal. Level Trickster memakai serangan contoh lokal.
+Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan.
 
 ## 5. Yang belum teruji
 
 | Hal | Alasan dan risiko |
 |---|---|
-| Mikrofon dan pengenalan suara `id-ID` sungguhan | Butuh suara manusia dan izin mikrofon. Pengenalan suara Chrome bergantung layanan Google |
-| Laptop berspesifikasi rendah sungguhan | Uji di i5-12400F, termasuk simulasi 2 thread. Laptop lama dengan RAM 4 GB bisa jauh lebih lambat atau kehabisan memori |
-| Pemasangan `llama-cpp-python` di mesin lain | Diuji di Windows x64 dengan Python 3.12 dan paket siap pakai CPU. macOS, Linux, Python lain, dan CPU tanpa AVX2 belum diuji |
-| Unduhan model lewat `server_lokal.py` dari nol | Berkas yang sudah ada dipakai. Jalur unduh memakai `huggingface_hub` yang sama dengan yang dipakai saat menyiapkan uji, tetapi tidak diulang lewat skrip |
-| GitHub Pages (`https`) memanggil server lokal atau Ollama (`http://localhost`) | Chrome dapat meminta izin akses jaringan lokal. Hanya diuji dari `file://` dan `http://localhost` |
-| Deploy ke GitHub Pages | Hanya diuji dari berkas lokal dan server statis lokal |
-| Stabilitas `openrouter/free` | Router memilih model yang berganti-ganti. Kuota harian 50 per akun |
-| Model lokal selain Qwen2.5 0.5B dan 1.5B | Misalnya Gemma 3 1B atau Llama 3.2 1B belum dibandingkan |
-| Browser selain Chrome, perangkat sentuh nyata | Hanya Chrome dan emulasi lebar 390 px |
+| Prompt hasil rakitan data ruang ke OpenRouter sungguhan | Refactor terjadi setelah uji nyata. Uji unit memastikan isi prompt Lab, tetapi perilaku model belum diukur ulang |
+| Model lokal sungguhan untuk Lab setelah refactor dunia | Hanya Kafe dan Studio yang diuji ulang (di atas) |
+| Browser dengan GPU sungguhan (kecepatan grafis realistis) | Semua uji WebGL memakai software rendering. Angka fps bukan indikator GPU |
+| Laptop berspesifikasi rendah fisik, RAM 4 GB | Hanya simulasi CPU dan sinyal perangkat |
+| Mikrofon dan pengenalan suara `id-ID` | Butuh suara manusia dan izin mikrofon |
+| Pemasangan `llama-cpp-python` di mesin lain | Diuji di Windows x64 dengan Python 3.12. macOS, Linux, dan Python lain belum |
+| Unduhan model dari nol lewat `server_lokal.py` | Berkas yang sudah ada dipakai |
+| GitHub Pages memanggil server lokal atau Ollama | Hanya diuji dari `file://` dan `http://localhost` |
+| Ruang buatan dengan definisi sangat besar atau sangat aneh | Pemeriksa membatasi jumlah dan panjang, tetapi tidak ada uji fuzzing |
+| Firefox, Safari, perangkat sentuh nyata | Hanya Chrome dan emulasi lebar 390 px |
 
 ## 6. Cara mengulang
 
