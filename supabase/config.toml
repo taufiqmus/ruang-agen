@@ -1,0 +1,4 @@
+# Endpoint ini dijaga oleh kode kelas (header x-kode-kelas), bukan JWT Supabase,
+# supaya halaman statis di GitHub Pages bisa memanggilnya tanpa login.
+[functions.agent-brain]
+verify_jwt = false
