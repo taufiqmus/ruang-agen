@@ -98,6 +98,7 @@
 
   async function satuPanggilan(pesan, state, cfg, potongan) {
     const timeout = cfg.timeoutMs || 12000;
+    const susun = cfg.ringkas ? bangunPromptRingkas : bangunPrompt; // prompt ringkas untuk model kecil
     if (cfg.mode === 'ollama') {
       const base = String(cfg.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
       const model = cfg.ollamaModel || 'qwen2.5:3b';
@@ -105,7 +106,7 @@
       try {
         d = await http(base + '/api/chat', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: bangunPrompt(pesan, state, potongan), stream: false, format: SKEMA, options: { temperature: 0.2 } })
+          body: JSON.stringify({ model, messages: susun(pesan, state, potongan), stream: false, format: SKEMA, options: { temperature: 0.2 } })
         }, timeout);
       } catch (e) {
         if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Ollama tidak terjangkau. Pastikan Ollama berjalan di laptop ini dan OLLAMA_ORIGINS mengizinkan alamat halaman ini.');
@@ -115,8 +116,26 @@
       if (!teks) throw new GalatOtak('kosong', 'Ollama mengembalikan jawaban kosong (model sudah diunduh?).');
       return { teks, model: 'ollama:' + (d.model || model) };
     }
+    if (cfg.mode === 'lokal') {
+      /* Server lokal berbasis Python (llama-cpp-python) atau server lain yang kompatibel OpenAI. Keluaran dipaksa
+         mengikuti skema lewat grammar, jadi JSON selalu valid dan device/op hanya bernilai sah. */
+      const base = String(cfg.lokalUrl || 'http://localhost:8000/v1').replace(/\/+$/, '');
+      let d;
+      try {
+        d = await http(base + '/chat/completions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: cfg.lokalModel || 'lokal', messages: susun(pesan, state, potongan), temperature: 0, max_tokens: 300, response_format: { type: 'json_object', schema: SKEMA } })
+        }, timeout);
+      } catch (e) {
+        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Server model lokal tidak terjangkau. Pastikan server berjalan di laptop ini (lihat PANDUAN.md) dan alamatnya benar.');
+        throw e;
+      }
+      const teks = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+      if (!teks) throw new GalatOtak('kosong', 'Server lokal mengembalikan jawaban kosong.');
+      return { teks, model: 'lokal:' + String(d.model || cfg.lokalModel || 'lokal').split(/[\\/]/).pop() };
+    }
     if (!cfg.apiKey) throw new GalatOtak('konfig', 'kunci OpenRouter belum diisi.');
-    const body = { messages: bangunPrompt(pesan, state, potongan), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };
+    const body = { messages: susun(pesan, state, potongan), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };
     const m = (cfg.models || []).filter(Boolean);
     if (m.length > 1) body.models = m; else body.model = m[0] || 'openrouter/free';
     const d = await http(OR_URL, {
@@ -142,6 +161,15 @@
     const inj = O.cekInjeksi(pesan);
     if (inj) return tandai(inj, { asal: 'guard' }, 'Input guard di kode menangkap pesan ini sebelum LLM dipanggil, jadi kuota tidak terpakai.');
     if (opsi.kuotaHabis) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', fallback: true, alasan: 'kuota sesi' }, 'Kuota LLM sesi ini habis. Memakai parser aturan.');
+
+    /* Router biaya (mode hemat): pesan yang dikenali parser dikerjakan parser. LLM hanya dipanggil untuk pesan yang
+       parser tidak paham. Cocok untuk model kecil di laptop lambat: hasil lebih andal dan jauh lebih cepat. */
+    if (cfg.rute === 'hemat') {
+      const p0 = O.pikir(pesan, state, opsiOtak);
+      // parser "perlu klarifikasi" (ada kata kerja atau perangkat, tapi kurang lengkap) lebih aman daripada tebakan model kecil
+      const takTahu = p0.intent === 'tidak_paham' && p0.sub !== 'perlu klarifikasi';
+      if (!takTahu) return tandai(p0, { asal: 'parser', rute: 'hemat' }, 'Router biaya: parser yakin dengan pesan ini, LLM dilewati (hemat waktu dan kuota).');
+    }
 
     /* RAG di kode: potongan dicari sebelum LLM dipanggil. Potongan yang memuat pola injeksi dibuang
        (manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung). */

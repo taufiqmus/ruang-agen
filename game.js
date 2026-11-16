@@ -26,11 +26,14 @@
 
   /* ---------- konfigurasi otak (disimpan lokal di browser) ---------- */
   const KFG = 'ruangagen-otak';
-  const cfg = { mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:3b', tts: false };
+  const cfg = { mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KFG) || '{}')); } catch (e) { /* tanpa penyimpanan */ }
-  if (!['parser', 'kunci', 'ollama'].includes(cfg.mode)) cfg.mode = 'parser'; // mode lama (misalnya proxy) yang sudah dihapus
+  if (!['parser', 'kunci', 'ollama', 'lokal'].includes(cfg.mode)) cfg.mode = 'parser'; // mode lama (misalnya proxy) yang sudah dihapus
   const simpanCfg = () => { try { localStorage.setItem(KFG, JSON.stringify(cfg)); } catch (e) { /* abaikan */ } };
-  const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), timeoutMs: cfg.mode === 'ollama' ? 60000 : 12000 });
+  const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), lokalUrl: String(cfg.lokalUrl).trim(), lokalModel: String(cfg.lokalModel).trim(),
+    // model kecil lokal: prompt ringkas, dan router hemat (parser mengerjakan pesan yang dikenalnya, LLM hanya untuk yang tidak dikenal)
+    ringkas: cfg.mode === 'lokal' || cfg.mode === 'ollama', rute: (cfg.mode === 'lokal' || cfg.mode === 'ollama') && cfg.hemat ? 'hemat' : '',
+    timeoutMs: cfg.mode === 'lokal' || cfg.mode === 'ollama' ? 120000 : 12000 });
 
   const MISI = [
     { judul: 'Perintah Jelas', base: 100, badge: 'pemula',
@@ -455,7 +458,6 @@
     chat('agen', plan.balasan, plan.ditolak.length > 0);
     jejak('balas', plan.balasan);
     say(potong(plan.balasan, 110), plan.ditolak.length ? 'guard' : 'balas');
-    bicara(plan.balasan);
     if (G.misi === 5 && !opsiKirim.serangan) {
       const h = hasilSerangan(plan);
       if (plan.ditolak.length) G.serangSendiri++;
@@ -559,25 +561,27 @@
   function renderOtak(info) {
     const b = $('#otakBadge');
     if (cfg.mode === 'parser') b.textContent = 'Otak: parser';
-    else if (cfg.mode === 'ollama') b.textContent = 'Otak: Ollama lokal' + (info && info.fallback ? ' (cadangan)' : '');
+    else if (cfg.mode === 'ollama' || cfg.mode === 'lokal') b.textContent = (cfg.mode === 'lokal' ? 'Otak: model lokal' : 'Otak: Ollama') + (info && info.fallback ? ' (cadangan)' : info && info.rute ? ' (hemat)' : '');
     else b.textContent = `Otak: LLM ${G.llmPakai}/${cfg.batasSesi}` + (info && info.fallback ? ' (cadangan)' : '');
   }
   function tampilGrup() {
     document.querySelectorAll('#otakForm .grp').forEach(d => {
       const m = d.dataset.mode;
-      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === cfg.mode);
+      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === 'lokalan' ? (cfg.mode === 'lokal' || cfg.mode === 'ollama') : m === cfg.mode);
     });
   }
   function isiForm() {
     $('#otMode').value = cfg.mode;
     $('#otKunci').value = cfg.apiKey; $('#otModels').value = cfg.models; $('#otBatas').value = cfg.batasSesi;
-    $('#otOllamaUrl').value = cfg.ollamaUrl; $('#otOllamaModel').value = cfg.ollamaModel; tampilGrup();
+    $('#otOllamaUrl').value = cfg.ollamaUrl; $('#otOllamaModel').value = cfg.ollamaModel;
+    $('#otLokalUrl').value = cfg.lokalUrl; $('#otLokalModel').value = cfg.lokalModel; $('#otHemat').checked = !!cfg.hemat; tampilGrup();
   }
   function bacaForm() {
     cfg.mode = $('#otMode').value;
     cfg.apiKey = $('#otKunci').value; cfg.models = $('#otModels').value || cfg.models;
     cfg.batasSesi = clamp(parseInt($('#otBatas').value, 10) || 30, 1, 200);
-    cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:3b';
+    cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:1.5b';
+    cfg.lokalUrl = $('#otLokalUrl').value || 'http://localhost:8000/v1'; cfg.lokalModel = $('#otLokalModel').value || 'qwen2.5-1.5b'; cfg.hemat = $('#otHemat').checked;
     simpanCfg(); tampilGrup(); renderOtak();
   }
   $('#otMode').addEventListener('change', () => { cfg.mode = $('#otMode').value; tampilGrup(); });
@@ -586,7 +590,7 @@
     bacaForm(); const st = $('#otStatus');
     if (cfg.mode === 'parser') { st.textContent = 'Pilih mode LLM dulu. Parser aturan tidak perlu koneksi.'; return; }
     st.textContent = 'Menguji koneksi...';
-    try { const r = await OtakLLM.uji(cfgAktif()); st.textContent = `Berhasil: ${r.model} menjawab dalam ${(r.ms / 1000).toFixed(1)} detik.` + (cfg.mode === 'ollama' ? '' : ' Satu permintaan terpakai dari kuota.'); }
+    try { const r = await OtakLLM.uji(cfgAktif()); st.textContent = `Berhasil: ${r.model} menjawab dalam ${(r.ms / 1000).toFixed(1)} detik.` + (cfg.mode === 'ollama' || cfg.mode === 'lokal' ? '' : ' Satu permintaan terpakai dari kuota.'); }
     catch (e) { st.textContent = 'Gagal: ' + (e && e.message ? e.message : e); }
   });
   isiForm(); renderOtak();
@@ -617,21 +621,8 @@
   }
   renderBadge();
 
-  /* ---------- suara: Web Speech API (id-ID), chat tetap jalur utama ---------- */
+  /* ---------- input suara: Web Speech API (id-ID). Agen tidak bersuara, chat tetap jalur utama ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const adaTTS = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
-  function bicara(txt) {
-    if (!cfg.tts || !adaTTS) return;
-    try {
-      speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(txt).slice(0, 240)); u.lang = 'id-ID'; u.rate = 1.05;
-      const v = speechSynthesis.getVoices().find(x => /^id/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u);
-    } catch (e) { /* abaikan */ }
-  }
-  if (adaTTS) { $('#ttsLbl').hidden = false; $('#ttsOn').checked = !!cfg.tts; $('#ttsOn').addEventListener('change', e => {
-      cfg.tts = e.target.checked; simpanCfg(); if (!cfg.tts) speechSynthesis.cancel();
-      const adaId = speechSynthesis.getVoices().some(v => /^id/i.test(v.lang));
-      $('#voiceNote').textContent = cfg.tts && !adaId ? 'Perangkat ini belum punya suara Indonesia, balasan dibacakan dengan suara lain.' : '';
-    }); }
   if (SR) {
     const mic = $('#micBtn'); mic.hidden = false; let rec = null;
     mic.addEventListener('click', () => {
@@ -644,7 +635,7 @@
       try { rec.start(); } catch (e) { rec = null; mic.textContent = 'Bicara'; }
     });
   }
-  $('#voiceNote').textContent = SR || adaTTS ? '' : 'Suara tidak didukung browser ini (pakai Chrome atau Edge di halaman https).';
+  $('#voiceNote').textContent = SR ? '' : 'Input suara tidak didukung browser ini (pakai Chrome atau Edge).';
 
   /* ================= loop ================= */
   let tSensor = 0, tCek = 0, tBoard = 0, last = performance.now(), waktu = 0, lampLevel = 0, doorAng = 0, arm = { tur: 0, bahu: -0.2, siku: 0.4 };

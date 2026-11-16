@@ -198,7 +198,6 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
       <div class="chips" id="chips"></div>
       <div class="voice" id="voiceRow">
         <button class="btn sm" type="button" id="micBtn" hidden>Bicara</button>
-        <label id="ttsLbl" hidden><input type="checkbox" id="ttsOn"> Bacakan balasan</label>
         <span class="note" id="voiceNote"></span>
       </div>
       <form class="form" id="form" autocomplete="off">
@@ -235,6 +234,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <select id="otMode">
           <option value="parser">Parser aturan (gratis, tanpa internet)</option>
           <option value="kunci">LLM dengan kunci OpenRouter sendiri</option>
+          <option value="lokal">Model lokal kecil, Python (disarankan untuk laptop biasa)</option>
           <option value="ollama">Ollama lokal (di laptop ini)</option>
         </select>
         <div class="grp" data-mode="kunci">
@@ -242,11 +242,22 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
           <input id="otKunci" type="password" placeholder="sk-or-...">
           <p class="note">Kunci hanya disimpan di browser ini dan hanya dikirim ke openrouter.ai. Akun gratis mendapat 50 permintaan model gratis per hari.</p>
         </div>
+        <div class="grp" data-mode="lokal">
+          <label for="otLokalUrl">Alamat server lokal</label>
+          <input id="otLokalUrl" type="url" placeholder="http://localhost:8000/v1">
+          <label for="otLokalModel">Nama model (bebas)</label>
+          <input id="otLokalModel" type="text" placeholder="qwen2.5-1.5b">
+          <p class="note">Jalankan server dengan <code>python server_lokal.py</code> di laptop ini (langkahnya ada di PANDUAN.md). Tanpa kuota dan tanpa internet setelah model terunduh.</p>
+        </div>
+        <div class="grp" data-mode="lokalan">
+          <label><input type="checkbox" id="otHemat"> Router hemat: parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru</label>
+          <p class="note">Disarankan untuk model kecil dan laptop lambat: lebih cepat dan lebih andal. Matikan untuk melihat model kecil bekerja sendirian.</p>
+        </div>
         <div class="grp" data-mode="ollama">
           <label for="otOllamaUrl">Alamat Ollama</label>
           <input id="otOllamaUrl" type="url" placeholder="http://localhost:11434">
           <label for="otOllamaModel">Model Ollama</label>
-          <input id="otOllamaModel" type="text" placeholder="qwen2.5:3b">
+          <input id="otOllamaModel" type="text" placeholder="qwen2.5:1.5b">
           <p class="note">Ollama harus berjalan di laptop ini dan mengizinkan alamat halaman game lewat OLLAMA_ORIGINS. Tanpa kuota dan tanpa internet, tetapi hanya berfungsi di laptop yang menjalankannya.</p>
         </div>
         <div class="grp" data-mode="llm">

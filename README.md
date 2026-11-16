@@ -25,15 +25,16 @@ Untuk kelas, unggah `index.html` ke GitHub Pages (Settings, Pages). Pratinjau ar
 | `brain.js` | Parser aturan, router intent, guardrail aksi (`validasi`), adaptor usulan LLM (`dariUsulan`), input guard (`cekInjeksi`), pembagian tugas (`bagiTugas`) |
 | `manual.js` | Isi rak manual, retrieval TF-IDF tanpa API, pembacaan angka dari teks manual |
 | `prompt.js` | Sumber tunggal prompt LLM (`bangunPrompt`) |
-| `brain-llm.js` | Memanggil LLM (OpenRouter atau Ollama), validasi skema, retry sekali, fallback ke parser |
+| `brain-llm.js` | Memanggil LLM (OpenRouter, model lokal Python, atau Ollama), validasi skema, retry sekali, router hemat, fallback ke parser |
+| `server_lokal.py`, `requirements-lokal.txt` | Server model kecil lokal berbasis Python (llama-cpp-python, CPU) |
 | `build.py` | Merakit `index.html` dari berkas sumber dan memeriksa tidak ada em dash |
 | `test_brain.js`, `test_manual.js`, `test_llm.js` | Uji otomatis tanpa jaringan |
 | `test_browser.js` | Uji alur browser dengan Playwright (jaringan ditiru) |
-| `test_browser_live.js`, `live_check.js` | Uji nyata ke OpenRouter atau Ollama (butuh kunci atau Ollama berjalan) |
+| `test_browser_live.js`, `live_check.js` | Uji nyata ke OpenRouter, server lokal Python, atau Ollama |
 
 Edit berkas sumber, bukan `index.html`. Setelah perubahan jalankan `python build.py`.
 
-## Tiga sumber otak
+## Empat sumber otak
 
 Dipilih di tab **Otak**. Kontrak JSON keluaran sama untuk semuanya:
 `{intent, sub, diambil[], didelegasikan_ke, pikiran, aksi[], ditolak[], baca, fokus, balasan, jejak[], otak}`.
@@ -41,8 +42,9 @@ Dipilih di tab **Otak**. Kontrak JSON keluaran sama untuk semuanya:
 | Mode | Cocok untuk | Catatan |
 |---|---|---|
 | Parser aturan | Semua perangkat, level awal | Gratis, instan, tanpa internet |
-| Kunci OpenRouter pribadi | **Satu kelas, gratis** | Tiap mahasiswa membuat akun dan kunci sendiri, jadi tiap orang mendapat kuota sendiri |
-| Ollama lokal | Laptop yang menjalankan Ollama | Gratis, tanpa kuota dan tanpa internet, lihat bagian Ollama |
+| **Model lokal kecil (Python)** | **Laptop berspesifikasi rendah, satu kelas** | Gratis, tanpa kuota, tanpa internet setelah model terunduh. Qwen2.5 1.5B lewat `server_lokal.py` |
+| Kunci OpenRouter pribadi | Model besar, butuh internet | Tiap mahasiswa membuat akun dan kunci sendiri, kuota gratis per akun |
+| Ollama lokal | Yang sudah memasang Ollama | Alternatif model lokal. Ollama bukan Python (ditulis dengan Go) |
 
 Kalau LLM gagal (kuota habis, jaringan, JSON rusak), agen otomatis memakai parser aturan dan kegagalannya tercatat di Jejak. Game selalu bisa dimainkan tanpa internet dan tanpa biaya.
 
@@ -79,26 +81,52 @@ Agen depan menjadi orkestrator. Tiga spesialis berdiri di dekat panelnya: **Caha
 - Pembagian dihitung di kode dari aksi yang sudah lolos guard, jadi LLM tidak menentukan tahap. Hasilnya di field `didelegasikan_ke` dan tag DELEGASI di tab Jejak.
 - Keterbatasan: untuk keluhan tanpa nama perangkat ("gerah lalu gelap"), tiap aksi menjadi tahap sendiri.
 
-## Ollama lokal
+## Model lokal kecil (Python) dan router hemat
 
-Tab **Otak**, pilih "Ollama lokal". Game memanggil `http://localhost:11434/api/chat` dengan keluaran terstruktur (`format` berisi JSON schema) dan batas waktu 60 detik.
+Untuk laptop berspesifikasi rendah. `server_lokal.py` menjalankan model Qwen2.5 Instruct kecil (kuantisasi Q4_K_M) di CPU memakai llama-cpp-python, tanpa GPU dan tanpa Docker. Server kompatibel OpenAI di `http://127.0.0.1:8000/v1`.
 
-1. Pasang Ollama dan unduh model, misalnya `ollama pull qwen2.5:3b`.
-2. Izinkan alamat halaman game lewat `OLLAMA_ORIGINS`. Hasil uji (Ollama 0.40.16, Windows): tanpa variabel ini Ollama hanya menerima origin `localhost`. Halaman dari `file://` dan dari GitHub Pages ditolak dengan HTTP 403. Contoh untuk GitHub Pages: `OLLAMA_ORIGINS=https://<akun>.github.io`. Untuk uji lokal: `OLLAMA_ORIGINS=*`. Lalu jalankan ulang Ollama.
+```bash
+python -m venv venv
+venv\Scripts\activate        # Linux atau Mac: source venv/bin/activate
+pip install -r requirements-lokal.txt
+python server_lokal.py          # unduh model 1.5B sekali (sekitar 1 GB), lalu jalan
+```
+
+Lalu di game: tab **Otak**, pilih "Model lokal kecil, Python", **Simpan**, **Tes koneksi**. Opsi lain: `--ukuran 0.5b` (paling ringan), `--threads N`, `--berkas jalur.gguf`, `--folder` (lokasi model, default `./model`).
+
+Strategi untuk model kecil, semuanya hasil uji (lihat [UJI.md](UJI.md)):
+
+1. **Prompt ringkas.** Aturan pendek dan banyak contoh. Model 1.5B naik dari 13 ke 18 benar dari 28 pesan, dan token lebih sedikit.
+2. **Keluaran dipaksa lewat grammar.** Server menerima skema JSON, jadi JSON selalu valid dan `device` serta `op` hanya bernilai sah. Tidak ada jawaban rusak.
+3. **Router hemat (bawaan hidup).** Pesan yang dikenali parser dikerjakan parser tanpa memanggil model. Model hanya dipanggil untuk pesan yang parser tidak kenal. Perintah yang kurang lengkap ("nyalakan") dijawab pertanyaan klarifikasi parser, bukan tebakan model. Hitungan "nyaman" dari manual dikerjakan kode, karena model kecil lemah berhitung. Hasil: 27 dari 28 benar, dan hanya 5 dari 26 pesan yang memanggil model. Matikan kotak "Router hemat" di tab Otak untuk melihat model kecil bekerja sendirian dan membandingkannya.
+4. **Guard tetap di kode.** Usulan model kecil yang berbahaya tetap ditolak.
+
+Pilihan model:
+
+| Model | Unduhan | RAM server | Kualitas pada pesan yang parser tidak kenal |
+|---|---|---|---|
+| Qwen2.5 0.5B | sekitar 0.5 GB | sekitar 1.5 sampai 2 GB | Hampir tidak membantu (0 dari 6 benar). Praktis parser saja |
+| **Qwen2.5 1.5B (bawaan)** | **sekitar 1.1 GB** | **sekitar 2 GB** | **Cukup (4 dari 6 benar)**, kadang salah menafsirkan |
+
+Kecepatan: sekitar 3.7 detik per panggilan model di CPU i5-12400F, sekitar 4.7 detik dengan dibatasi 2 thread. Laptop lama bisa lebih lambat, dan router hemat membuat sebagian besar pesan tetap instan. Batas waktu 120 detik.
+
+Server hanya menerima koneksi dari laptop itu sendiri (127.0.0.1). Hasil uji: halaman dari `file://` dan `http://localhost` bisa memanggilnya langsung dari browser (server mengizinkan CORS). Halaman GitHub Pages (`https`) yang memanggil `http://localhost` belum diuji dan bisa memicu izin akses jaringan lokal di Chrome. Pada skenario itu, alternatifnya membuka `index.html` dari berkas lokal atau dari `python -m http.server`.
+
+## Ollama lokal (alternatif)
+
+Tab **Otak**, pilih "Ollama lokal". Memakai `http://localhost:11434/api/chat` dengan keluaran terstruktur dan prompt ringkas serta router hemat yang sama.
+
+1. Pasang Ollama dan unduh model kecil, misalnya `ollama pull qwen2.5:1.5b`.
+2. Izinkan alamat halaman game lewat `OLLAMA_ORIGINS`. Hasil uji (Ollama 0.40.16, Windows): tanpa variabel ini Ollama hanya menerima origin `localhost`. Halaman dari `file://` dan GitHub Pages ditolak dengan HTTP 403. Contoh GitHub Pages: `OLLAMA_ORIGINS=https://<akun>.github.io`. Uji lokal: `OLLAMA_ORIGINS=*`. Lalu jalankan ulang Ollama.
 3. Isi alamat dan nama model di tab Otak, lalu **Tes koneksi**.
 
-Keterbatasan:
-- Hanya berfungsi di laptop yang menjalankan Ollama (`localhost` milik tiap perangkat).
-- Model kecil lebih lemah. Hasil uji `qwen2.5:3b` (22 pesan): JSON valid 20 dari 20 panggilan, perilaku benar 19 dari 22. Salah pada pesan ambigu ("yang itu dong", "nyalakan") dan pada hitungan level kipas dari manual. Guard aksi tetap menolak semua yang berbahaya. Coba model lebih besar bila GPU cukup.
-- Halaman `https` yang memanggil `http://localhost` bisa diminta izin akses jaringan lokal oleh Chrome. Skenario GitHub Pages ke Ollama belum diuji.
-- Jawaban pertama lebih lambat karena model dimuat dulu. Tidak ada kuota sesi untuk mode ini.
+Keterbatasan: Ollama memakai ruang disk dan layanan latar belakang lebih besar daripada server Python. Hasil uji model 3B di Ollama ada di [UJI.md](UJI.md). Hanya berfungsi di laptop yang menjalankannya.
 
-## Suara
+## Input suara
 
-Tombol **Bicara** memakai Web Speech API (`id-ID`) lalu mengirim hasilnya lewat jalur chat yang sama, jadi input guard dan guard aksi tetap berlaku. Kotak **Bacakan balasan** memakai `speechSynthesis`.
+Agen tidak bersuara. Suara hanya untuk **input**: tombol **Bicara** memakai Web Speech API (`id-ID`), mengubah ucapan menjadi teks, lalu mengirimnya lewat jalur chat yang sama, jadi input guard dan guard aksi tetap berlaku.
 
-- Syarat: Chrome atau Edge, halaman `https` atau `localhost`, izin mikrofon. Pengenalan suara Chrome mengirim audio ke server Google.
-- Pembacaan butuh suara Indonesia terpasang di perangkat. Tanpanya game memberi catatan dan membaca dengan suara lain. Di Windows, tambahkan suara lewat Settings, Time and language, Speech.
+- Syarat: Chrome atau Edge, halaman `https` atau `localhost`, izin mikrofon. Pengenalan suara Chrome mengirim audio ke server Google dan butuh internet.
 - Tidak berfungsi di pratinjau artifact, hanya di halaman yang di-host sendiri. Chat tetap jalur utama.
 
 ## Misi, XP, dan badge
@@ -131,7 +159,7 @@ Bahan ajar: bandingkan jejak mode parser dan mode LLM untuk pesan yang sama, lal
 python build.py            # menghasilkan index.html
 node test_brain.js         # parser dan guardrail
 node test_manual.js        # RAG dan orkestrasi
-node test_llm.js           # otak LLM dengan fetch tiruan, Ollama tiruan
+node test_llm.js           # otak LLM dengan fetch tiruan: OpenRouter, model lokal, Ollama, router hemat
 
 # uji browser (jaringan ditiru). Butuh playwright-core, Chrome, dan salinan lokal three@0.128.0:
 PW=<jalur playwright-core> THREE=<jalur three.min.js> CHROME=<jalur chrome> node test_browser.js
@@ -139,9 +167,11 @@ PW=<jalur playwright-core> THREE=<jalur three.min.js> CHROME=<jalur chrome> node
 # uji nyata (kunci lewat variabel lingkungan, jangan simpan di berkas):
 OPENROUTER_API_KEY=sk-or-... node live_check.js                  # 15 pesan dasar
 SUITE=rag OPENROUTER_API_KEY=sk-or-... node live_check.js        # 7 pesan dengan manual
+LOKAL=http://127.0.0.1:8000/v1 RINGKAS=1 RUTE=hemat SUITE=semua node live_check.js q15   # server_lokal.py berjalan
 OLLAMA=1 SUITE=semua node live_check.js qwen2.5:3b               # Ollama lokal
 OPENROUTER_API_KEY=sk-or-... PW=... THREE=... CHROME=... node test_browser_live.js
 OLLAMA=1 PW=... THREE=... CHROME=... node test_browser_live.js
+LOKAL=1 PW=... THREE=... CHROME=... node test_browser_live.js   # server_lokal.py berjalan di localhost:8000
 ```
 
 Ringkasan hasil dan batasnya ada di [UJI.md](UJI.md).

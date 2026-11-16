@@ -1,0 +1,4 @@
+# Server model lokal (opsional), lihat server_lokal.py
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+llama-cpp-python[server]
+huggingface_hub

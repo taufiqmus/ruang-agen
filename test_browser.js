@@ -11,7 +11,7 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
 (async () => {
   const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
-  const dipanggil = { or: [], ollama: [] };
+  const dipanggil = { or: [], ollama: [], lokal: [] };
   let modeLLM = 'tertipu';
   await ctx.route('**/*', route => {
     const u = route.request().url();
@@ -24,6 +24,11 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
         ? { intent: 'kontrol', pikiran: 'LLM tertipu', aksi: [{ device: 'lengan', op: 'on', speed: 500, angle: 60 }], fokus: 'semua', balasan: 'Siap!' }
         : { intent: 'kontrol', pikiran: 'manual: 24 sampai 26', aksi: [{ device: 'kipas', op: 'on', speed: 3 }, { device: 'lampu', op: 'on' }], fokus: 'semua', balasan: 'Siap, sesuai manual.' };
       return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: JSON.stringify({ model: 'tiruan/model:free', choices: [{ message: { content: JSON.stringify(isi) } }] }) });
+    }
+    if (u.startsWith('http://localhost:8000/')) {
+      const b = JSON.parse(route.request().postData()); dipanggil.lokal.push(b);
+      const isi = { intent: 'kontrol', pikiran: 'lokal', aksi: [{ device: 'kipas', op: 'on', speed: 1 }], fokus: 'semua', balasan: 'Kipas pelan kunyalakan.' };
+      return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }, contentType: 'application/json', body: JSON.stringify({ model: 'qwen2.5-1.5b-instruct-q4_k_m.gguf', choices: [{ message: { content: JSON.stringify(isi) } }] }) });
     }
     if (u.startsWith('http://localhost:11434/')) {
       dipanggil.ollama.push(JSON.parse(route.request().postData()));
@@ -123,21 +128,37 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   await page.click('#tab-otak'); await page.selectOption('#otMode', 'ollama');
   cek('grup Ollama tampil, grup kunci tersembunyi', await page.isVisible('#otOllamaUrl') && !(await page.isVisible('#otKunci')));
   await page.click('#otakForm button[type=submit]');
+  await page.uncheck('#otHemat'); await page.click('#otakForm button[type=submit]');
   await kirim('nyalakan lampu');
   cek('Ollama dipanggil dengan skema terstruktur', dipanggil.ollama.length === 1 && dipanggil.ollama[0].format && dipanggil.ollama[0].stream === false && (await state()).lampu.on);
   cek('badge Ollama', /Ollama/.test(await page.textContent('#otakBadge')));
+  cek('Ollama memakai prompt ringkas', /Kamu otak agen ruangan/.test(dipanggil.ollama[0].messages[0].content));
+
+  /* Model lokal kecil (Python) dengan router hemat */
+  await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
+  await page.click('#tab-otak'); await page.selectOption('#otMode', 'lokal');
+  cek('grup model lokal dan opsi router hemat tampil ', await page.isVisible('#otLokalUrl') && await page.isVisible('#otHemat'));
+  await page.check('#otHemat');
+  await page.click('#otakForm button[type=submit]');
+  await kirim('nyalakan lampu dan kipas');
+  cek('hemat: pesan yang dikenal parser tidak memanggil model', dipanggil.lokal.length === 0 && (await state()).lampu.on && /\(hemat\)/.test(await page.textContent('#otakBadge')));
+  cek('hemat: jejak menjelaskan router biaya', /Router biaya/.test((await page.$$eval('#trace li', e => e.map(x => x.textContent))).join(' ')));
+  await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
+  await kirim('hawanya bikin ngantuk');
+  cek('pesan yang parser tidak kenal diteruskan ke model lokal dengan grammar skema', dipanggil.lokal.length === 1 && dipanggil.lokal[0].response_format.schema.properties.aksi && dipanggil.lokal[0].temperature === 0);
+  cek('hasil model lokal dikerjakan spesialis Suhu', (await state()).kipas.on && /model lokal/.test(await page.textContent('#otakBadge')));
+  await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
   await page.click('#tab-otak'); await page.selectOption('#otMode', 'parser'); await page.click('#otakForm button[type=submit]');
 
-  /* Suara */
+  /* Input suara (agen tidak bersuara) */
   await page.click('#tab-chat');
-  cek('tombol mic dan kotak bacakan tampil', await page.isVisible('#micBtn') && await page.isVisible('#ttsLbl'));
-  await page.check('#ttsOn');
+  cek('tombol Bicara tampil dan tidak ada kontrol suara keluar', await page.isVisible('#micBtn') && (await page.$('#ttsOn')) === null);
   await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
   const nSebelum = await page.evaluate(() => window.__ruangAgen.G.pesan);
-  await page.click('#tab-chat'); await page.click('#micBtn');
+  await page.click('#micBtn');
   await tunggu(nSebelum + 1);
-  await page.waitForFunction(() => window.__ucap.length >= 1, null, { timeout: 60000 });
-  cek('suara: ucapan masuk chat lewat jalur yang sama, balasan dibacakan id-ID', (await state()).lampu.on && (await page.evaluate(() => window.__ucap[0].l)) === 'id-ID');
+  cek('suara masuk: ucapan menjadi pesan lewat jalur chat yang sama', (await state()).lampu.on && /nyalakan lampu/.test(await page.textContent('#chatlog')));
+  cek('agen tidak memanggil speechSynthesis', (await page.evaluate(() => window.__ucap.length)) === 0);
 
   /* Mobile */
   await page.setViewportSize({ width: 390, height: 800 });
