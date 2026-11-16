@@ -49,11 +49,30 @@ Pada pengujian sebelumnya (Lab, 28 pesan): 1,5B prompt ringkas dengan router hem
 | Dasar, 15 pesan | Perilaku benar 15 dari 15 |
 | RAG, 7 pesan dengan manual | Perilaku benar 7 dari 7. LLM memakai angka manual setelah aturan prompt "nyaman" diganti |
 
-Dari browser (`file://` dan `http://localhost`): Tes koneksi berhasil, alur penuh jalan, injeksi ditolak. **Catatan**: uji OpenRouter nyata dijalankan sebelum refactor "dunia berbasis data". Prompt sekarang dirakit dari data ruang dan belum diuji ulang ke OpenRouter sungguhan. Perilaku prompt untuk Lab dicek identik dengan isi sebelumnya lewat uji (`test_dunia.js`).
+Dari browser (`file://` dan `http://localhost`): Tes koneksi berhasil, alur penuh jalan, injeksi ditolak.
 
-### 4.2 Model lokal Python dari browser (sebelum refactor dunia)
+**Diulang setelah refactor dunia** (prompt dirakit dari data ruang, `openrouter/free`, 17 November 2026):
 
-`test_browser_live.js` dengan `LOKAL=1`, dari `file://` dan `http://localhost`: semua lulus (CORS server mengizinkan, grammar JSON, router hemat). Belum diulang setelah refactor dunia.
+| Ruang | Perilaku benar | Catatan |
+|---|---|---|
+| Lab, suite RAG (7 pesan) | 7 dari 7 | Banyak panggilan jatuh ke parser (429 atau lambat, rata-rata 17 detik), hasil akhir tetap benar karena fallback |
+| Kafe (7 pesan) | 7 dari 7 | 5 dari 7 dijawab LLM |
+| Studio (6 pesan) | 5 dari 6 | "go live" dijawab LLM sebagai tidak paham karena prompt belum memuat alias ruang. **Diperbaiki**: alias dan kata gaul ruang kini masuk prompt. Belum diukur ulang ke OpenRouter karena layanan gratis lambat |
+
+### 4.2 Model lokal Python dari browser
+
+`test_browser_live.js` dengan `LOKAL=1`, dari `file://` dan `http://localhost`: semua lulus (CORS server mengizinkan, grammar JSON, router hemat). Diulang setelah refactor dunia: lulus.
+
+**Pelajaran dari refactor:** prompt ringkas yang dirakit dari data awalnya menurunkan akurasi model 1,5B (Lab 24 dari 28, "yang itu dong" dijawab info) hanya karena beberapa kata dan contoh berbeda dari versi tulisan tangan. Setelah kata dan contoh yang terbukti dipulihkan, Lab kembali 15 dari 15 pada pesan dasar. Model kecil sangat peka terhadap redaksi prompt, jadi setiap perubahan prompt perlu diukur ulang dengan `live_check.js`.
+
+Hasil akhir model lokal 1,5B dengan prompt dari data (prompt ringkas, CPU, 17 November 2026):
+
+| Ruang | Tanpa router hemat | Dengan router hemat |
+|---|---|---|
+| Lab, 15 pesan dasar | 15 dari 15 (1 panggilan model) | 15 dari 15 |
+| Lab, 6 pesan sulit | 2 dari 6 | 4 dari 6 |
+| Kafe, 7 pesan | 6 dari 7 ("tolong nyalakan blender" ditafsirkan menyalakan espresso, guard tidak berperan karena aksinya sah) | 7 dari 7 tanpa panggilan model |
+| Studio, 6 pesan | 6 dari 6 (setelah alias masuk prompt) | 6 dari 6 tanpa panggilan model |
 
 ### 4.3 Perbandingan model kecil (Lab, 28 pesan)
 
@@ -74,14 +93,14 @@ JSON valid 20 dari 20, perilaku benar 19 dari 22. Tanpa `OLLAMA_ORIGINS`, halama
 
 ### 4.5 Tampilan
 
-Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan.
+Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan. Ring light Studio yang tampak hilang ternyata hanya tertutup kartu misi dan terlihat jelas saat kartu diringkas.
 
 ## 5. Yang belum teruji
 
 | Hal | Alasan dan risiko |
 |---|---|
-| Prompt hasil rakitan data ruang ke OpenRouter sungguhan | Refactor terjadi setelah uji nyata. Uji unit memastikan isi prompt Lab, tetapi perilaku model belum diukur ulang |
-| Model lokal sungguhan untuk Lab setelah refactor dunia | Hanya Kafe dan Studio yang diuji ulang (di atas) |
+| Studio ke OpenRouter setelah alias masuk prompt | Perbaikan hanya diukur di model lokal. Layanan gratis terlalu lambat saat pengujian |
+| Perangkat yang tidak ada di ruang ("nyalakan blender") | Model kecil bisa menebak perangkat terdekat. Aksi tetap lewat guard, tetapi tebakannya sah. Router hemat mengurangi kasus ini |
 | Browser dengan GPU sungguhan (kecepatan grafis realistis) | Semua uji WebGL memakai software rendering. Angka fps bukan indikator GPU |
 | Laptop berspesifikasi rendah fisik, RAM 4 GB | Hanya simulasi CPU dan sinyal perangkat |
 | Mikrofon dan pengenalan suara `id-ID` | Butuh suara manusia dan izin mikrofon |

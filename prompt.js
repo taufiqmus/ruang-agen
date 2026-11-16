@@ -53,6 +53,7 @@ function bangunPrompt(pesan, state, potongan, ruang) {
   if (B.iC) tafsir.push('gelap berarti ' + B.iC + ' on');
   if (B.iU && B.iD) tafsir.push('pengap berarti ' + B.iU + ' open dan ' + B.iD + ' on speed 1');
   if (B.iD) tafsir.push('dingin berarti ' + B.iD + ' off');
+  Object.keys(R.alias).slice(0, 6).forEach(function (k) { tafsir.push('"' + k + '" berarti ' + R.alias[k]); });
   R.keluhan.forEach(function (k) { tafsir.push('"' + k.kata.slice(0, 3).join('" atau "') + '" berarti ' + k.aksi.map(B.aksiTeks).join(' dan ')); });
 
   var N = B.nyaman, nyaman;
@@ -119,6 +120,10 @@ function bangunPromptRingkas(pesan, state, potongan, ruang) {
   if (B.iC) ex('kok redup ya', B.json('kontrol', 'redup berarti ' + B.iC, [{ device: B.iC, op: 'on' }], 'semua', P[B.iC].nama + ' kunyalakan.'));
   if (B.iU && B.iD) ex('udara pengap', B.json('kontrol', 'butuh sirkulasi', [{ device: B.iU, op: 'open' }, B.on(B.iD, 1)], 'semua', P[B.iU].nama + ' kubuka dan ' + B.k(B.iD) + ' pelan.'));
   R.keluhan.slice(0, 3).forEach(function (k) { ex(k.kata[0] + ' banget', B.json('kontrol', k.alasan, k.aksi, 'semua', 'Oke.')); });
+  Object.keys(R.alias).slice(0, 2).forEach(function (k) {
+    var m = R.alias[k].match(/^(nyalakan|matikan) ([a-z0-9_]+)$/);
+    if (m && P[m[2]]) ex(k, B.json('kontrol', k + ' berarti ' + R.alias[k], [{ device: m[2], op: m[1] === 'nyalakan' ? 'on' : 'off' }], 'semua', 'Oke.'));
+  });
   if (B.iS && B.iB) ex('matikan ' + B.k(B.iS) + ' lalu buka ' + B.k(B.iB), B.json('kontrol', 'dua langkah berurutan', [{ device: B.iS, op: 'off' }, { device: B.iB, op: 'open' }], 'semua', 'Oke.'));
   if (B.iM) ex('jalankan ' + B.k(B.iM) + ' 80%', B.json('kontrol', 'angka disalin apa adanya', [{ device: B.iM, op: 'on', speed: 80, angle: 60 }], 'semua', 'Oke.'));
   ex('berapa suhunya?', B.json('info', 'tanya sensor', [], 'suhu', ''));
