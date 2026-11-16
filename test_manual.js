@@ -25,7 +25,6 @@ cek('nilai suhu koma desimal', M.nilaiSuhu(ubahSuhu('Suhu nyaman 23,5 sampai 25,
 cek('nilai suhu tak terbaca = null', M.nilaiSuhu(ubahSuhu('Suhu terserah saja.')) === null);
 cek('nilai suhu ngawur ditolak', M.nilaiSuhu(ubahSuhu('Suhu nyaman 90 sampai 99 C.')) === null);
 cek('nilai cahaya', M.nilaiCahaya(M.MANUAL_AWAL).min === 200);
-cek('bersihkan: batas jumlah dan karakter', (() => { const b = M.bersihkan([{ judul: '<b>x', teks: 'y'.repeat(999) }, 1, null, { teks: 'a' }, { teks: 'b' }, { teks: 'c' }], 900); return b.length <= 3 && b[0].teks.length <= 300 && !/[<>]/.test(b[0].judul); })());
 
 /* parser membaca manual */
 let p = O.pikir('bikin nyaman dong', baru(), { manual: M.MANUAL_AWAL });

@@ -94,17 +94,6 @@ const reset = (...r) => { antrean = r; panggilan = []; };
   p = await L.pikirAsync('nyalakan lampu', baru(), cfgK(), { kuotaHabis: true });
   cek('kuota habis: tanpa fetch', p.otak.fallback && panggilan.length === 0 && /Kuota/.test(p.jejak[1].t), p.otak);
 
-  reset(OR({ intent: 'kontrol', aksi: [{ device: 'kipas', op: 'on', speed: 1 }] }, 'proxy-model'));
-  const proxyRes = { status: 200, json: { teks: JSON.stringify({ intent: 'kontrol', aksi: [{ device: 'kipas', op: 'on', speed: 1 }] }), model: 'proxy-model' } };
-  reset(proxyRes);
-  p = await L.pikirAsync('gerah', baru(), { mode: 'proxy', proxyUrl: 'https://x.supabase.co/functions/v1/agent-brain', kodeKelas: 'KELAS1', klienId: 'k123', timeoutMs: 1000 });
-  const pc = panggilan[0], pb = JSON.parse(pc.opsi.body);
-  cek('mode proxy: bentuk permintaan', p.otak.asal === 'llm' && pc.url.endsWith('/agent-brain') && pc.opsi.headers['x-kode-kelas'] === 'KELAS1' && pc.opsi.headers['x-klien'] === 'k123' && pb.pesan === 'gerah' && !pb.messages && !pc.opsi.headers.Authorization, { h: pc.opsi.headers, b: Object.keys(pb) });
-
-  reset({ status: 401, json: { error: 'kode_kelas_salah' } });
-  p = await L.pikirAsync('gerah', baru(), { mode: 'proxy', proxyUrl: 'https://x/y', kodeKelas: 'salah', timeoutMs: 1000 });
-  cek('proxy 401: pesan jelas dan fallback', p.otak.fallback && /kode kelas ditolak/.test(p.otak.alasan) && p.aksi.length === 1, p.otak);
-
   reset();
   p = await L.pikirAsync('gerah', baru(), { mode: 'kunci', apiKey: '', timeoutMs: 100 });
   cek('kunci kosong: fallback tanpa fetch', p.otak.fallback && /belum diisi/.test(p.otak.alasan) && panggilan.length === 0, p.otak);

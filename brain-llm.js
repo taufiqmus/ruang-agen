@@ -1,4 +1,4 @@
-/* Otak LLM: memanggil model (lewat proxy kelas atau kunci OpenRouter pribadi),
+/* Otak LLM: memanggil model (kunci OpenRouter pribadi atau Ollama lokal),
    memvalidasi jawabannya, dan jatuh kembali ke parser aturan bila gagal.
    Prinsip: LLM hanya MENGUSULKAN. Input guard dan guard aksi tetap dijalankan di kode. */
 (function (root) {
@@ -53,7 +53,7 @@
   }
 
   const LABEL = {
-    auth: 'kunci atau kode kelas ditolak.',
+    auth: 'kunci ditolak.',
     kuota: 'kuota model gratis habis atau sedang penuh (429).',
     saldo: 'saldo OpenRouter negatif (402).'
   };
@@ -114,16 +114,6 @@
       const teks = d && d.message && d.message.content;
       if (!teks) throw new GalatOtak('kosong', 'Ollama mengembalikan jawaban kosong (model sudah diunduh?).');
       return { teks, model: 'ollama:' + (d.model || model) };
-    }
-    if (cfg.mode === 'proxy') {
-      if (!cfg.proxyUrl) throw new GalatOtak('konfig', 'URL proxy belum diisi.');
-      const d = await http(cfg.proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-kode-kelas': cfg.kodeKelas || '', 'x-klien': cfg.klienId || '' },
-        body: JSON.stringify({ pesan, state: ringkasState(state), potongan })
-      }, timeout);
-      if (!d || typeof d.teks !== 'string' || !d.teks) throw new GalatOtak('kosong', 'proxy mengembalikan jawaban kosong.');
-      return { teks: d.teks, model: d.model || 'proxy' };
     }
     if (!cfg.apiKey) throw new GalatOtak('konfig', 'kunci OpenRouter belum diisi.');
     const body = { messages: bangunPrompt(pesan, state, potongan), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };

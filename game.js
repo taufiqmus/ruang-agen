@@ -22,11 +22,10 @@
 
   /* ---------- konfigurasi otak (disimpan lokal di browser) ---------- */
   const KFG = 'ruangagen-otak';
-  const cfg = { mode: 'parser', proxyUrl: '', kodeKelas: '', apiKey: '', models: 'openrouter/free', batasSesi: 30, klienId: '', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:3b', tts: false };
+  const cfg = { mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:3b', tts: false };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KFG) || '{}')); } catch (e) { /* tanpa penyimpanan */ }
-  if (!cfg.klienId) cfg.klienId = 'k' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   const simpanCfg = () => { try { localStorage.setItem(KFG, JSON.stringify(cfg)); } catch (e) { /* abaikan */ } };
-  const cfgAktif = () => ({ mode: cfg.mode, proxyUrl: String(cfg.proxyUrl).trim(), kodeKelas: cfg.kodeKelas, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), klienId: cfg.klienId, ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), timeoutMs: cfg.mode === 'ollama' ? 60000 : 12000 });
+  const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), timeoutMs: cfg.mode === 'ollama' ? 60000 : 12000 });
 
   const MISI = [
     { judul: 'Perintah Jelas', base: 100, badge: 'pemula',
@@ -395,7 +394,7 @@
     chat('kamu', teks);
     pemisah(G.cmd);
     if (cfg.mode !== 'parser') say('Berpikir...', 'pikir');
-    const kuotaHabis = (cfg.mode === 'proxy' || cfg.mode === 'kunci') && G.llmPakai >= cfg.batasSesi;
+    const kuotaHabis = cfg.mode === 'kunci' && G.llmPakai >= cfg.batasSesi;
     const plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag });
     G.llmPakai += plan.otak.panggilan || 0;
     renderOtak(plan.otak);
@@ -568,16 +567,16 @@
   function tampilGrup() {
     document.querySelectorAll('#otakForm .grp').forEach(d => {
       const m = d.dataset.mode;
-      d.classList.toggle('on', m === 'llm' ? (cfg.mode === 'proxy' || cfg.mode === 'kunci') : m === cfg.mode);
+      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === cfg.mode);
     });
   }
   function isiForm() {
-    $('#otMode').value = cfg.mode; $('#otProxy').value = cfg.proxyUrl; $('#otKode').value = cfg.kodeKelas;
+    $('#otMode').value = cfg.mode;
     $('#otKunci').value = cfg.apiKey; $('#otModels').value = cfg.models; $('#otBatas').value = cfg.batasSesi;
     $('#otOllamaUrl').value = cfg.ollamaUrl; $('#otOllamaModel').value = cfg.ollamaModel; tampilGrup();
   }
   function bacaForm() {
-    cfg.mode = $('#otMode').value; cfg.proxyUrl = $('#otProxy').value; cfg.kodeKelas = $('#otKode').value;
+    cfg.mode = $('#otMode').value;
     cfg.apiKey = $('#otKunci').value; cfg.models = $('#otModels').value || cfg.models;
     cfg.batasSesi = clamp(parseInt($('#otBatas').value, 10) || 30, 1, 200);
     cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:3b';

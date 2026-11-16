@@ -1,6 +1,5 @@
 /* Sumber tunggal prompt untuk otak LLM.
-   Dipakai di browser (mode kunci pribadi) dan disalin otomatis ke proxy Edge Function (prompt.ts)
-   oleh build.py, supaya keduanya tidak pernah berbeda. */
+   Dipakai di browser untuk semua mode LLM (kunci pribadi dan Ollama). */
 function bangunPrompt(pesan, state, potongan) {
   var s = state || {};
   var n = function (v, d) { v = Number(v); return isFinite(v) ? v : d; };

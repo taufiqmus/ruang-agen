@@ -256,16 +256,9 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <label for="otMode">Sumber otak</label>
         <select id="otMode">
           <option value="parser">Parser aturan (gratis, tanpa internet)</option>
-          <option value="proxy">LLM lewat proxy kelas</option>
           <option value="kunci">LLM dengan kunci OpenRouter sendiri</option>
           <option value="ollama">Ollama lokal (di laptop ini)</option>
         </select>
-        <div class="grp" data-mode="proxy">
-          <label for="otProxy">URL proxy kelas</label>
-          <input id="otProxy" type="url" placeholder="https://xxxx.supabase.co/functions/v1/agent-brain">
-          <label for="otKode">Kode kelas</label>
-          <input id="otKode" type="text" placeholder="dari dosen">
-        </div>
         <div class="grp" data-mode="kunci">
           <label for="otKunci">Kunci OpenRouter</label>
           <input id="otKunci" type="password" placeholder="sk-or-...">

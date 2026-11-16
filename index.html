@@ -256,16 +256,9 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <label for="otMode">Sumber otak</label>
         <select id="otMode">
           <option value="parser">Parser aturan (gratis, tanpa internet)</option>
-          <option value="proxy">LLM lewat proxy kelas</option>
           <option value="kunci">LLM dengan kunci OpenRouter sendiri</option>
           <option value="ollama">Ollama lokal (di laptop ini)</option>
         </select>
-        <div class="grp" data-mode="proxy">
-          <label for="otProxy">URL proxy kelas</label>
-          <input id="otProxy" type="url" placeholder="https://xxxx.supabase.co/functions/v1/agent-brain">
-          <label for="otKode">Kode kelas</label>
-          <input id="otKode" type="text" placeholder="dari dosen">
-        </div>
         <div class="grp" data-mode="kunci">
           <label for="otKunci">Kunci OpenRouter</label>
           <input id="otKunci" type="password" placeholder="sk-or-...">
@@ -362,21 +355,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
     return r ? { min: angka(r[1]) } : null;
   }
 
-  /* Potongan dari klien disanitasi sebelum masuk prompt (dipakai juga oleh proxy). */
-  function bersihkan(potongan, batasTotal) {
-    const out = []; let sisa = batasTotal || 900;
-    for (const p of Array.isArray(potongan) ? potongan.slice(0, 3) : []) {
-      if (!p || typeof p !== 'object') continue;
-      const judul = String(p.judul || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
-      let teks = String(p.teks || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
-      if (!teks || sisa <= 0) continue;
-      teks = teks.slice(0, sisa); sisa -= teks.length;
-      out.push({ id: String(p.id || '').slice(0, 20), judul, teks });
-    }
-    return out;
-  }
-
-  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, bersihkan, norm };
+  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, norm };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Manual = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -886,8 +865,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 </script>
 <script>
 /* Sumber tunggal prompt untuk otak LLM.
-   Dipakai di browser (mode kunci pribadi) dan disalin otomatis ke proxy Edge Function (prompt.ts)
-   oleh build.py, supaya keduanya tidak pernah berbeda. */
+   Dipakai di browser untuk semua mode LLM (kunci pribadi dan Ollama). */
 function bangunPrompt(pesan, state, potongan) {
   var s = state || {};
   var n = function (v, d) { v = Number(v); return isFinite(v) ? v : d; };
@@ -948,7 +926,7 @@ function bangunPrompt(pesan, state, potongan) {
 
 </script>
 <script>
-/* Otak LLM: memanggil model (lewat proxy kelas atau kunci OpenRouter pribadi),
+/* Otak LLM: memanggil model (kunci OpenRouter pribadi atau Ollama lokal),
    memvalidasi jawabannya, dan jatuh kembali ke parser aturan bila gagal.
    Prinsip: LLM hanya MENGUSULKAN. Input guard dan guard aksi tetap dijalankan di kode. */
 (function (root) {
@@ -1003,7 +981,7 @@ function bangunPrompt(pesan, state, potongan) {
   }
 
   const LABEL = {
-    auth: 'kunci atau kode kelas ditolak.',
+    auth: 'kunci ditolak.',
     kuota: 'kuota model gratis habis atau sedang penuh (429).',
     saldo: 'saldo OpenRouter negatif (402).'
   };
@@ -1064,16 +1042,6 @@ function bangunPrompt(pesan, state, potongan) {
       const teks = d && d.message && d.message.content;
       if (!teks) throw new GalatOtak('kosong', 'Ollama mengembalikan jawaban kosong (model sudah diunduh?).');
       return { teks, model: 'ollama:' + (d.model || model) };
-    }
-    if (cfg.mode === 'proxy') {
-      if (!cfg.proxyUrl) throw new GalatOtak('konfig', 'URL proxy belum diisi.');
-      const d = await http(cfg.proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-kode-kelas': cfg.kodeKelas || '', 'x-klien': cfg.klienId || '' },
-        body: JSON.stringify({ pesan, state: ringkasState(state), potongan })
-      }, timeout);
-      if (!d || typeof d.teks !== 'string' || !d.teks) throw new GalatOtak('kosong', 'proxy mengembalikan jawaban kosong.');
-      return { teks: d.teks, model: d.model || 'proxy' };
     }
     if (!cfg.apiKey) throw new GalatOtak('konfig', 'kunci OpenRouter belum diisi.');
     const body = { messages: bangunPrompt(pesan, state, potongan), temperature: 0.2, max_tokens: 1500, response_format: { type: 'json_object' } };
@@ -1266,11 +1234,10 @@ function bangunPrompt(pesan, state, potongan) {
 
   /* ---------- konfigurasi otak (disimpan lokal di browser) ---------- */
   const KFG = 'ruangagen-otak';
-  const cfg = { mode: 'parser', proxyUrl: '', kodeKelas: '', apiKey: '', models: 'openrouter/free', batasSesi: 30, klienId: '', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:3b', tts: false };
+  const cfg = { mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:3b', tts: false };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KFG) || '{}')); } catch (e) { /* tanpa penyimpanan */ }
-  if (!cfg.klienId) cfg.klienId = 'k' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   const simpanCfg = () => { try { localStorage.setItem(KFG, JSON.stringify(cfg)); } catch (e) { /* abaikan */ } };
-  const cfgAktif = () => ({ mode: cfg.mode, proxyUrl: String(cfg.proxyUrl).trim(), kodeKelas: cfg.kodeKelas, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), klienId: cfg.klienId, ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), timeoutMs: cfg.mode === 'ollama' ? 60000 : 12000 });
+  const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), timeoutMs: cfg.mode === 'ollama' ? 60000 : 12000 });
 
   const MISI = [
     { judul: 'Perintah Jelas', base: 100, badge: 'pemula',
@@ -1639,7 +1606,7 @@ function bangunPrompt(pesan, state, potongan) {
     chat('kamu', teks);
     pemisah(G.cmd);
     if (cfg.mode !== 'parser') say('Berpikir...', 'pikir');
-    const kuotaHabis = (cfg.mode === 'proxy' || cfg.mode === 'kunci') && G.llmPakai >= cfg.batasSesi;
+    const kuotaHabis = cfg.mode === 'kunci' && G.llmPakai >= cfg.batasSesi;
     const plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag });
     G.llmPakai += plan.otak.panggilan || 0;
     renderOtak(plan.otak);
@@ -1812,16 +1779,16 @@ function bangunPrompt(pesan, state, potongan) {
   function tampilGrup() {
     document.querySelectorAll('#otakForm .grp').forEach(d => {
       const m = d.dataset.mode;
-      d.classList.toggle('on', m === 'llm' ? (cfg.mode === 'proxy' || cfg.mode === 'kunci') : m === cfg.mode);
+      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === cfg.mode);
     });
   }
   function isiForm() {
-    $('#otMode').value = cfg.mode; $('#otProxy').value = cfg.proxyUrl; $('#otKode').value = cfg.kodeKelas;
+    $('#otMode').value = cfg.mode;
     $('#otKunci').value = cfg.apiKey; $('#otModels').value = cfg.models; $('#otBatas').value = cfg.batasSesi;
     $('#otOllamaUrl').value = cfg.ollamaUrl; $('#otOllamaModel').value = cfg.ollamaModel; tampilGrup();
   }
   function bacaForm() {
-    cfg.mode = $('#otMode').value; cfg.proxyUrl = $('#otProxy').value; cfg.kodeKelas = $('#otKode').value;
+    cfg.mode = $('#otMode').value;
     cfg.apiKey = $('#otKunci').value; cfg.models = $('#otModels').value || cfg.models;
     cfg.batasSesi = clamp(parseInt($('#otBatas').value, 10) || 30, 1, 200);
     cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:3b';

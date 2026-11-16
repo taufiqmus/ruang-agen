@@ -67,21 +67,7 @@
     return r ? { min: angka(r[1]) } : null;
   }
 
-  /* Potongan dari klien disanitasi sebelum masuk prompt (dipakai juga oleh proxy). */
-  function bersihkan(potongan, batasTotal) {
-    const out = []; let sisa = batasTotal || 900;
-    for (const p of Array.isArray(potongan) ? potongan.slice(0, 3) : []) {
-      if (!p || typeof p !== 'object') continue;
-      const judul = String(p.judul || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
-      let teks = String(p.teks || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
-      if (!teks || sisa <= 0) continue;
-      teks = teks.slice(0, sisa); sisa -= teks.length;
-      out.push({ id: String(p.id || '').slice(0, 20), judul, teks });
-    }
-    return out;
-  }
-
-  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, bersihkan, norm };
+  const api = { MANUAL_AWAL, cari, ambilId, nilaiSuhu, nilaiCahaya, norm };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Manual = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -12,12 +12,11 @@ Kontrak JSON tidak berubah: field `diambil` (RAG) dan `didelegasikan_ke` (orkest
 | `brain.js` | Parser aturan, router intent, guardrail aksi (`validasi`), adaptor usulan LLM (`dariUsulan`), pembagian tugas (`bagiTugas`) |
 | `manual.js` | Isi rak manual, retrieval TF-IDF tanpa API, pembacaan angka dari teks manual |
 | `kelas.js` | Klien Supabase untuk papan skor, badge, dan serangan Trickster (`supabase/schema.sql` berisi tabel dan RLS) |
-| `prompt.js` | Sumber tunggal prompt LLM (dipakai browser dan disalin ke proxy) |
+| `prompt.js` | Sumber tunggal prompt LLM |
 | `brain-llm.js` | Memanggil LLM, validasi skema, retry sekali, fallback ke parser |
 | `game.js`, `index.src.html` | Adegan 3D, UI, misi |
-| `supabase/functions/agent-brain/` | Proxy Edge Function (`index.ts`; `prompt.ts` dihasilkan otomatis) |
-| `build.py` | Merakit `index.html` dan `prompt.ts` |
-| `test_brain.js`, `test_manual.js`, `test_llm.js`, `test_proxy.mjs`, `test_kelas.js` | Uji otomatis (tanpa jaringan) |
+| `build.py` | Merakit `index.html` |
+| `test_brain.js`, `test_manual.js`, `test_llm.js`, `test_kelas.js` | Uji otomatis (tanpa jaringan) |
 | `test_browser.js` | Uji alur browser dengan Playwright (jaringan ditiru) |
 | `live_check.js` | Uji nyata 15 pesan contoh ke OpenRouter (butuh kunci lewat variabel lingkungan) |
 
@@ -28,57 +27,27 @@ Kontrak JSON tidak berubah: field `diambil` (RAG) dan `didelegasikan_ke` (orkest
 
 Pratinjau artifact di claude.ai memblokir koneksi keluar, jadi mode LLM hanya bekerja di halaman yang Anda host sendiri.
 
-## Empat sumber otak
+## Tiga sumber otak
 
 | Mode | Cocok untuk | Catatan |
 |---|---|---|
 | Parser aturan | Semua perangkat, level awal | Gratis, instan, tanpa internet |
 | Ollama lokal | Laptop yang menjalankan Ollama | Gratis, tanpa kuota dan tanpa internet, lihat bagian Ollama |
 | LLM dengan kunci OpenRouter sendiri | **Satu kelas, gratis** | Tiap mahasiswa membuat akun dan kunci sendiri, jadi tiap orang mendapat kuota sendiri |
-| LLM lewat proxy kelas | Demo oleh dosen, atau kelas kecil | Kunci Anda aman di server, mahasiswa cukup memasukkan kode kelas |
 
 ### Batas gratis (dicek 16 November 2026)
 
 - Model OpenRouter berakhiran `:free`: 20 permintaan per menit, dan **50 permintaan per hari** untuk akun yang total pembelian kreditnya di bawah 10 dolar, atau 1.000 per hari setelah membeli kredit 10 dolar sekali saja. Batas ini **per akun**, bukan per kunci, jadi membuat banyak kunci tidak menambah kuota.
   Sumber: https://openrouter.ai/docs/api/reference/limits
-- Akibatnya, satu kunci dosen yang dipakai satu kelas lewat proxy hanya cukup untuk sekitar 50 pesan per hari kecuali Anda membeli kredit 10 dolar. Karena itu mode **kunci pribadi** adalah jalur gratis yang realistis.
-- Supabase paket gratis: 500.000 pemanggilan Edge Function per bulan, dan proyek gratis dijeda setelah sekitar seminggu tidak aktif. Sumber: https://supabase.com/docs/guides/functions/pricing
-- Daftar model gratis cepat berubah. Model bawaan `openrouter/free` (router yang memilih model gratis yang sedang tersedia; `google/gemma-4-31b-it:free` sering 429 karena kolam Google dipakai bersama) bisa diganti di tab Otak, dan di proxy lewat variabel `MODELS`. Jika model pertama gagal atau penuh, OpenRouter mencoba model berikutnya dalam daftar.
+- Akibatnya, satu kunci yang dipakai bersama satu kelas hanya cukup untuk sekitar 50 pesan per hari kecuali dibeli kredit 10 dolar. Karena itu mode **kunci pribadi** adalah jalur gratis yang realistis. Tidak ada proxy kelas.
+- Daftar model gratis cepat berubah. Model bawaan `openrouter/free` (router yang memilih model gratis yang sedang tersedia; `google/gemma-4-31b-it:free` sering 429 karena kolam Google dipakai bersama) bisa diganti di tab Otak. Jika model pertama gagal atau penuh, OpenRouter mencoba model berikutnya dalam daftar.
 - Hasil uji nyata (16 November 2026, 15 pesan contoh): `openrouter/free` dengan `max_tokens` 1500 memberi JSON valid 13 dari 13 panggilan dan perilaku benar 15 dari 15. Dengan `max_tokens` 400 hanya 7 dari 13, karena model penalaran menghabiskan token untuk berpikir lalu mengembalikan jawaban kosong. Model Gemma bawaan lama selalu 429. Hasil ini belum tentu stabil karena router memilih model yang berganti-ganti.
 
-## Opsi A: kunci OpenRouter pribadi (mahasiswa)
+## Kunci OpenRouter pribadi (mahasiswa)
 
 1. Buat akun di openrouter.ai, lalu buat API key.
 2. Di game, tab **Otak**, pilih "LLM dengan kunci OpenRouter sendiri", tempel kunci, **Simpan**, lalu **Tes koneksi**.
 3. Kunci hanya disimpan di localStorage browser itu dan hanya dikirim ke openrouter.ai.
-
-## Opsi B: proxy kelas di Supabase
-
-Prasyarat: Supabase CLI dan satu proyek Supabase (bisa proyek game turunan yang sudah ada).
-
-```bash
-supabase login
-supabase link --project-ref <ref-proyek>
-
-supabase secrets set OPENROUTER_API_KEY=sk-or-... KODE_KELAS=pilih-kode-rahasia
-# opsional:
-supabase secrets set ALLOWED_ORIGIN=https://<akun>.github.io
-supabase secrets set MODELS="openrouter/free"
-supabase secrets set BATAS_GLOBAL_PER_HARI=45        # naikkan ke 950 jika sudah membeli kredit 10 dolar
-supabase secrets set BATAS_KLIEN_PER_MENIT=6 BATAS_GLOBAL_PER_MENIT=18
-
-supabase functions deploy agent-brain --no-verify-jwt
-```
-
-Lalu di game, tab **Otak**, pilih "LLM lewat proxy kelas", isi URL
-`https://<ref-proyek>.supabase.co/functions/v1/agent-brain` dan kode kelas, **Simpan**, **Tes koneksi**.
-
-Pengaman di proxy:
-- Kunci OpenRouter hanya ada di server, tidak pernah dikirim ke browser.
-- Kode kelas wajib (header `x-kode-kelas`). Tanpa kode yang benar, permintaan ditolak sebelum menyentuh OpenRouter.
-- Prompt dibangun di server. Klien tidak bisa menyuntikkan `messages` atau memilih model. Klien memang mengirim `potongan` manual (maksimal 3 potongan, 300 karakter tiap potongan, 900 total), dan server membatasi serta membuang potongan berpola injeksi sebelum masuk prompt. Potongan tetap bisa memengaruhi teks jawaban model, tetapi tidak bisa melewati guard aksi di kode, jadi endpoint ini tetap bukan LLM bebas untuk perangkat.
-- Batas per klien (6 per menit), batas global per menit (18, di bawah 20 milik OpenRouter), dan batas global per hari.
-- Penghitung berada di memori isolate. Itu cukup untuk satu kelas tetapi bukan jaminan mutlak. Untuk batas ketat, pindahkan ke tabel Postgres.
 
 ## Rak manual (RAG)
 
@@ -89,7 +58,7 @@ sebagai tag AMBIL di tab Jejak.
 - Retrieval memakai TF-IDF sederhana di browser (`manual.js`), tanpa API dan tanpa embedding.
 - Aturan "nyaman" membaca batas suhu dari **teks** manual. Contoh: batas 24 sampai 26 C membuat kipas level 3, batas 28 sampai 30 C membuat kipas level 1,
   dan batas 22 sampai 24 C membuat kipas level 3 ditambah pintu dibuka. Matikan kotak "Agen boleh membaca manual" untuk melihat agen mengarang angka (kipas level 2).
-- Untuk LLM, potongan disisipkan ke prompt sebagai DATA. Manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung. Karena itu potongan yang memuat pola injeksi dibuang di kode (klien dan proxy) sebelum sampai ke LLM.
+- Untuk LLM, potongan disisipkan ke prompt sebagai DATA. Manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung. Karena itu potongan yang memuat pola injeksi dibuang di kode sebelum sampai ke LLM.
 - Guard aksi tetap di kode: angka dari manual tidak bisa melewati batas keselamatan (kecepatan lengan, interlock, level kipas).
 - Misi 4 melatih ini: ubah batas suhu di manual lalu lihat perilaku agen ikut berubah.
 
@@ -147,11 +116,10 @@ setuju. Ini juga bahan ajar tentang defense in depth: bandingkan jejak mode pars
 ## Build dan uji
 
 ```bash
-python3 build.py                       # menghasilkan index.html dan prompt.ts
+python3 build.py                       # menghasilkan index.html
 node test_brain.js                     # parser dan guardrail
 node test_llm.js                       # otak LLM dengan fetch tiruan
 node test_manual.js                    # RAG dan orkestrasi
-node --experimental-strip-types --no-warnings test_proxy.mjs   # proxy (Node 22.6 atau lebih baru)
 node test_kelas.js                     # klien Supabase dan skema SQL
 
 # uji browser (jaringan ditiru). Butuh playwright-core, Chrome, dan salinan lokal three@0.128.0:
@@ -164,6 +132,6 @@ OPENROUTER_API_KEY=sk-or-... node live_check.js [model1,model2]
 ## Yang belum teruji
 
 Teruji nyata: panggilan ke OpenRouter dari Node (15 pesan contoh). Semua yang lain memakai server tiruan.
-Belum diuji: panggilan nyata ke OpenRouter dari browser, deploy sungguhan proxy dan `schema.sql` ke Supabase (termasuk bentuk respons login anonim),
+Belum diuji: panggilan nyata ke OpenRouter dari browser, deploy sungguhan `schema.sql` ke Supabase (termasuk bentuk respons login anonim),
 Ollama sungguhan (model kecil dan CORS), pengenalan suara sungguhan di Chrome, dan kualitas bahasa Indonesia model gratis.
 Lakukan **Tes koneksi** dan beberapa pesan percobaan sebelum dipakai di kelas.
