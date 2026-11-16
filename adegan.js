@@ -106,7 +106,7 @@
 
     /* ---------- isi ruang (dibangun ulang tiap ganti ruang atau mutu) ---------- */
     let grup = null, R = null, anim = [], lampuTitik = [], tombol = {}, posTombol = {}, spes = {}, A = null, totem = null, papan = null, bukuSorot = null, cincinMesh = null;
-    let router = null, st = null, rakAktif = 0;
+    let labelA = null, router = null, st = null, rakAktif = 0, OP = { rute: [], spesialis: {}, agen: { nama: 'Agen', warna: '#2f5bff' } };
     const PAD = { HOME: { x: 0, z: 2.3 }, S: { x: -2.0, z: -3.6, hadap: [-2.0, -5] }, R: { x: -4.5, z: -2.5, hadap: [-5.65, -2.5] } };
     const SLOT_LANTAI = [[-3.5, -3.9], [2.6, -3.9], [4.4, -2.7], [-1.9, -4.35], [-5.0, 3.9], [5.2, 4.3]];
     const SLOT_KONSOL = [[-4.5, 1.3, Math.PI / 2], [-4.5, -0.4, Math.PI / 2], [4.6, 0.6, -Math.PI / 2], [4.6, 2.4, -Math.PI / 2]];
@@ -329,16 +329,17 @@
       papan.mesh.position.set(-2.0, 2.45, -4.93); grup.add(papan.mesh);
 
       // totem router
-      const RUTE = [['kontrol', 'KONTROL', C.blue], ['info', 'INFO', C.yellow], ['bahaya', 'BAHAYA', C.coral], ['obrol', 'OBROL', C.mint]];
+      const RUTE = [['kontrol', 'KONTROL', C.blue], ['info', 'INFO', C.yellow], ['bahaya', 'BAHAYA', C.coral], ['obrol', 'OBROL', C.mint]].concat(OP.rute.map(r => [r.id, r.nama, parseInt(String(r.warna).slice(1), 16)]));
       box(1.6, 2.0, 0.08, mat(C.gelap, { r: 0.35, m: 0.5 }), -2.1, 1.55, 2.2, grup); cyl(0.05, 0.05, 0.6, logam(), -2.1, 0.3, 2.2, grup, 10); cyl(0.42, 0.46, 0.06, logam(C.gelap, 0.4), -2.1, 0.03, 2.2, grup);
       totem = sign(1.5, 1.9, (ctx, w, h) => {
         ctx.fillStyle = '#12121f'; rrect(ctx, 0, 0, w, h, 18); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.font = '800 28px "Bricolage Grotesque", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ROUTER', w / 2, 44);
+        const langkah = Math.min(84, (h - 82) / RUTE.length), tinggi = langkah - 10, f = Math.max(11, Math.min(20, tinggi * 0.5));
         RUTE.forEach((r2, i) => {
-          const y = 70 + i * 84, aktif = router === r2[0];
-          ctx.fillStyle = aktif ? hex(r2[2]) : '#2b2a44'; rrect(ctx, 16, y, w - 32, 66, 12); ctx.fill();
-          ctx.fillStyle = aktif ? '#fff' : '#7b7fa3'; ctx.font = '600 20px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.fillText(r2[1], 48, y + 40);
-          ctx.beginPath(); ctx.arc(34, y + 33, 8, 0, 7); ctx.fillStyle = aktif ? '#fff' : '#4a4970'; ctx.fill();
+          const y = 64 + i * langkah, aktif = router === r2[0];
+          ctx.fillStyle = aktif ? hex(r2[2]) : '#2b2a44'; rrect(ctx, 16, y, w - 32, tinggi, 10); ctx.fill();
+          ctx.fillStyle = aktif ? '#fff' : '#7b7fa3'; ctx.font = `600 ${f}px "JetBrains Mono", monospace`; ctx.textAlign = 'left'; ctx.fillText(r2[1].slice(0, 11), 44, y + tinggi / 2 + f * 0.35);
+          ctx.beginPath(); ctx.arc(30, y + tinggi / 2, Math.min(8, tinggi / 4), 0, 7); ctx.fillStyle = aktif ? '#fff' : '#4a4970'; ctx.fill();
         });
       });
       totem.mesh.position.set(-2.1, 1.55, 2.25); grup.add(totem.mesh);
@@ -376,7 +377,7 @@
       // konsol dan spesialis: satu konsol per spesialis, tombolnya perangkat yang ia pegang
       const nama = [...new Set(Object.keys(P).map(id => P[id].spesialis))].slice(0, 4);
       nama.forEach((n, i) => {
-        const s = SLOT_KONSOL[i], devs = Object.keys(P).filter(id => P[id].spesialis === n), w = WARNA_SPES[i];
+        const s = SLOT_KONSOL[i], devs = Object.keys(P).filter(id => P[id].spesialis === n), w = OP.spesialis[n] ? parseInt(String(OP.spesialis[n]).slice(1), 16) : WARNA_SPES[i];
         const g = new THREE.Group(); g.position.set(s[0], 0, s[1]); g.rotation.y = s[2]; grup.add(g);
         box(1.4, 0.88, 0.66, mat(C.gelap, { r: 0.45, m: 0.3 }), 0, 0.44, 0, g);
         const atas = box(1.44, 0.1, 0.84, logam(0xc3c9d6, 0.3), 0, 0.97, 0.02, g); atas.rotation.x = 0.35;
@@ -410,9 +411,12 @@
       grup = new THREE.Group(); scene.add(grup);
       anim = []; lampuTitik = []; tombol = {}; posTombol = {}; spes = {}; papanTeks.length = 0; bukuSorot = null;
       bangunRuang(); bangunPerangkat();
-      A = buatRobot(C.blue, 1); A.g.position.set(pos[0], 0, pos[1]); A.g.rotation.y = pos[2];
+      const wa = parseInt(String(OP.agen.warna).slice(1), 16) || C.blue;
+      A = buatRobot(wa, 1); A.g.position.set(pos[0], 0, pos[1]); A.g.rotation.y = pos[2];
+      const la = sign(1.2, 0.32, (ctx, w2, h) => { ctx.fillStyle = hex(wa); rrect(ctx, 0, 0, w2, h, 8); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '800 18px "Bricolage Grotesque", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(OP.agen.nama).toUpperCase().slice(0, 12), w2 / 2, 23); }, 180);
+      labelA = la.mesh; grup.add(la.mesh);
     }
-    function muatRuang(def) { R = def; st = null; router = null; if (A) { A.g.position.set(PAD.HOME.x, 0, PAD.HOME.z); A.g.rotation.y = 0; } bangun(); }
+    function muatRuang(def, opsi) { R = def; OP = Object.assign({ rute: [], spesialis: {}, agen: { nama: 'Agen', warna: '#2f5bff' } }, opsi || {}); st = null; router = null; if (A) { A.g.position.set(PAD.HOME.x, 0, PAD.HOME.z); A.g.rotation.y = 0; } bangun(); }
     function setKualitas(k) { k = k === 'ringan' ? 'ringan' : 'realistis'; if (k === Q) return; Q = k; terapkanMutu(); if (R) bangun(); }
 
     /* ---------- kamera orbit ---------- */
@@ -477,6 +481,7 @@
       terang = halus(terang, clamp(state.cahaya / 420, 0, 1), dt, 4);
       hemi.intensity = 0.34 + 0.5 * terang; sun.intensity = 0.3 + 0.55 * terang;
       langit.copy(LANGIT_GELAP).lerp(LANGIT_TERANG, terang);
+      if (labelA) labelA.position.set(A.g.position.x, 2.25, A.g.position.z);
       gerakRobot(A, dt, true); for (const n in spes) gerakRobot(spes[n], dt, false);
       for (const k in tombol) { const m = tombol[k].material; if (m.emissiveIntensity > 0.15) m.emissiveIntensity = Math.max(0.15, m.emissiveIntensity - dt * 2.5); }
       if (cincinMesh.visible) { const k = 1 + Math.sin(waktu * 6) * 0.15; cincinMesh.scale.set(k, k, k); }

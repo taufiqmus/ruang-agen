@@ -149,7 +149,7 @@
   async function pikirAsync(pesan, state, cfg, opsi) {
     const O = root.Otak; opsi = opsi || {}; cfg = cfg || { mode: 'parser' };
     const opsiOtak = { manual: opsi.manual, rag: opsi.rag, k: opsi.k };
-    const k = Math.max(1, Math.min(3, opsi.k | 0 || 2));
+    const RG = O.rag(), k = Math.max(1, Math.min(3, opsi.k | 0 || RG.k));
     const t0 = Date.now();
     const tandai = (plan, info, catatan) => {
       plan.otak = Object.assign({ ms: Date.now() - t0, panggilan: 0 }, info);
@@ -159,6 +159,8 @@
     if (!cfg.mode || cfg.mode === 'parser') return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser' }, 'Otak: parser aturan (tanpa LLM).');
     const inj = O.cekInjeksi(pesan);
     if (inj) return tandai(inj, { asal: 'guard' }, 'Input guard di kode menangkap pesan ini sebelum LLM dipanggil, jadi kuota tidak terpakai.');
+    const rute = O.adaRute(pesan);
+    if (rute) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', rute: 'router' }, `Router di kode memutuskan: rute "${rute.nama}" dijawab aturan, bukan LLM. Pilihan rute tidak diserahkan ke model.`);
     if (O.adaMemori(pesan)) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser' }, 'Menulis memori dikerjakan kode, bukan LLM: apa yang boleh ditulis ke rak tidak diserahkan ke model.');
     if (opsi.kuotaHabis) return tandai(O.pikir(pesan, state, opsiOtak), { asal: 'parser', fallback: true, alasan: 'kuota sesi' }, 'Kuota LLM sesi ini habis. Memakai parser aturan.');
 
@@ -175,7 +177,7 @@
        (manual bisa diedit pemain, jadi bisa menjadi jalur injeksi tidak langsung). */
     let diambil = [], dibuang = 0;
     if (root.Manual && Array.isArray(opsi.manual) && opsi.rag !== false) {
-      const kandidat = root.Manual.cari(pesan, opsi.manual, k, 0.8);
+      const kandidat = root.Manual.cari(pesan, opsi.manual, k, RG.ambang, { sinonim: RG.sinonim, stop: RG.stop });
       diambil = kandidat.filter(p => !O.adaInjeksi(p.judul + ' ' + p.teks));
       dibuang = kandidat.length - diambil.length;
     }

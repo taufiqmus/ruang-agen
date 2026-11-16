@@ -24,16 +24,18 @@
     if (w.length > 4 && /(an|lah|kah)$/.test(w)) return w.slice(0, w.endsWith('an') ? -2 : -3);
     return w;
   }
-  const token = s => norm(s).split(' ').filter(w => w.length > 1 && !STOP.has(w)).map(stem);
-  const tokenQuery = s => { const t = token(s); const ekstra = t.map(w => SINONIM[w]).filter(Boolean); return t.concat(ekstra); };
+  /* opsi.stop dan opsi.sinonim menambah kosakata bawaan (diatur per semesta). Peta sinonim: kata -> istilah di rak. */
+  const token = (s, op) => { const stop = op && op.stop && op.stop.length ? new Set(op.stop) : null; return norm(s).split(' ').filter(w => w.length > 1 && !STOP.has(w) && !(stop && stop.has(w))).map(stem); };
+  const tokenQuery = (s, op) => { const t = token(s, op); const sin = op && op.sinonim ? op.sinonim : null; const ekstra = t.map(w => (sin && sin[w]) || SINONIM[w]).filter(Boolean).map(w => stem(norm(w))); return t.concat(ekstra); };
 
   /* TF-IDF: skor = jumlah tf*idf istilah query pada potongan, dinormalkan panjang potongan. */
-  function cari(pesan, manual, k, min) {
-    const docs = (manual || []).map(m => ({ m, t: token(m.judul + ' ' + m.judul + ' ' + m.teks) }));
+  function cari(pesan, manual, k, min, opsi) {
+    const koleksi = opsi && opsi.koleksi;
+    const docs = (manual || []).filter(m => !koleksi || m.koleksi === koleksi).map(m => ({ m, t: token(m.judul + ' ' + m.judul + ' ' + m.teks, opsi) }));
     if (!docs.length) return [];
     const df = {};
     for (const d of docs) for (const w of new Set(d.t)) df[w] = (df[w] || 0) + 1;
-    const q = tokenQuery(pesan);
+    const q = tokenQuery(pesan, opsi);
     const hasil = [];
     for (const d of docs) {
       let skor = 0;
@@ -43,7 +45,7 @@
         skor += tf * Math.log(1 + docs.length / df[w]);
       }
       const nilai = Math.round(skor / Math.sqrt(d.t.length) * 100) / 100;
-      if (skor > 0 && nilai >= (min || 0)) hasil.push({ id: d.m.id, judul: d.m.judul, teks: d.m.teks, skor: nilai });
+      if (skor > 0 && nilai >= (min || 0)) hasil.push({ id: d.m.id, judul: d.m.judul, teks: d.m.teks, koleksi: d.m.koleksi || '', skor: nilai });
     }
     hasil.sort((a, b) => b.skor - a.skor);
     return hasil.slice(0, k || 2);
@@ -68,11 +70,11 @@
     return null;
   }
   /* Untuk belajar: skor tiap potongan terhadap sebuah pertanyaan, beserta kata yang cocok. */
-  function jelaskan(pesan, manual) {
-    const q = [...new Set(tokenQuery(pesan))];
-    const skor = {}; for (const h of cari(pesan, manual, 99, 0)) skor[h.id] = h.skor;
+  function jelaskan(pesan, manual, opsi) {
+    const q = [...new Set(tokenQuery(pesan, opsi))];
+    const skor = {}; for (const h of cari(pesan, manual, 99, 0, opsi)) skor[h.id] = h.skor;
     return (manual || []).map(m => {
-      const t = new Set(token(m.judul + ' ' + m.teks));
+      const t = new Set(token(m.judul + ' ' + m.teks, opsi));
       return { id: m.id, judul: m.judul, skor: skor[m.id] || 0, cocok: q.filter(w => t.has(w)) };
     }).sort((a, b) => b.skor - a.skor);
   }

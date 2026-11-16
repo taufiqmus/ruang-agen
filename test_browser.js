@@ -4,7 +4,7 @@ const path = require('path');
 const { chromium } = require(process.env.PW || 'playwright-core');
 const THREE = process.env.THREE, CHROME = process.env.CHROME || '/usr/bin/google-chrome';
 if (!THREE) { console.error('Set THREE ke salinan lokal three@0.128.0 (three.min.js).'); process.exit(1); }
-const URL = 'file:///' + path.resolve('index.html').split(path.sep).join('/') + '?grafis=ringan';
+const URL = 'file:///' + path.resolve('index.html').split(path.sep).join('/') + '?grafis=ringan&kejadian=mati';
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 300) : ''); } else console.log('ok   :', n); };
 
@@ -57,7 +57,7 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   const tag = async (t) => page.$$eval('#trace li .tag', (els, t) => els.filter(e => e.textContent === t).length, t);
 
   cek('halaman termuat tanpa galat awal', galatHalaman.length === 0, galatHalaman);
-  cek('enam tab dan tiga spesialis', (await page.$$('[role=tab]')).length === 6 && (await page.evaluate(() => Object.keys(window.__ruangAgen.SPES).join())) === 'Cahaya,Suhu,Keamanan');
+  cek('tujuh tab dan tiga spesialis', (await page.$$('[role=tab]')).length === 7 && (await page.evaluate(() => Object.keys(window.__ruangAgen.SPES).join())) === 'Cahaya,Suhu,Keamanan');
 
   /* Misi 4: ubah manual lewat UI, perilaku agen berubah */
   await page.evaluate(() => window.__ruangAgen.mulaiMisi(3));
@@ -187,11 +187,11 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   cek('catatan berpola injeksi ditolak masuk rak', !(await page.evaluate(() => window.__ruangAgen.G.manual.some(m => /abaikan/.test(m.teks)))));
   await page.click('#tab-dunia');
   await page.fill('#duKata', 'mager'); await page.selectOption('#duDev', 'speaker'); await page.selectOption('#duOp', 'on'); await page.click('#duAjar');
-  cek('ajari kata gaul: tersimpan sebagai ruang ubahan', /paham "mager"/.test(await page.textContent('#duStatus')) && /diubah/.test(await page.textContent('#duRuang')));
+  cek('ajari kata gaul: tersimpan sebagai ruang ubahan', /paham "mager"/.test(await page.textContent('#duStatus')) && /diubah/.test(await page.textContent('#duSemesta')));
   await kirim('mager banget nih');
   cek('kata gaul baru langsung dipakai agen', (await state()).speaker.on === true);
-  await page.click('#tab-dunia'); await page.click('#duHapus');
-  cek('ruang bawaan bisa dikembalikan', !/diubah/.test(await page.textContent('#duRuang')));
+  await page.click('#tab-dunia'); await page.click('#duHapusS');
+  cek('semesta bawaan bisa dikembalikan setelah diubah', !/diubah/.test(await page.textContent('#duSemesta')) && (await page.evaluate(() => window.__ruangAgen.G.ruang)) === 'kafe');
   await page.fill('#duJson', '{ "id": "rusak", "nama": "Rusak", "perangkat": { "tv": { "tipe": "layar", "kata": ["tv"] } } }'); await page.click('#duTerap');
   cek('definisi salah: galat ramah, ruang aktif tidak berubah', /tipe" harus salah satu/.test(await page.textContent('#duGalat')) && (await page.evaluate(() => window.__ruangAgen.G.ruang)) === 'kafe', await page.textContent('#duGalat'));
   await page.fill('#duJson', '{ rusak'); await page.click('#duTerap');

@@ -247,7 +247,7 @@
     });
 
     R.kataManual = (Array.isArray(def.kataManual) ? def.kataManual : []).map(x => String(x).toLowerCase().trim()).filter(x => OK_KATA.test(x)).slice(0, 16);
-    R.manual = (Array.isArray(def.manual) ? def.manual.slice(0, 12) : []).map((m, i) => ({ id: OK_ID.test(String(m && m.id)) ? String(m.id) : 'bab' + (i + 1), judul: teks(m && m.judul, 60) || 'Tanpa judul', teks: teks(m && m.teks, 300) })).filter(m => m.teks);
+    R.manual = (Array.isArray(def.manual) ? def.manual.slice(0, 16) : []).map((m, i) => ({ id: OK_ID.test(String(m && m.id)) ? String(m.id) : 'bab' + (i + 1), judul: teks(m && m.judul, 60) || 'Tanpa judul', teks: teks(m && m.teks, 300), koleksi: teks(m && m.koleksi, 16).toLowerCase().replace(/[^a-z0-9_]/g, '') })).filter(m => m.teks);
     R.contoh = (Array.isArray(def.contoh) ? def.contoh.slice(0, 8) : []).map(c => teks(c, 60)).filter(Boolean);
     R.misiBawaan = def.misiBawaan === true && R.id === 'lab';
 
@@ -269,6 +269,9 @@
       if (tg.suhuMaks != null) T.suhuMaks = bil(tg.suhuMaks, 10, 45, 27);
       if (tg.cahayaMin != null) T.cahayaMin = bil(tg.cahayaMin, 0, 1000, 200);
       for (const k of ['tolakMin', 'paralelMin', 'tahapMin', 'memoriMin']) if (tg[k] != null) T[k] = Math.round(bil(tg[k], 1, 5, 1));
+      if (tg.maksPesan != null) T.maksPesan = Math.round(bil(tg.maksPesan, 1, 30, 5));
+      if (Array.isArray(tg.urutan)) { const u = tg.urutan.filter(x => punya(P, x)).slice(0, 5); if (u.length !== tg.urutan.length) G.push(`${di}: "urutan" menyebut perangkat yang tidak ada.`); if (u.length) T.urutan = u; }
+      for (const k of ['intent', 'rute', 'kejadian']) if (tg[k] != null) T[k] = teks(tg[k], 24);
       if (tg.ambil != null) T.ambil = tg.ambil === true ? true : teks(tg.ambil, 20);
       if (!Object.keys(T).length) { G.push(`${di}: "target" kosong, misi tidak bisa selesai.`); return; }
       const awal = {};
@@ -290,8 +293,8 @@
   const aktif = x => !!(x && (x.on || x.open));
 
   /* Fisika sederhana: tiap perangkat aktif menggeser suhu dan cahaya menuju nilai stabil. */
-  function nilaiStabil(R, s) {
-    let ts = R.ambien.suhu, tc = R.ambien.cahaya;
+  function nilaiStabil(R, s, ek) {
+    let ts = R.ambien.suhu + (ek ? ek.suhu || 0 : 0), tc = R.ambien.cahaya + (ek ? ek.cahaya || 0 : 0);
     for (const id of Object.keys(R.perangkat)) {
       if (!aktif(s[id])) continue;
       const d = R.perangkat[id];
@@ -300,8 +303,8 @@
     }
     return { suhu: ts, cahaya: Math.max(0, tc) };
   }
-  function langkahFisika(R, s, dt) {
-    const t = nilaiStabil(R, s);
+  function langkahFisika(R, s, dt, ek) {
+    const t = nilaiStabil(R, s, ek);
     s.suhu += (t.suhu - s.suhu) * (1 - Math.exp(-dt * 0.15));
     s.cahaya += (t.cahaya - s.cahaya) * (1 - Math.exp(-dt * 5));
     return s;
@@ -323,10 +326,15 @@
     if (T.tahapMin) out.push([`Rencana berurutan ${g.tahapMaks} tahap (target ${T.tahapMin})`, g.tahapMaks >= T.tahapMin]);
     if (T.ambil != null) { const ok = T.ambil === true ? g.ambil.length > 0 : g.ambil.includes(T.ambil); out.push([`Agen membuka rak manual${T.ambil === true ? '' : ' (bab "' + T.ambil + '")'}`, ok]); }
     if (T.memoriMin) out.push([`Catatan memori di rak: ${g.memori} (target ${T.memoriMin})`, g.memori >= T.memoriMin]);
+    if (T.urutan) { const log = g.logAksi || []; let i = 0; for (const d of log) if (d === T.urutan[i]) i++; out.push([`Urutan aksi: ${T.urutan.map(d => P[d].nama).join(' lalu ')} (${Math.min(i, T.urutan.length)} dari ${T.urutan.length})`, i >= T.urutan.length]); }
+    if (T.intent) out.push([`Pernah memicu intent "${T.intent}"`, (g.intents || []).includes(T.intent)]);
+    if (T.rute) out.push([`Pernah memakai rute "${T.rute}"`, (g.rute || []).includes(T.rute)]);
+    if (T.kejadian) out.push([`Mengalami kejadian "${T.kejadian}"`, (g.kejadian || []).includes(T.kejadian)]);
+    if (T.maksPesan) out.push([`Pesan terpakai ${g.pesan || 0} (maksimal ${T.maksPesan})`, (g.pesan || 0) <= T.maksPesan]);
     return out;
   }
 
-  const api = { TIPE, BENTUK, RUANG, TEMPLAT, periksa, stateAwal, aktif, nilaiStabil, langkahFisika, nilaiMisi, punya };
+  const api = { TIPE, BENTUK, RUANG, TEMPLAT, teks, bil, warna, OK_ID, OK_KATA, periksa, stateAwal, aktif, nilaiStabil, langkahFisika, nilaiMisi, punya };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Dunia = api;
 })(typeof window !== 'undefined' ? window : globalThis);

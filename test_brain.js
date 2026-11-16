@@ -1,5 +1,5 @@
 global.Manual = require('./manual.js');
-global.Dunia = require('./dunia.js');
+global.Dunia = require('./dunia.js'); require('./semesta.js');
 const O = require('./brain.js');
 let gagal = 0;
 function cek(nama, cond, info) { if (!cond) { gagal++; console.log('GAGAL:', nama, info !== undefined ? JSON.stringify(info) : ''); } else console.log('ok   :', nama); }

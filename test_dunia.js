@@ -1,7 +1,7 @@
 /* Uji dunia berbasis data: ruang bawaan, ruang buatan, pemeriksa definisi, fisika, misi deklaratif, memori. Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, D = ctx.Dunia, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 400) : ''); } else console.log('ok   :', n); };

@@ -25,6 +25,18 @@
   const MEMORI = /^\s*(?:tolong\s+)?(?:ingat|inget|catat|simpan)(?:\s+ya|\s+bahwa|\s+dong)?\s*[:,]?\s+(.{3,160})$/i;
   const LABEL_INTENT = { kontrol: 'kontrol perangkat', info: 'tanya info', bahaya: 'bahaya', obrol: 'obrolan', tidak_paham: 'tidak dikenali' };
 
+  /* ---------- semesta aktif: kepribadian agen, router, RAG, guardrails, orkestrator ---------- */
+  let U = null, RUTE = [], INJEKSI_X = null;
+  const EKS = { suhu: 0, cahaya: 0 };   // efek kejadian sementara (misalnya gelombang panas), diatur oleh game
+  function aturSemesta(def) {
+    const h = D.periksaSemesta(def);
+    if (!h.ok) return h;
+    U = h.semesta;
+    RUTE = U.router.rute.map(r => ({ r, re: new RegExp('\\b(' + r.kata.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b') }));
+    INJEKSI_X = U.guard.input.pola.length ? new RegExp('\\b(' + U.guard.input.pola.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b') : null;
+    return h;
+  }
+
   /* ---------- ruang aktif dan turunan yang dihitung sekali ---------- */
   let R = null, P = {}, POLA = {}, ALIAS = [], KELUHAN = [], MANUAL_Q = null;
   const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -131,7 +143,7 @@
     const iD = peran('dingin'), iU = peran('udara'), iC = peran('cahaya');
     const aksi = [], catatan = [];
     if (sh && iD) {
-      const amb = R.ambien.suhu, per = -P[iD].efek.suhu, maks = P[iD].tipe === 'level' ? P[iD].maks : 1, bu = iU ? -P[iU].efek.suhu : 0;
+      const amb = R.ambien.suhu + EKS.suhu, per = -P[iD].efek.suhu, maks = P[iD].tipe === 'level' ? P[iD].maks : 1, bu = iU ? -P[iU].efek.suhu : 0;
       if (state.suhu > sh.maks) {
         let level = 0, buka = false;
         for (let s = 1; s <= maks && !level; s++) if (amb - per * s <= sh.maks) level = s;
@@ -205,11 +217,11 @@
     const ok = [], tolak = [];
     for (const a of aksi) {
       const d = P[a.device], N = d.nama;
-      if (d.tipe === 'level' && a.op === 'on' && !(a.speed >= 1 && a.speed <= d.maks)) {
+      if (U.guard.aksi.aktif && d.tipe === 'level' && a.op === 'on' && !(a.speed >= 1 && a.speed <= d.maks)) {
         tolak.push({ device: a.device, aturan: 'batas_level', pesan: `${N} hanya punya level 1 sampai ${d.maks}, bukan ${a.speed}.` });
         continue;
       }
-      if (d.tipe === 'mesin' && a.op === 'on') {
+      if (U.guard.aksi.aktif && d.tipe === 'mesin' && a.op === 'on') {
         if (!(a.speed <= d.batasDaya)) {
           tolak.push({ device: a.device, aturan: 'batas_kecepatan', pesan: `${d.satuan === 'daya' ? 'Daya' : 'Kecepatan'} ${nm(a.device)} ${a.speed}% melebihi batas aman ${d.batasDaya}%.`, saran: `Mau kupakai ${d.batasDaya}%?` });
           continue;
@@ -219,7 +231,7 @@
           continue;
         }
       }
-      const il = (a.op === 'open' || a.op === 'on') && R.interlock.find(x => x.larang === a.device && D.aktif(sim[x.saat]));
+      const il = U.guard.interlock.aktif && (a.op === 'open' || a.op === 'on') && R.interlock.find(x => x.larang === a.device && D.aktif(sim[x.saat]));
       if (il) { tolak.push({ device: a.device, aturan: 'interlock', pesan: il.pesan, saran: il.saran }); continue; }
       terapkan(sim, a);
       ok.push(a);
@@ -270,12 +282,13 @@
   function bagiTugas(aksi, teksPesan) {
     if (!aksi.length) return null;
     const teks = pakaiAlias(norm(teksPesan));
-    const urut = URUT.test(teks);
+    const strategi = U.orkestrator.strategi;
+    const urut = strategi === 'paralel' ? false : strategi === 'berurutan' ? true : URUT.test(teks);
     // dua aksi yang terikat interlock tidak boleh satu tahap (hindari balapan antar spesialis)
     const terikat = (x, a) => R.interlock.some(il => (x.device === il.larang && (x.op === 'open' || x.op === 'on') && a.device === il.saat) || (a.device === il.larang && (a.op === 'open' || a.op === 'on') && x.device === il.saat));
     const bentrok = (st, a) => st.some(x => terikat(x, a));
     let kelompok = null;
-    if (urut) {
+    if (urut && strategi === 'otomatis') {
       const seg = segmenUrut(teks);
       if (aksi.every(a => seg.some(d => d.has(a.device)))) {
         kelompok = seg.map(() => []);
@@ -299,7 +312,7 @@
   function delegasiJejak(tugas) {
     if (!tugas || !tugas.length) return [];
     const n = Math.max(...tugas.map(t => t.tahap)) + 1;
-    const baris = [`Orkestrator membagi ${tugas.reduce((s, t) => s + t.aksi.length, 0)} aksi ke ${new Set(tugas.map(t => t.agen)).size} spesialis dalam ${n} tahap.`];
+    const baris = [`${U.orkestrator.nama} (${U.orkestrator.strategi}) membagi ${tugas.reduce((s, t) => s + t.aksi.length, 0)} aksi ke ${new Set(tugas.map(t => t.agen)).size} spesialis dalam ${n} tahap.`];
     for (let i = 0; i < n; i++) {
       const dalam = tugas.filter(t => t.tahap === i);
       baris.push(`Tahap ${i + 1}${dalam.length > 1 ? ' (paralel)' : ''}: ` + dalam.map(t => `${t.agen} (${t.aksi.map(a => a.device + ' ' + a.op).join(', ')})`).join(' dan '));
@@ -310,11 +323,18 @@
   function kerangka(pesan) {
     const asli = String(pesan || '').trim();
     const mentah = norm(asli), teks = pakaiAlias(mentah);
-    const out = { intent: 'tidak_paham', sub: '', diambil: [], didelegasikan_ke: null, memori: null, pikiran: '', aksi: [], ditolak: [], baca: false, fokus: 'semua', balasan: '', jejak: [] };
+    const out = { intent: 'tidak_paham', sub: '', rute: null, diambil: [], didelegasikan_ke: null, memori: null, catatanGuard: [], pikiran: '', aksi: [], ditolak: [], baca: false, fokus: 'semua', balasan: '', jejak: [] };
     const J = out.jejak;
     J.push({ k: 'terima', t: `Pesan masuk: "${potong(asli, 70)}"` });
     const selesai = (tujuan) => {
-      const router = { k: 'router', intent: out.intent, t: `Router: intent "${LABEL_INTENT[out.intent]}"${out.sub ? ' (' + out.sub + ')' : ''}${tujuan ? '. Tujuan: ' + tujuan : ''}` };
+      if (U.guard.output.aktif && U.guard.output.kata.length && out.balasan) {
+        let n = 0; const re = new RegExp('\\b(' + U.guard.output.kata.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'gi');
+        const baru = out.balasan.replace(re, m => { n++; return '*'.repeat(m.length); });
+        if (n) { out.balasan = baru; out.catatanGuard.push(`keluaran: ${n} kata terlarang disamarkan`); J.push({ k: 'guard', t: `Guard keluaran: ${n} kata terlarang di jawabanku disamarkan sebelum sampai ke pengguna.` }); }
+      }
+      if ((!U.guard.aksi.aktif || !U.guard.interlock.aktif) && out.aksi.length) J.push({ k: 'guard', t: `Peringatan: ${[!U.guard.aksi.aktif ? 'guard batas aksi' : '', !U.guard.interlock.aktif ? 'interlock' : ''].filter(Boolean).join(' dan ')} dimatikan di semesta ini (mode rentan, hanya untuk belajar).` });
+      const rt = out.rute && RUTE.find(x => x.r.id === out.rute);
+      const router = { k: 'router', intent: out.intent, rute: out.rute || out.intent, t: `Router: ${rt ? 'rute "' + rt.r.nama + '"' : 'intent "' + LABEL_INTENT[out.intent] + '"'}${out.sub ? ' (' + out.sub + ')' : ''}${tujuan ? '. Tujuan: ' + tujuan : ''}` };
       J.splice(1, 0, router);
       let i = 2;
       if (out.pikiran) J.splice(i++, 0, { k: 'pikir', t: out.pikiran });
@@ -330,7 +350,7 @@
   /* Input guard: berjalan di kode, sebelum LLM dipanggil (hemat kuota dan lebih aman). Membaca teks sebelum alias. */
   function cekInjeksi(pesan) {
     const { mentah, out, selesai } = kerangka(pesan);
-    const inj = mentah.match(INJEKSI);
+    const inj = U.guard.input.aktif ? (mentah.match(INJEKSI) || (INJEKSI_X && mentah.match(INJEKSI_X))) : null;
     if (!inj) return null;
     out.intent = 'bahaya'; out.sub = 'injeksi';
     out.pikiran = `Ada pola "${inj[0]}" yang mencoba mengubah aturanku. Itu tidak kuikuti.`;
@@ -338,30 +358,69 @@
     out.balasan = 'Aku tidak bisa mengabaikan aturan keselamatan. Kalau mau mengendalikan perangkat, sebut saja namanya ya.';
     return selesai('tidak ada aksi');
   }
-  const adaInjeksi = teks => INJEKSI.test(norm(teks));
-  const adaMemori = pesan => MEMORI.test(String(pesan || '').trim());
+  const adaInjeksi = teks => { if (!U.guard.input.aktif) return false; const n = norm(teks); return INJEKSI.test(n) || !!(INJEKSI_X && INJEKSI_X.test(n)); };
+  const adaMemori = pesan => U.guard.memori.aktif && MEMORI.test(String(pesan || '').trim());
 
   function susunBalasan(v) {
     const bagian = [];
-    if (v.ok.length) bagian.push('Siap! ' + daftar(v.ok.map(deskripsi), 'dan').replace(/, dan /, ' dan ') + '.');
-    for (const t of v.tolak) bagian.push('Aku tolak: ' + t.pesan + (t.saran ? ' ' + t.saran : ''));
+    if (v.ok.length) bagian.push(U.agen.siap + ' ' + daftar(v.ok.map(deskripsi), 'dan').replace(/, dan /, ' dan ') + '.');
+    for (const t of v.tolak) bagian.push(U.agen.tolak + ' ' + t.pesan + (t.saran ? ' ' + t.saran : ''));
     return bagian.join(' ');
   }
   const tujuanSpesialis = out => (out.didelegasikan_ke ? 'spesialis ' + [...new Set(out.didelegasikan_ke.map(t => t.agen))].join(', ') : 'tidak ada aksi');
+
+  /* Rute buatan: pesan yang memuat kata pemicu dijawab aturan router. Perintah perangkat yang jelas (kata kerja dan nama
+     perangkat) tidak dibajak rute manual atau balas, tetapi rute "tolak" selalu menang. */
+  function cariRute(teks, verbAda, perangkatAda) {
+    for (const x of RUTE) if (x.r.aksi === 'tolak' && x.re.test(teks)) return x.r;   // rute tolak selalu didahulukan
+    for (const x of RUTE) if (x.r.aksi !== 'tolak' && x.re.test(teks) && !(verbAda && perangkatAda.length)) return x.r;
+    return null;
+  }
+  function adaRute(pesan) {
+    const t = pakaiAlias(norm(pesan)), pa = ids().filter(id => POLA[id].test(t)), v = cariVerb(t) || (pa.length && /(kecepatan|daya|level|tingkat|volume|sudut|derajat|\d+\s*%)/.test(t) ? 'on' : null);
+    if (INJEKSI.test(norm(pesan)) && U.guard.input.aktif) return null;
+    return cariRute(t, v, pa);
+  }
+  function jalankanRute(r, teks, out, selesai, manual, M, k, rg) {
+    out.rute = r.id; out.sub = 'rute ' + r.id;
+    const kata = (teks.match(RUTE.find(x => x.r.id === r.id).re) || [''])[0];
+    if (r.aksi === 'tolak') {
+      out.intent = 'bahaya';
+      out.pikiran = `Kata "${kata}" memicu rute ${r.nama}. Rute ini menolak, tanpa menyentuh perangkat.`;
+      out.ditolak.push({ device: null, aturan: 'rute_' + r.id, pesan: `Rute ${r.nama} menolak topik ini.` });
+      out.balasan = r.balasan;
+      return selesai('tidak ada aksi');
+    }
+    if (r.aksi === 'balas') {
+      out.intent = r.intent;
+      out.pikiran = `Kata "${kata}" memicu rute ${r.nama}. Jawabannya aturan tetap di router, bukan AI.`;
+      out.balasan = r.balasan;
+      return selesai('tidak perlu berjalan');
+    }
+    out.intent = 'info'; out.fokus = 'manual';
+    out.pikiran = `Kata "${kata}" memicu rute ${r.nama}. Aku mencari jawabannya hanya di koleksi "${r.koleksi || 'semua'}".`;
+    if (!manual) { out.balasan = 'Akses ke rak manual sedang dimatikan, jadi aku belum bisa menjawab topik ini.'; return selesai('tidak perlu berjalan'); }
+    const hit = M.cari(teks, manual, k, 0, Object.assign({ koleksi: r.koleksi }, rg));
+    if (!hit.length) { out.balasan = `Belum ada catatan tentang itu di koleksi "${r.koleksi || 'semua'}".`; return selesai('Rak Manual'); }
+    out.diambil = hit; out.sub = 'rute ' + r.id + ' (baca manual)';
+    out.balasan = potong(`Menurut manual, ${hit[0].judul}: ${hit[0].teks}`, 260);
+    return selesai('Rak Manual');
+  }
 
   function pikir(pesan, state, opsi) {
     opsi = opsi || {};
     const M = root.Manual;
     const manual = M && opsi.rag !== false && Array.isArray(opsi.manual) ? opsi.manual : null;
-    const k = Math.max(1, Math.min(3, opsi.k | 0 || 2));
+    const k = Math.max(1, Math.min(3, opsi.k | 0 || U.rag.k));
     const ctx = manual ? { M, manual } : null;
+    const rg = { sinonim: U.rag.sinonim, stop: U.rag.stop };
     const { asli, teks, out, selesai } = kerangka(pesan);
     const plIn = cekInjeksi(pesan);
     if (plIn) return plIn;
     const nama = ids().map(nm);
 
     // 1. Memori: "ingat ..." menulis catatan baru ke rak manual (RAG sebagai ingatan jangka panjang)
-    const mm = asli.match(MEMORI);
+    const mm = U.guard.memori.aktif ? asli.match(MEMORI) : null;
     if (mm) {
       out.intent = 'obrol'; out.sub = 'simpan memori';
       if (!manual) { out.pikiran = 'Kamu memintaku mengingat sesuatu, tapi akses ke rak manual sedang dimatikan.'; out.balasan = 'Aku tidak bisa mencatat karena rak manual (RAG) sedang dimatikan.'; return selesai('tidak perlu berjalan'); }
@@ -375,13 +434,17 @@
     const punyaAngka = perangkatAda.length && /(kecepatan|daya|level|tingkat|volume|sudut|derajat|\d+\s*%)/.test(teks);
     const verbAda = cariVerb(teks) || (punyaAngka ? 'on' : null);
 
+    // 1b. Router buatan: rute milik semesta (kata pemicu), dikerjakan kode sebelum LLM atau parser perangkat
+    const rt = cariRute(teks, verbAda, perangkatAda);
+    if (rt) return jalankanRute(rt, teks, out, selesai, manual, M, k, rg);
+
     // 2. Obrolan
     if (!verbAda && !perangkatAda.length && (SAPA.test(teks) || TANYA_DIRI.test(teks))) {
       out.intent = 'obrol';
       out.pikiran = 'Ini sapaan atau pertanyaan umum, tidak perlu menyentuh perangkat.';
       out.balasan = TANYA_DIRI.test(teks) && !SAPA.test(teks)
-        ? `Aku agen penjaga ${R.nama}. Aku bisa mengatur ${daftar(nama, 'dan')}, membaca papan sensor, atau membuka rak manual.`
-        : `Halo! Aku siap menerima perintah. Coba: "nyalakan ${nama[0]}" atau "gerah nih".`;
+        ? `Aku ${U.agen.nama}, ${U.agen.persona || 'agen penjaga'} di ${R.nama}. Aku bisa mengatur ${daftar(nama, 'dan')}, membaca papan sensor, atau membuka rak manual.`
+        : (U.agen.sapaan || `Halo! Aku siap menerima perintah. Coba: "nyalakan ${nama[0]}" atau "gerah nih".`);
       return selesai('tidak perlu berjalan');
     }
 
@@ -393,7 +456,7 @@
       return selesai('Rak Manual');
     };
     if (manual && !cariVerb(teks) && MANUAL_Q.test(teks)) {
-      const hit = M.cari(teks, manual, k, 0.8);
+      const hit = M.cari(teks, manual, k, U.rag.ambang, rg);
       if (hit.length) return jawabManual(hit);
     }
 
@@ -423,7 +486,7 @@
     }
     if (jenis === 'tidak_paham') {
       // tidak ada kata perintah atau perangkat, tapi mungkin jawabannya ada di rak manual (ambang skor lebih ketat)
-      if (manual) { const hit = M.cari(teks, manual, k, 1.2); if (hit.length) return jawabManual(hit); }
+      if (manual) { const hit = M.cari(teks, manual, k, U.rag.ambang + 0.4, rg); if (hit.length) return jawabManual(hit); }
       out.pikiran = 'Tidak ada kata perintah, nama perangkat, atau keluhan yang kukenali.';
       out.balasan = `Hmm, aku belum paham. Sebut perangkatnya (${nama.join(', ')}) atau bilang keluhanmu, misalnya "gerah" atau "gelap".`;
       return selesai('bertanya balik');
@@ -511,8 +574,9 @@
     return selesai(tujuanSpesialis(out));
   }
 
+  aturSemesta(D.SEMESTA.kampus);
   aturRuang(D.RUANG.lab);
-  const api = { pikir, cekInjeksi, adaInjeksi, adaMemori, bagiTugas, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, aturRuang, ruang: () => R };
+  const api = { aturSemesta, semesta: () => U, rag: () => U.rag, adaRute, setEkstra: e => { EKS.suhu = +e.suhu || 0; EKS.cahaya = +e.cahaya || 0; }, ekstra: () => EKS, pikir, cekInjeksi, adaInjeksi, adaMemori, bagiTugas, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, aturRuang, ruang: () => R };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Otak = api;
 })(typeof window !== 'undefined' ? window : globalThis);

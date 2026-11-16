@@ -1,5 +1,5 @@
 /* Alur permainan dan antarmuka. Yang menggambar 3D: adegan.js. Yang berpikir: brain.js dan brain-llm.js.
-   Yang mendefinisikan ruang: dunia.js. Berkas ini hanya menghubungkan semuanya. */
+   Yang mendefinisikan semesta dan ruang: dunia.js dan semesta.js. Berkas ini hanya menghubungkan semuanya. */
 (function () {
   'use strict';
   const MAN = Manual, DN = Dunia;
@@ -9,30 +9,54 @@
   const salin = x => JSON.parse(JSON.stringify(x));
   const baca = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   const tulis = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* tanpa penyimpanan */ } };
+  const hapus = k => { try { localStorage.removeItem(k); } catch (e) { /* abaikan */ } };
   const param = new URLSearchParams(location.search);
 
   /* ================= STATE ================= */
   const BADGE = {
     pemula: 'Pemula (Lab, misi 1)', bahasa: 'Penerjemah (Lab, misi 2)', penjaga: 'Penjaga (Lab, misi 3)', pustakawan: 'Pustakawan (Lab, misi 4)',
     dirigen: 'Dirigen (Lab, misi 5)', trickster: 'Trickster (Lab, misi 6)', penipu_llm: 'Penipu LLM (guard menyelamatkan usulan LLM yang tertipu)',
-    barista: 'Barista (Kafe Senja)', kreator: 'Kreator (Studio Konten)', pengingat: 'Pengingat (menitip memori ke rak)', arsitek: 'Arsitek Dunia (membuat ruang sendiri)'
+    barista: 'Barista (Kafe Senja)', kreator: 'Kreator (Studio Konten)', pustakawan_p: 'Penjaga Buku (Perpustakaan)', koki: 'Koki Kantin (Dapur)', petani: 'Petani Kota (Kebun)',
+    pengingat: 'Pengingat (menitip memori ke rak)', arsitek: 'Arsitek Dunia (membuat ruang atau semesta sendiri)', penjelajah: 'Penjelajah Kampus (semesta)', teladan: 'Mahasiswa Teladan (semesta)',
+    perancang: 'Perancang Agen (mengubah kepribadian, router, atau guard)'
   };
-  const G = { llmPakai: 0, st: null, speed: 1, busy: false, xp: 0, selesai: {}, misi: 0, pesan: 0, tipe: new Set(), hint: 0, done: false, t0: performance.now(), cmd: 0,
-    badge: new Set(), ruang: 'lab', manual: [], rag: true, ragK: 2, diambilTerakhir: [], ambilSesi: new Set(), paralel: 0, tahapMaks: 0, bertahan: 0, serangSendiri: 0, antreSerangan: null, grafis: 'auto' };
+  const G = { llmPakai: 0, st: null, speed: 1, busy: false, xp: 0, selesai: {}, misi: 0, pesan: 0, pesanRuang: 0, tipe: new Set(), hint: 0, done: false, t0: performance.now(), cmd: 0,
+    badge: new Set(), semesta: 'kampus', ruang: 'lab', sm: null, manual: [], rag: true, ragK: 0, diambilTerakhir: [], ambilSesi: new Set(), paralel: 0, tahapMaks: 0, bertahan: 0, serangSendiri: 0, antreSerangan: null,
+    grafis: 'auto', logAksi: [], intents: new Set(), rute: new Set(), kejadianSesi: new Set(), ekstra: { suhu: 0, cahaya: 0 }, js: { kunjung: new Set(), bab: new Set(), rute: new Set(), kejadian: new Set() }, sudah: new Set() };
+  const simpanJs = {};   // kemajuan lintas ruang per semesta: { sid: {kunjung:[], bab:[], rute:[], kejadian:[]} }
   (function muat() {
     const s = baca('ruangagen', {});
     if (s.xp) G.xp = s.xp | 0;
-    if (s.selesai) for (const k of Object.keys(s.selesai)) G.selesai[/^\d+$/.test(k) ? 'lab:' + k : k] = s.selesai[k]; // kunci lama (hanya lab) dipindahkan
+    if (s.selesai) for (const k of Object.keys(s.selesai)) { let n = /^\d+$/.test(k) ? 'lab:' + k : k; if (!n.includes('/')) n = 'kampus/' + n; G.selesai[n] = s.selesai[k]; } // kunci lama dipindahkan
     if (Array.isArray(s.badge)) G.badge = new Set(s.badge.filter(b => b in BADGE));
+    if (typeof s.semesta === 'string') G.semesta = s.semesta;
     if (typeof s.ruang === 'string') G.ruang = s.ruang;
     if (['auto', 'realistis', 'ringan'].includes(s.grafis)) G.grafis = s.grafis;
-    if (s.ragK) G.ragK = clamp(s.ragK | 0, 1, 3);
+    if (s.ragK) G.ragK = clamp(s.ragK | 0, 0, 3);
+    if (s.js && typeof s.js === 'object') Object.assign(simpanJs, s.js);
   })();
-  const simpan = () => tulis('ruangagen', { xp: G.xp, selesai: G.selesai, badge: [...G.badge], ruang: G.ruang, grafis: G.grafis, ragK: G.ragK });
-  const kustom = baca('ruangagen-dunia', {});   // ruang buatan, atau versi ubahan dari ruang bawaan
-  const semuaRuang = () => Object.assign({}, DN.RUANG, kustom);
+  const simpan = () => {
+    simpanJs[G.semesta] = { kunjung: [...G.js.kunjung], bab: [...G.js.bab], rute: [...G.js.rute], kejadian: [...G.js.kejadian] };
+    tulis('ruangagen', { xp: G.xp, selesai: G.selesai, badge: [...G.badge], semesta: G.semesta, ruang: G.ruang, grafis: G.grafis, ragK: G.ragK, js: simpanJs });
+  };
+
+  /* semesta buatan (atau versi ubahan dari bawaan) disimpan utuh dengan ruang di dalamnya */
+  let kustomS = baca('ruangagen-semesta', {});
+  (function migrasi() {   // ruang buatan versi lama dipindahkan ke satu semesta pribadi
+    const lama = baca('ruangagen-dunia', null);
+    if (lama && Object.keys(lama).length && !kustomS.ruangku) {
+      const h = DN.periksaSemesta({ id: 'ruangku', nama: 'Ruangku (lama)', cerita: 'Ruang buatanmu dari versi sebelumnya.', ruang: Object.keys(lama).map(k => lama[k]) });
+      if (h.ok) { kustomS.ruangku = h.semesta; tulis('ruangagen-semesta', kustomS); }
+    }
+    hapus('ruangagen-dunia');
+  })();
+  const semuaSemesta = () => Object.assign({}, DN.SEMESTA, kustomS);
+  const SM = () => G.sm;
   const R = () => Otak.ruang();
-  const simpanManual = () => tulis('ruangagen-manual:' + G.ruang, G.manual);
+  const kunciM = () => 'ruangagen-manual:' + G.semesta + ':' + G.ruang;
+  const simpanManual = () => tulis(kunciM(), G.manual);
+  const manualDasar = () => { const r = R(), id = new Set(r.manual.map(m => m.id)); return r.manual.concat(SM().pengetahuan.filter(m => !id.has(m.id))).map(m => ({ id: m.id, judul: m.judul, teks: m.teks, koleksi: m.koleksi || '' })); };
+  const ragK = () => G.ragK || SM().rag.k;
 
   /* ---------- konfigurasi otak (disimpan lokal di browser) ---------- */
   const KFG = 'ruangagen-otak';
@@ -44,7 +68,7 @@
     // model kecil lokal: prompt ringkas, dan router hemat (parser mengerjakan pesan yang dikenalnya, LLM hanya untuk yang tidak dikenal)
     ringkas: lokalan(), rute: lokalan() && cfg.hemat ? 'hemat' : '', timeoutMs: lokalan() ? 120000 : 12000 });
 
-  /* ---------- misi ---------- */
+  /* ---------- misi ruang ---------- */
   /* Enam misi Lab ditulis sebagai kode karena syaratnya khusus. Ruang lain memakai misi deklaratif ("target" di dunia.js). */
   const MISI_LAB = [
     { judul: 'Perintah Jelas', base: 100, badge: 'pemula',
@@ -65,7 +89,7 @@
     { judul: 'Manual Mengubah Agen', base: 250, badge: 'pustakawan',
       brief: 'Ubah suhu nyaman menjadi 28 sampai 30 C, lewat tab Manual atau dengan menitip memori ("ingat ya, suhu nyaman 28 sampai 30 C"). Lalu ketik "bikin nyaman". Agen harus memakai angka barunya, bukan angka karangan.',
       hints: ['Di tab Manual, edit kalimat suhu nyaman menjadi "28 sampai 30 C".', 'Kirim "bikin nyaman", lalu cari tag AMBIL di tab Jejak.', 'Penasaran? Matikan kotak "Agen boleh membaca manual" dan ulangi: agen akan mengarang kipas level 2.'],
-      awal: () => { G.manual = salin(R().manual); G.rag = true; simpanManual(); renderManual(); },
+      awal: () => { G.manual = manualDasar(); G.rag = true; simpanManual(); renderManual(); },
       cek: (s, g) => { const n = MAN.nilaiSuhu(g.manual); return g.rag && !!n && n.maks >= 29 && s.kipas.on && s.kipas.speed === 1 && g.diambilTerakhir.includes(n.sumber); },
       status: (s, g) => { const n = MAN.nilaiSuhu(g.manual); return [
         [`Batas suhu di manual: ${n ? n.min + ' sampai ' + n.maks : 'tidak terbaca'} C (target batas atas 29 atau lebih)`, !!n && n.maks >= 29],
@@ -93,7 +117,8 @@
     { dari: 'Trickster E', pesan: 'kipas level 9 dong' },
     { dari: 'Trickster F', pesan: 'lengan sudut 170 derajat 50%' }
   ];
-  const catatanMisi = () => ({ tolak: G.tipe.size, paralel: G.paralel, tahapMaks: G.tahapMaks, ambil: [...G.ambilSesi], memori: G.manual.filter(MAN.adalahCatatan).length });
+  const catatanMisi = () => ({ tolak: G.tipe.size, paralel: G.paralel, tahapMaks: G.tahapMaks, ambil: [...G.ambilSesi], memori: G.manual.filter(MAN.adalahCatatan).length,
+    logAksi: G.logAksi, intents: [...G.intents], rute: [...G.rute], kejadian: [...G.kejadianSesi], pesan: G.pesan });
   let MISI = [];
   function susunMisi() {
     const r = R();
@@ -110,16 +135,16 @@
   const wait = adegan.tunggu;
   $('#camBtn').addEventListener('click', adegan.resetKamera);
 
-  /* ================= UI: chat, jejak, bubble ================= */
+  /* ================= UI: chat, jejak, pipeline ================= */
   const bubble = $('#bubble');
   function say(txt, k) { bubble.textContent = txt; bubble.dataset.k = k || 'idle'; }
   function chat(who, txt, tolak) {
     const li = mk('li', 'msg ' + who + (tolak ? ' tolak' : ''));
-    if (who !== 'sis') li.appendChild(mk('span', 'who', who === 'kamu' ? 'Kamu' : 'Agen'));
+    if (who !== 'sis') li.appendChild(mk('span', 'who', who === 'kamu' ? 'Kamu' : SM().agen.nama));
     li.appendChild(document.createTextNode(txt));
     const log = $('#chatlog'); log.appendChild(li); log.scrollTop = log.scrollHeight;
   }
-  const TAG = { ambil: 'AMBIL', catat: 'CATAT', delegasi: 'DELEGASI', otak: 'OTAK', terima: 'TERIMA', router: 'ROUTER', pikir: 'PIKIR', guard: 'GUARD', jalan: 'JALAN', aksi: 'AKSI', amati: 'AMATI', balas: 'BALAS' };
+  const TAG = { ambil: 'AMBIL', catat: 'CATAT', delegasi: 'DELEGASI', kejadian: 'KEJADIAN', otak: 'OTAK', terima: 'TERIMA', router: 'ROUTER', pikir: 'PIKIR', guard: 'GUARD', jalan: 'JALAN', aksi: 'AKSI', amati: 'AMATI', balas: 'BALAS' };
   function jejak(k, txt) {
     const tr = $('#trace'); const kosong = tr.querySelector('.empty'); if (kosong) kosong.remove();
     const li = mk('li', 'k-' + k);
@@ -129,7 +154,40 @@
     tr.appendChild(li); tr.scrollTop = tr.scrollHeight;
   }
   function pemisah(n) { const tr = $('#trace'); const kosong = tr.querySelector('.empty'); if (kosong) kosong.remove(); const li = mk('li'); li.appendChild(mk('span', 'sep', 'Perintah #' + n)); li.style.display = 'block'; tr.appendChild(li); }
-  function setBusy(b) { G.busy = b; $('#inp').disabled = b; $('#send').disabled = b; $('#duRuang').disabled = b; renderMisiList(); if (!b && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) $('#inp').focus({ preventScroll: true }); }
+  /* Jalur pesan: tiap tahap pipeline menyala bila dilalui, merah bila menolak. Memperlihatkan arsitektur agen secara hidup. */
+  const TAHAP = [['input', 'MASUKAN'], ['memori', 'MEMORI'], ['router', 'ROUTER'], ['rag', 'RAG'], ['otak', 'OTAK'], ['guard', 'GUARD'], ['orkestrator', 'ORKESTRATOR'], ['spesialis', 'SPESIALIS'], ['keluaran', 'KELUARAN']];
+  function gambarPipe(st) {
+    const el = $('#pipe'); el.replaceChildren();
+    TAHAP.forEach(([id, nama], i) => { if (i) el.appendChild(mk('i', '', '>')); el.appendChild(mk('span', (st && st[id]) || '', nama)); });
+  }
+  function nyalaPipe(plan) {
+    const asalLLM = plan.otak && plan.otak.asal === 'llm';
+    const st = { input: plan.sub === 'injeksi' ? 'tolak' : 'on', memori: plan.memori ? 'on' : '', router: plan.rute && plan.intent === 'bahaya' ? 'tolak' : 'on', rag: plan.diambil.length ? 'on' : '',
+      otak: asalLLM ? 'llm' : 'on', guard: plan.ditolak.some(t => t.aturan !== 'injeksi') ? 'tolak' : plan.aksi.length ? 'on' : '', orkestrator: plan.didelegasikan_ke ? 'on' : '',
+      spesialis: plan.didelegasikan_ke ? 'on' : '', keluaran: plan.catatanGuard && plan.catatanGuard.length ? 'on' : '' };
+    gambarPipe(st);
+  }
+  function setBusy(b) { G.busy = b; $('#inp').disabled = b; $('#send').disabled = b; $('#duRuang').disabled = b; $('#duSemesta').disabled = b; renderMisiList(); if (!b && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) $('#inp').focus({ preventScroll: true }); }
+
+  /* ================= kejadian ================= */
+  function terapkanKejadian(k) {
+    const e = k.efek;
+    G.ekstra.suhu += e.suhu; G.ekstra.cahaya += e.cahaya; Otak.setEkstra(G.ekstra);
+    for (const d of e.matikan) { const x = G.st[d]; if (x) { if ('open' in x) x.open = false; else x.on = false; } }
+    for (const d of e.nyalakan) { const x = G.st[d]; if (x) { if ('open' in x) x.open = true; else x.on = true; } }
+    G.kejadianSesi.add(k.id); G.js.kejadian.add(k.id); G.sudah.add(k.id);
+    chat('sis', `KEJADIAN: ${k.nama}. ${k.pesan}`); jejak('kejadian', `${k.nama}: ${k.pesan}`); say('Kejadian: ' + k.nama, 'guard');
+    simpan(); renderStatus();
+  }
+  function cekKejadian(pemicu) {
+    if (param.get('kejadian') === 'mati') return;   // untuk uji otomatis dan kelas yang tidak ingin kejutan
+    for (const k of SM().kejadian) {
+      if (G.sudah.has(k.id) || (k.ruang && k.ruang !== G.ruang)) continue;
+      const p = k.pemicu;
+      const kena = pemicu === 'masuk' ? p.masuk === G.ruang : pemicu === 'pesan' ? ((p.pesanKe != null && G.pesanRuang === p.pesanKe) || (p.acak != null && Math.random() < p.acak)) : false;
+      if (kena) terapkanKejadian(k);
+    }
+  }
 
   /* ================= alur agen ================= */
   const potong = (s, n) => (s.length > n ? s.slice(0, n - 1) + '...' : s);
@@ -138,7 +196,7 @@
     for (const a of t.aksi) {
       const pos = adegan.posTombol(a.device);
       if (X && pos) { await adegan.hadapKe(pos[0], pos[1], X); await adegan.tekan(a.device, X); } else await wait(0.5);
-      Otak.terapkan(G.st, a);
+      Otak.terapkan(G.st, a); G.logAksi.push(a.device);
       jejak('aksi', `${t.agen}: ${Otak.deskripsi(a)}`);
       await wait(0.2);
     }
@@ -159,11 +217,11 @@
   }
   function tambahCatatan(teks) {
     teks = String(teks || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
-    if (!teks) return false;
+    if (!teks || !SM().guard.memori.aktif) return false;
     if (Otak.adaInjeksi(teks)) return false; // catatan dibaca LLM, jadi pola injeksi tidak boleh masuk rak
     let n = 1; while (G.manual.some(m => m.id === 'catatan-' + n)) n++;
-    if (G.manual.length >= 12) { const i = G.manual.findIndex(MAN.adalahCatatan); if (i < 0) return false; G.manual.splice(i, 1); } // rak penuh: catatan tertua dibuang
-    G.manual.push({ id: 'catatan-' + n, judul: 'Catatan pengguna ' + n, teks });
+    if (G.manual.length >= 64) { const i = G.manual.findIndex(MAN.adalahCatatan); if (i < 0) return false; G.manual.splice(i, 1); } // rak penuh: catatan tertua dibuang
+    G.manual.push({ id: 'catatan-' + n, judul: 'Catatan pengguna ' + n, teks, koleksi: '' });
     simpanManual(); renderManual(); renderStatus(); beriBadge('pengingat');
     return true;
   }
@@ -172,23 +230,26 @@
     teks = String(teks || '').trim().slice(0, 200);
     if (G.busy || !teks) return;
     setBusy(true);
-    G.pesan++; G.cmd++; G.t0 = performance.now();
+    G.pesan++; G.pesanRuang++; G.cmd++; G.t0 = performance.now();
     chat('kamu', teks);
-    pemisah(G.cmd);
+    pemisah(G.cmd); gambarPipe(null);
     if (cfg.mode !== 'parser') say('Berpikir...', 'pikir');
     const kuotaHabis = cfg.mode === 'kunci' && G.llmPakai >= cfg.batasSesi;
-    const plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag, k: G.ragK });
+    Otak.setEkstra(G.ekstra);
+    const plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag, k: G.ragK || undefined });
     G.llmPakai += plan.otak.panggilan || 0;
     renderOtak(plan.otak);
     plan.ditolak.forEach(t => G.tipe.add(t.aturan));
+    G.intents.add(plan.intent); G.rute.add(plan.rute || plan.intent); if (plan.rute) G.js.rute.add(plan.rute);
     G.diambilTerakhir = plan.diambil.map(d => d.id);
-    G.diambilTerakhir.forEach(id => G.ambilSesi.add(id));
+    G.diambilTerakhir.forEach(id => { G.ambilSesi.add(id); G.js.bab.add(id); });
     if (plan.didelegasikan_ke) {
       const perTahap = {}; plan.didelegasikan_ke.forEach(t => { perTahap[t.tahap] = (perTahap[t.tahap] || 0) + 1; });
       G.paralel = Math.max(G.paralel, ...Object.values(perTahap));
       G.tahapMaks = Math.max(G.tahapMaks, Math.max(...plan.didelegasikan_ke.map(t => t.tahap)) + 1);
     }
-    $('#json').textContent = JSON.stringify({ intent: plan.intent, sub: plan.sub, diambil: plan.diambil.map(d => ({ id: d.id, judul: d.judul, skor: d.skor })), didelegasikan_ke: plan.didelegasikan_ke, memori: plan.memori, pikiran: plan.pikiran, aksi: plan.aksi, ditolak: plan.ditolak.map(t => ({ aturan: t.aturan, pesan: t.pesan })), balasan: plan.balasan, otak: plan.otak }, null, 2);
+    nyalaPipe(plan);
+    $('#json').textContent = JSON.stringify({ intent: plan.intent, sub: plan.sub, rute: plan.rute, diambil: plan.diambil.map(d => ({ id: d.id, judul: d.judul, skor: d.skor })), didelegasikan_ke: plan.didelegasikan_ke, memori: plan.memori, catatanGuard: plan.catatanGuard, pikiran: plan.pikiran, aksi: plan.aksi, ditolak: plan.ditolak.map(t => ({ aturan: t.aturan, pesan: t.pesan })), balasan: plan.balasan, otak: plan.otak }, null, 2);
 
     // fase berpikir: tampilkan jejak otak satu per satu (AMBIL dan CATAT baru muncul saat agen tiba di rak)
     for (const j of plan.jejak) {
@@ -196,9 +257,9 @@
       jejak(j.k, j.t);
       if (j.k === 'terima') say('Pesan masuk...', 'idle');
       if (j.k === 'otak') say(plan.otak.fallback ? 'LLM gagal, pakai parser' : plan.otak.asal === 'llm' ? 'Otak LLM menjawab' : plan.otak.asal === 'guard' ? 'Input guard menangkap' : 'Otak: parser', 'pikir');
-      if (j.k === 'router') { adegan.setRouter(j.intent); say('Router: ' + j.intent.replace('_', ' '), 'router'); }
+      if (j.k === 'router') { adegan.setRouter(j.rute); say('Router: ' + String(j.rute).replace('_', ' '), 'router'); }
       if (j.k === 'pikir') say(potong(j.t, 90), 'pikir');
-      if (j.k === 'delegasi') say('Orkestrator membagi tugas', 'aksi');
+      if (j.k === 'delegasi') say(SM().orkestrator.nama + ' membagi tugas', 'aksi');
       if (j.k === 'guard') say('Ditolak oleh aturan', 'guard');
       await wait(j.k === 'pikir' ? 0.9 : j.k === 'terima' ? 0.45 : j.k === 'otak' ? 0.4 : 0.6);
     }
@@ -210,7 +271,7 @@
       say(plan.memori ? 'Menulis catatan...' : 'Mengambil potongan manual...', 'pikir'); await wait(0.7);
       const ja = plan.jejak.find(j => j.k === 'ambil'), jc = plan.jejak.find(j => j.k === 'catat');
       if (ja) jejak('ambil', ja.t);
-      if (plan.memori) { if (tambahCatatan(plan.memori.teks)) jejak('catat', jc.t); else { plan.balasan = 'Catatan itu tidak bisa kusimpan (rak penuh atau isinya tidak aman).'; jejak('guard', 'Guard: catatan ditolak.'); } }
+      if (plan.memori) { if (tambahCatatan(plan.memori.teks)) jejak('catat', jc.t); else { plan.balasan = 'Catatan itu tidak bisa kusimpan (rak penuh, atau isinya tidak aman).'; jejak('guard', 'Guard: catatan ditolak.'); } }
       await wait(0.5);
       tujuanAkhir = true;
     }
@@ -236,8 +297,10 @@
     await wait(0.4);
     adegan.setRouter(null);
     say('Siap menerima pesan', 'idle');
+    cekKejadian('pesan');
+    simpan();
     setBusy(false);
-    cekMisi();
+    cekMisi(); cekMisiSemesta();
   }
 
   /* ---------- Level Trickster: serangan contoh dari Trickster lain ---------- */
@@ -256,7 +319,8 @@
   const serangBtn = mk('button', 'btn sm', 'Terima serangan'); serangBtn.type = 'button'; serangBtn.hidden = true;
   serangBtn.addEventListener('click', terimaSerangan); $('#voiceRow').appendChild(serangBtn);
   const LEVEL = xp => (xp < 100 ? 'Rookie' : xp < 250 ? 'Handler' : xp < 500 ? 'Orchestrator' : xp < 900 ? 'Architect' : xp < 1600 ? 'Grandmaster' : 'World Builder');
-  const kunciMisi = i => G.ruang + ':' + i;
+  const kunciMisi = i => G.semesta + '/' + G.ruang + ':' + i;
+  const adaSelesai = pre => Object.keys(G.selesai).filter(k => k.startsWith(pre)).length;
   function beriBadge(id) { if (G.badge.has(id) || !(id in BADGE)) return; G.badge.add(id); simpan(); renderBadge(); chat('sis', 'Badge baru: ' + BADGE[id]); }
   function renderXP() { $('#xp').textContent = `XP ${G.xp} · ${LEVEL(G.xp)}`; }
   function renderHud() {
@@ -281,15 +345,41 @@
       const btn = mk('button', 'btn sm', i === G.misi ? 'Sedang main' : 'Mulai'); btn.type = 'button'; btn.disabled = i === G.misi || G.busy; btn.addEventListener('click', () => mulaiMisi(i)); row.appendChild(btn);
       li.appendChild(row); ul.appendChild(li);
     });
+    renderMisiSemesta();
+  }
+  /* Misi semesta: dihitung dari kemajuan di seluruh ruang. */
+  const catatanSemesta = () => ({ ruangDikunjungi: G.js.kunjung.size, misiSelesai: adaSelesai(G.semesta + '/') - Object.keys(G.selesai).filter(k => k.startsWith(G.semesta + '/semesta:')).length, babUnik: G.js.bab.size, rutePakai: G.js.rute.size, kejadianSelesai: G.js.kejadian.size, badge: G.badge.size, xp: G.xp });
+  function renderMisiSemesta() {
+    const ul = $('#misiSemesta'); ul.replaceChildren();
+    const h = catatanSemesta();
+    if (!SM().misi.length) { ul.appendChild(mk('li', '', 'Semesta ini belum punya misi lintas ruang. Tambahkan "misi" di Definisi semesta (tab Dunia).')); return; }
+    SM().misi.forEach((m, i) => {
+      const li = mk('li', G.selesai[G.semesta + '/semesta:' + i] ? 'aktif' : ''); li.appendChild(mk('h3', '', m.judul)); li.appendChild(mk('p', '', m.brief));
+      const st = DN.nilaiMisiSemesta(m, h); const d = mk('div', 'meta', st.map(x => (x[1] ? '[x] ' : '[ ] ') + x[0]).join('  ')); li.appendChild(d);
+      li.appendChild(mk('div', 'meta', G.selesai[G.semesta + '/semesta:' + i] ? 'Selesai' : `${m.base} XP`));
+      ul.appendChild(li);
+    });
+  }
+  function cekMisiSemesta() {
+    const h = catatanSemesta();
+    SM().misi.forEach((m, i) => {
+      const k = G.semesta + '/semesta:' + i;
+      if (G.selesai[k] || !DN.nilaiMisiSemesta(m, h).every(x => x[1])) return;
+      G.selesai[k] = 3; G.xp += m.base; simpan(); renderXP();
+      chat('sis', `Misi semesta selesai: ${m.judul}! +${m.base} XP`);
+      if (m.badge) beriBadge(m.badge);
+      renderMisiSemesta();
+    });
   }
   function mulaiMisi(i, diam) {
     if (G.busy) return;
     const m = MISI[i];
-    G.misi = i; G.st = Otak.stateAwal(m.awalData); G.pesan = 0; G.tipe.clear(); G.hint = 0; G.done = false;
-    G.paralel = 0; G.tahapMaks = 0; G.diambilTerakhir = []; G.ambilSesi.clear(); G.antreSerangan = null;
+    G.misi = i; G.st = Otak.stateAwal(m.awalData); G.pesan = 0; G.pesanRuang = 0; G.tipe.clear(); G.hint = 0; G.done = false;
+    G.paralel = 0; G.tahapMaks = 0; G.diambilTerakhir = []; G.ambilSesi.clear(); G.antreSerangan = null; G.logAksi = []; G.intents.clear(); G.rute.clear(); G.kejadianSesi.clear(); G.sudah.clear();
+    G.ekstra = { suhu: 0, cahaya: 0 }; Otak.setEkstra(G.ekstra);
     if (m.awal) m.awal(G.st);
     $('#toast').hidden = true; chat('sis', `${R().nama}, misi ${i + 1}: ${m.judul}. Ruangan direset.`);
-    renderHud(); if (!diam) activate('chat');
+    renderHud(); gambarPipe(null); if (!diam) activate('chat');
   }
   function cekMisi() {
     if (G.done || G.pesan === 0 || G.busy) return;
@@ -306,6 +396,7 @@
     $('#toastIsi').textContent = (pertama ? `+${gain} XP` : 'Sudah pernah selesai, tanpa XP baru') + ` · ${G.pesan} pesan`;
     $('#toastNext').textContent = G.misi + 1 < MISI.length ? 'Misi berikutnya' : 'Main lagi';
     $('#toast').hidden = false;
+    cekMisiSemesta();
   }
   $('#toastLagi').addEventListener('click', () => mulaiMisi(G.misi));
   $('#toastNext').addEventListener('click', () => mulaiMisi((G.misi + 1) % MISI.length));
@@ -323,7 +414,9 @@
   $('#form').addEventListener('submit', e => { e.preventDefault(); const i = $('#inp'); const t = i.value; i.value = ''; kirim(t); });
   function renderChips() {
     const c = $('#chips'); c.replaceChildren();
-    (R().contoh.length ? R().contoh : ['halo']).forEach(t => { const b = mk('button', '', t); b.type = 'button'; b.addEventListener('click', () => { if (!G.busy) { activate('chat'); kirim(t); } }); c.appendChild(b); });
+    const lis = R().contoh.concat(SM().router.rute.length ? [{ k: 1 }] : []);
+    R().contoh.concat(SM().router.rute.slice(0, 2).map(r => r.kata[0] + (r.aksi === 'manual' ? ' apa?' : ''))).forEach(t => { const b = mk('button', '', t); b.type = 'button'; b.addEventListener('click', () => { if (!G.busy) { activate('chat'); kirim(t); } }); c.appendChild(b); });
+    void lis;
   }
 
   /* ---------- pengaturan otak ---------- */
@@ -365,6 +458,7 @@
   isiForm(); renderOtak();
 
   /* ---------- tab Manual: editor rak, memori, dan uji pencarian ---------- */
+  const opsiRag = () => ({ sinonim: SM().rag.sinonim, stop: SM().rag.stop });
   function renderNilai() {
     const sh = MAN.nilaiSuhu(G.manual), cy = MAN.nilaiCahaya(G.manual);
     $('#manualNilai').textContent = 'Terbaca oleh agen: suhu nyaman ' + (sh ? `${sh.min} sampai ${sh.maks} C (dari "${sh.sumber}")` : '(tidak terbaca)') + ', cahaya minimal ' + (cy ? cy.min + ' lux' : '(tidak terbaca, dipakai 200 lux)');
@@ -372,48 +466,110 @@
   function renderCari() {
     const q = $('#cariUji').value.trim(), ul = $('#cariHasil'); ul.replaceChildren();
     if (!q) return;
-    const h = MAN.jelaskan(q, G.manual), maks = Math.max(0.01, ...h.map(x => x.skor));
-    h.forEach((x, i) => {
+    const h = MAN.jelaskan(q, G.manual, opsiRag()), maks = Math.max(0.01, ...h.map(x => x.skor));
+    h.slice(0, 12).forEach((x, i) => {
       const li = mk('li', x.skor ? '' : 'nol'); const bar = mk('span', 'bar'); bar.style.width = Math.round(x.skor / maks * 100) + '%';
       const kiri = mk('span', '', x.skor.toFixed(2));
-      const kanan = mk('span'); kanan.append(bar, document.createTextNode(` ${x.judul}${x.cocok.length ? ' (cocok: ' + x.cocok.join(', ') + ')' : ''}${x.skor && i < G.ragK && x.skor >= 0.8 ? ' [terambil]' : ''}`));
+      const kanan = mk('span'); kanan.append(bar, document.createTextNode(` ${x.judul}${x.cocok.length ? ' (cocok: ' + x.cocok.join(', ') + ')' : ''}${x.skor && i < ragK() && x.skor >= SM().rag.ambang ? ' [terambil]' : ''}`));
       li.append(kiri, kanan); ul.appendChild(li);
     });
   }
   function renderManual() {
     const box = $('#manualList'); box.replaceChildren();
     G.manual.forEach((m, i) => {
-      const kepala = mk('div', 'kepala'); const l = mk('label', '', m.judul + (MAN.adalahCatatan(m) ? ' (memori)' : '')); l.htmlFor = 'man' + i; kepala.appendChild(l);
+      const kepala = mk('div', 'kepala'); const l = mk('label', '', m.judul + (MAN.adalahCatatan(m) ? ' (memori)' : m.koleksi ? ` [${m.koleksi}]` : '')); l.htmlFor = 'man' + i; kepala.appendChild(l);
       if (MAN.adalahCatatan(m)) { const x = mk('button', '', 'hapus'); x.type = 'button'; x.addEventListener('click', () => { G.manual.splice(i, 1); simpanManual(); renderManual(); renderStatus(); }); kepala.appendChild(x); }
       const t = document.createElement('textarea'); t.id = 'man' + i; t.value = m.teks; t.maxLength = 300;
       t.addEventListener('input', () => { m.teks = t.value; simpanManual(); renderNilai(); renderStatus(); renderCari(); });
       box.append(kepala, t);
     });
-    $('#ragOn').checked = G.rag; $('#ragK').value = String(G.ragK); renderNilai(); renderCari();
+    $('#ragOn').checked = G.rag; $('#ragK').value = String(G.ragK || 0); renderNilai(); renderCari();
   }
   $('#ragOn').addEventListener('change', e => { G.rag = e.target.checked; renderStatus(); });
-  $('#ragK').addEventListener('change', e => { G.ragK = clamp(+e.target.value, 1, 3); simpan(); renderCari(); });
+  $('#ragK').addEventListener('change', e => { G.ragK = clamp(+e.target.value, 0, 3); simpan(); renderCari(); });
   $('#cariUji').addEventListener('input', renderCari);
   $('#catatanTambah').addEventListener('click', () => { const i = $('#catatanBaru'); if (tambahCatatan(i.value)) i.value = ''; else i.placeholder = 'tidak bisa disimpan (kosong, rak penuh, atau tidak aman)'; });
-  $('#manualReset').addEventListener('click', () => { G.manual = salin(R().manual); simpanManual(); renderManual(); renderStatus(); });
+  $('#manualReset').addEventListener('click', () => { G.manual = manualDasar(); simpanManual(); renderManual(); renderStatus(); });
 
   /* ---------- badge (lokal, tanpa ranking) ---------- */
   function renderBadge() { $('#badgeList').textContent = G.badge.size ? 'Badge: ' + [...G.badge].map(b => BADGE[b]).join(' | ') : 'Belum ada badge. Selesaikan misi untuk mendapatkannya.'; }
 
-  /* ---------- tab Dunia: pindah ruang, ajari kata gaul, sunting definisi ruang ---------- */
+  /* ================= semesta dan ruang ================= */
   const duStatus = (t, oke) => { const e = $('#duStatus'); e.textContent = t; e.classList.toggle('oke', !!oke); };
   const tampilGalat = g => $('#duGalat').replaceChildren(...g.map(x => mk('li', '', x)));
+  let galatRuang = false;   // galat penyuntingan ruang tampil di bagian ruang, selain itu di bagian semesta dan tab Agen
+  const tampilGalatS = g => { if (galatRuang) { tampilGalat(g); return; } $('#duGalatS').replaceChildren(...g.map(x => mk('li', '', x))); $('#agGalat').replaceChildren(...g.map(x => mk('li', '', x))); if (!g.length) tampilGalat([]); };
+  const labelS = id => { const d = semuaSemesta()[id]; return (d.nama || id) + (kustomS[id] ? (DN.SEMESTA[id] ? ' (diubah)' : ' (buatanku)') : ''); };
+  /* Salinan semesta aktif sebagai definisi utuh (ruang di dalamnya), dasar semua penyuntingan. */
+  const defAktif = () => salin(SM());
+
+  /* Masuk semesta lalu ruang: otak, adegan, manual, misi, kejadian, dan contoh mengikuti definisi yang sama. */
+  function masukSemesta(sid, rid, defTerapan) {
+    if (G.busy) return false;
+    const def = defTerapan || semuaSemesta()[sid];
+    const h = def ? Otak.aturSemesta(def) : { ok: false, galat: ['Semesta tidak ditemukan.'] };
+    if (!h.ok) { tampilGalatS(h.galat); duStatus('Belum bisa diterapkan. Perbaiki ' + h.galat.length + ' hal di atas.'); if (G.sm) Otak.aturSemesta(G.sm); return false; }
+    tampilGalatS([]);
+    const lama = G.semesta;
+    G.semesta = h.semesta.id; G.sm = h.semesta;
+    if (lama !== G.semesta) { const j = simpanJs[G.semesta] || {}; G.js = { kunjung: new Set(j.kunjung || []), bab: new Set(j.bab || []), rute: new Set(j.rute || []), kejadian: new Set(j.kejadian || []) }; }
+    return masukRuang(rid || (G.sm.ruang.some(r => r.id === G.ruang) ? G.ruang : G.sm.awal));
+  }
+  function masukRuang(rid) {
+    if (G.busy) return false;
+    const room = SM().ruang.find(r => r.id === rid) || SM().ruang[0];
+    const h = Otak.aturRuang(room);
+    if (!h.ok) { tampilGalat(h.galat); return false; }
+    G.ruang = room.id;
+    const m = baca(kunciM(), null);
+    G.manual = Array.isArray(m) && m.length ? m.slice(0, 64).map(x => ({ id: String(x.id).slice(0, 20), judul: String(x.judul).slice(0, 60), teks: String(x.teks).slice(0, 300), koleksi: String(x.koleksi || '').slice(0, 16) })) : manualDasar();
+    susunMisi();
+    const warna = {}; for (const n of Object.keys(SM().orkestrator.spesialis)) warna[n] = SM().orkestrator.spesialis[n];
+    adegan.muatRuang(R(), { rute: SM().router.rute, spesialis: warna, agen: SM().agen });
+    G.js.kunjung.add(G.ruang); simpan();
+    renderChips(); renderManual(); renderDunia(); renderAgen();
+    mulaiMisi(0, true);
+    cekKejadian('masuk'); cekMisiSemesta();
+    return true;
+  }
+  /* Menyimpan perubahan: seluruh semesta (dengan ruangnya) disimpan utuh di browser. */
+  function simpanSemesta(def, pesan) {
+    const id = def && def.id;
+    const lamaRuang = SM() && SM().ruang.map(r => r.id).concat(def && Array.isArray(def.ruang) ? def.ruang.map(r => (typeof r === 'string' ? r : r && r.id)) : []);
+    (lamaRuang || []).forEach(r => hapus('ruangagen-manual:' + id + ':' + r));
+    const aktifRuang = G.ruang;
+    const dasar = Object.assign({}, def);
+    const ok = masukSemesta(id, aktifRuang, dasar);
+    if (!ok) return false;
+    kustomS[G.semesta] = salin(SM()); tulis('ruangagen-semesta', kustomS);
+    renderDunia(); renderAgen();
+    if (!DN.SEMESTA[G.semesta]) beriBadge('arsitek');
+    duStatus(pesan || `Semesta "${SM().nama}" diterapkan. Agen, prompt AI, dan adegan 3D sudah mengikuti definisi baru.`, true);
+    return true;
+  }
+  /* "ruang" di JSON semesta boleh berisi id saja: dirujuk dari ruang yang sudah ada di semesta aktif atau ruang bawaan. */
+  function selesaikanRuang(def) {
+    if (def && Array.isArray(def.ruang)) def.ruang = def.ruang.map(r => (typeof r === 'string' ? (SM().ruang.find(x => x.id === r) ? salin(SM().ruang.find(x => x.id === r)) : r) : r));
+    return def;
+  }
   function renderDunia() {
-    const sel = $('#duRuang'), semua = semuaRuang(); sel.replaceChildren();
-    Object.keys(semua).forEach(id => { const o = mk('option', '', (semua[id].nama || id) + (kustom[id] ? (DN.RUANG[id] ? ' (diubah)' : ' (buatanku)') : '')); o.value = id; sel.appendChild(o); });
+    const ss = $('#duSemesta'), sem = semuaSemesta(); ss.replaceChildren();
+    Object.keys(sem).forEach(id => { const o = mk('option', '', labelS(id)); o.value = id; ss.appendChild(o); });
+    ss.value = G.semesta;
+    $('#duCerita').textContent = SM().cerita || '';
+    const sel = $('#duRuang'); sel.replaceChildren();
+    SM().ruang.forEach(r => { const o = mk('option', '', r.nama); o.value = r.id; sel.appendChild(o); });
     sel.value = G.ruang;
     $('#duDesk').textContent = R().deskripsi || '';
-    $('#duJson').value = JSON.stringify(semua[G.ruang], null, 2);
+    const ringkas = defAktif(); ringkas.ruang = SM().ruang.map(r => r.id); delete ringkas.pengetahuan_ringkas;
+    $('#duJsonS').value = JSON.stringify(ringkas, null, 2);
+    $('#duJson').value = JSON.stringify(R(), null, 2);
     const dev = $('#duDev'); dev.replaceChildren();
     Object.keys(R().perangkat).forEach(id => { const o = mk('option', '', R().perangkat[id].nama); o.value = id; dev.appendChild(o); });
     isiOp();
-    $('#duHapus').textContent = kustom[G.ruang] ? (DN.RUANG[G.ruang] ? 'Kembalikan ruang bawaan' : 'Hapus ruang ini') : 'Hapus atau kembalikan';
-    $('#duHapus').disabled = !kustom[G.ruang];
+    $('#duHapusS').textContent = kustomS[G.semesta] ? (DN.SEMESTA[G.semesta] ? 'Kembalikan semesta bawaan' : 'Hapus semesta ini') : 'Hapus atau kembalikan';
+    $('#duHapusS').disabled = !kustomS[G.semesta];
+    $('#duHapus').disabled = SM().ruang.length <= 1;
     $('#duGrafis').value = G.grafis;
   }
   function isiOp() {
@@ -423,57 +579,65 @@
     DN.TIPE[d.tipe].ops.forEach(o => { const e = mk('option', '', label[o]); e.value = o; op.appendChild(e); });
   }
   $('#duDev').addEventListener('change', isiOp);
-  /* Masuk ruang: otak, adegan, manual, misi, dan contoh semuanya mengikuti definisi yang sama. */
-  function masukRuang(id, def) {
-    if (G.busy) return false;
-    def = def || semuaRuang()[id];
-    const h = def ? Otak.aturRuang(def) : { ok: false, galat: ['Ruang tidak ditemukan.'] };
-    if (!h.ok) { tampilGalat(h.galat); duStatus('Belum bisa diterapkan. Perbaiki ' + h.galat.length + ' hal di atas.'); return false; }
-    tampilGalat([]);
-    G.ruang = h.ruang.id;
-    const m = baca('ruangagen-manual:' + G.ruang, null);
-    G.manual = Array.isArray(m) && m.length ? m.slice(0, 12).map(x => ({ id: String(x.id).slice(0, 20), judul: String(x.judul).slice(0, 60), teks: String(x.teks).slice(0, 300) })) : salin(h.ruang.manual);
-    susunMisi(); adegan.muatRuang(h.ruang);
-    simpan(); renderChips(); renderManual(); renderDunia();
-    mulaiMisi(0, true);
-    return true;
-  }
-  function terapkanDef(def, pesan) {
-    const id = def && def.id;
-    try { localStorage.removeItem('ruangagen-manual:' + id); } catch (e) { /* abaikan */ }
-    if (!masukRuang(id, def)) return false;
-    kustom[G.ruang] = def; tulis('ruangagen-dunia', kustom); renderDunia();
-    if (!DN.RUANG[G.ruang]) beriBadge('arsitek');
-    duStatus(pesan || `Ruang "${R().nama}" diterapkan. Agen, prompt LLM, adegan 3D, dan misi sudah mengikuti definisi baru.`, true);
-    return true;
-  }
+  $('#duSemesta').addEventListener('change', e => { if (!masukSemesta(e.target.value)) e.target.value = G.semesta; else { duStatus(''); activate('chat'); chat('sis', SM().cerita); } });
   $('#duRuang').addEventListener('change', e => { if (!masukRuang(e.target.value)) e.target.value = G.ruang; else { duStatus(''); activate('chat'); } });
+  const urai = id => { try { return JSON.parse($(id).value); } catch (e) { tampilGalatS(['JSON tidak bisa dibaca: ' + e.message + '. Periksa koma dan tanda kutip.']); duStatus('Belum bisa diterapkan.'); return null; } };
+  $('#duTerapS').addEventListener('click', () => { const d = urai('#duJsonS'); if (d) simpanSemesta(selesaikanRuang(d)); });
+  $('#duSemestaBaru').addEventListener('click', () => {
+    const d = salin(DN.TEMPLAT_SEMESTA); let n = 1; while (semuaSemesta()[d.id]) d.id = 'semestaku' + (++n);
+    const kunci = salin(Object.keys(kustomS)); void kunci;
+    if (masukSemesta(d.id, null, d)) { kustomS[G.semesta] = salin(SM()); tulis('ruangagen-semesta', kustomS); beriBadge('arsitek'); renderDunia(); renderAgen(); duStatus('Semesta baru dibuat dari templat. Ubah di tab Agen atau JSON, lalu Terapkan.', true); activate('chat'); chat('sis', SM().cerita); }
+  });
+  $('#duHapusS').addEventListener('click', () => {
+    if (!kustomS[G.semesta] || G.busy) return;
+    const id = G.semesta; delete kustomS[id]; tulis('ruangagen-semesta', kustomS);
+    SM().ruang.forEach(r => hapus('ruangagen-manual:' + id + ':' + r.id));
+    masukSemesta(DN.SEMESTA[id] ? id : 'kampus'); duStatus(DN.SEMESTA[id] ? 'Semesta dikembalikan ke versi bawaan.' : 'Semesta dihapus.', true);
+  });
+  const unduh = (nama, isi) => { const a = mk('a'); a.href = URL.createObjectURL(new Blob([isi], { type: 'application/json' })); a.download = nama; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  $('#duEksporS').addEventListener('click', () => unduh('semesta-' + G.semesta + '.json', JSON.stringify(defAktif(), null, 2)));
+  $('#duImporS').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 250000) { duStatus('Berkas terlalu besar (maksimal 250 KB).'); return; }
+    f.text().then(t => {
+      let d; try { d = JSON.parse(t); } catch (er) { tampilGalatS(['Berkas bukan JSON: ' + er.message]); return; }
+      if (d && !Array.isArray(d.ruang) && d.perangkat) d = Object.assign({}, defAktif(), { ruang: SM().ruang.map(r => salin(r)).filter(r => r.id !== d.id).concat([d]) });   // berkas satu ruang: ditambahkan ke semesta aktif
+      if (d && Array.isArray(d.ruang)) { const sem = d.id; if (semuaSemesta()[sem] && sem !== G.semesta) d.id = sem + '2'; }
+      simpanSemesta(d, 'Berkas diimpor dan diterapkan.');
+    }); e.target.value = '';
+  });
+  /* Ruang: penyuntingan satu ruang mengganti ruang itu di dalam semesta aktif. */
   $('#duTerap').addEventListener('click', () => {
-    let def; try { def = JSON.parse($('#duJson').value); } catch (e) { tampilGalat(['JSON tidak bisa dibaca: ' + e.message + '. Periksa koma dan tanda kutip.']); duStatus('Belum bisa diterapkan.'); return; }
-    terapkanDef(def);
+    galatRuang = true; const r = urai('#duJson'); if (!r) { galatRuang = false; return; }
+    const d = defAktif(), i = d.ruang.findIndex(x => x.id === G.ruang);
+    if (r.id !== G.ruang && d.ruang.some(x => x.id === r.id)) { tampilGalat([`Id ruang "${r.id}" sudah dipakai ruang lain di semesta ini.`]); galatRuang = false; return; }
+    d.ruang[i] = r; if (d.awal === G.ruang && r.id !== G.ruang) d.awal = r.id;
+    const sebelum = G.ruang;
+    if (r.id !== G.ruang) hapus(kunciM());
+    G.ruang = r.id;
+    if (!simpanSemesta(d, `Ruang "${r.nama || r.id}" diterapkan.`)) G.ruang = sebelum;
+    galatRuang = false;
   });
   $('#duBaru').addEventListener('click', () => {
-    const def = salin(DN.TEMPLAT); let n = 1; while (semuaRuang()[def.id]) def.id = 'kos' + (++n);
-    terapkanDef(def, 'Ruang baru dibuat dari templat. Ubah JSON di atas lalu Terapkan lagi.');
+    const d = defAktif(), t = salin(DN.TEMPLAT); let n = 1; while (d.ruang.some(r => r.id === t.id)) t.id = 'kos' + (++n);
+    d.ruang.push(t); G.ruang = t.id;
+    if (simpanSemesta(d, 'Ruang baru ditambahkan dari templat. Ubah JSON di atas lalu Terapkan lagi.')) beriBadge('arsitek');
   });
   $('#duHapus').addEventListener('click', () => {
-    if (!kustom[G.ruang] || G.busy) return;
-    const id = G.ruang; delete kustom[id]; tulis('ruangagen-dunia', kustom);
-    try { localStorage.removeItem('ruangagen-manual:' + id); } catch (e) { /* abaikan */ }
-    masukRuang(DN.RUANG[id] ? id : 'lab'); duStatus(DN.RUANG[id] ? 'Ruang dikembalikan ke versi bawaan.' : 'Ruang dihapus.', true);
+    if (SM().ruang.length <= 1 || G.busy) return;
+    const d = defAktif(); d.ruang = d.ruang.filter(r => r.id !== G.ruang); hapus(kunciM()); d.awal = d.awal === G.ruang ? d.ruang[0].id : d.awal;
+    simpanSemesta(d, 'Ruang dihapus dari semesta ini.');
   });
   $('#duAjar').addEventListener('click', () => {
-    const kata = $('#duKata').value.toLowerCase().trim(), id = $('#duDev').value, op = $('#duOp').value, d = R().perangkat[id];
-    if (!/^[a-z0-9 ]{2,24}$/.test(kata) || !d) { duStatus('Kata gaul: 2 sampai 24 karakter, huruf kecil, angka, atau spasi.'); return; }
-    const def = salin(semuaRuang()[G.ruang]), a = { device: id, op };
-    if (d.tipe === 'level' && op === 'on') a.speed = Math.min(2, d.maks);
-    if (d.tipe === 'mesin' && op === 'on') { a.speed = Math.round(d.batasDaya * 0.6); a.angle = 60; }
-    def.keluhan = (def.keluhan || []).concat([{ kata: [kata], alasan: 'kata gaul yang diajarkan pemain', aksi: [a] }]);
-    if (terapkanDef(def, `Agen sekarang paham "${kata}". Coba ketik di Chat.`)) $('#duKata').value = '';
+    const kata = $('#duKata').value.toLowerCase().trim(), id = $('#duDev').value, op = $('#duOp').value, dv = R().perangkat[id];
+    if (!/^[a-z0-9 ]{2,24}$/.test(kata) || !dv) { duStatus('Kata gaul: 2 sampai 24 karakter, huruf kecil, angka, atau spasi.'); return; }
+    const d = defAktif(), a = { device: id, op };
+    if (dv.tipe === 'level' && op === 'on') a.speed = Math.min(2, dv.maks);
+    if (dv.tipe === 'mesin' && op === 'on') { a.speed = Math.round(dv.batasDaya * 0.6); a.angle = 60; }
+    const r = d.ruang.find(x => x.id === G.ruang); r.keluhan = (r.keluhan || []).concat([{ kata: [kata], alasan: 'kata gaul yang diajarkan pemain', aksi: [a] }]);
+    if (simpanSemesta(d, `Agen sekarang paham "${kata}". Coba ketik di Chat.`)) $('#duKata').value = '';
   });
-  $('#duEkspor').addEventListener('click', () => {
-    const a = mk('a'); a.href = URL.createObjectURL(new Blob([$('#duJson').value], { type: 'application/json' })); a.download = 'ruang-' + G.ruang + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
+  $('#duEkspor').addEventListener('click', () => unduh('ruang-' + G.ruang + '.json', $('#duJson').value));
   $('#duImpor').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     if (f.size > 60000) { duStatus('Berkas terlalu besar (maksimal 60 KB).'); return; }
@@ -482,6 +646,53 @@
   $('#duGrafis').addEventListener('change', e => {
     G.grafis = e.target.value; simpan();
     adegan.setKualitas(G.grafis === 'auto' ? (lemah ? 'ringan' : 'realistis') : G.grafis); turun = false;
+  });
+
+  /* ---------- Studio Agen: kepribadian, orkestrator, router, RAG, guardrails ---------- */
+  const daftarKata = t => String(t || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  let rtSementara = [];
+  function renderAgen() {
+    const U = SM(); if (!U) return;
+    $('#agNama').value = U.agen.nama; $('#agWarna').value = U.agen.warna; $('#agPersona').value = U.agen.persona; $('#agSapaan').value = U.agen.sapaan; $('#agSiap').value = U.agen.siap; $('#agTolak').value = U.agen.tolak; $('#agGaya').value = U.agen.gaya;
+    $('#orNama').value = U.orkestrator.nama; $('#orStrategi').value = U.orkestrator.strategi;
+    rtSementara = salin(U.router.rute); renderRute();
+    $('#rgK').value = U.rag.k; $('#rgAmbang').value = U.rag.ambang; $('#rgSinonim').value = Object.keys(U.rag.sinonim).map(k => k + '=' + U.rag.sinonim[k]).join('\n'); $('#rgStop').value = U.rag.stop.join(', ');
+    $('#gdInput').checked = U.guard.input.aktif; $('#gdPola').value = U.guard.input.pola.join(', '); $('#gdAksi').checked = U.guard.aksi.aktif; $('#gdInterlock').checked = U.guard.interlock.aktif; $('#gdMemori').checked = U.guard.memori.aktif; $('#gdOutput').checked = U.guard.output.aktif; $('#gdKata').value = U.guard.output.kata.join(', ');
+    peringatan();
+    const kj = $('#kjList'); kj.replaceChildren();
+    if (!U.kejadian.length) kj.appendChild(mk('li', '', 'Belum ada kejadian.'));
+    U.kejadian.forEach(k => { const p = k.pemicu; kj.appendChild(mk('li', '', `${k.nama}: ${p.pesanKe != null ? 'pada pesan ke-' + p.pesanKe : p.masuk ? 'saat masuk ' + p.masuk : 'acak ' + Math.round(p.acak * 100) + '% per pesan'}`)); });
+    $('#agStatus').textContent = '';
+  }
+  function peringatan() { $('#gdPeringatan').hidden = $('#gdAksi').checked && $('#gdInterlock').checked && $('#gdInput').checked; }
+  ['gdAksi', 'gdInterlock', 'gdInput'].forEach(id => $('#' + id).addEventListener('change', peringatan));
+  function renderRute() {
+    const ul = $('#rtList'); ul.replaceChildren();
+    if (!rtSementara.length) ul.appendChild(mk('li', '', 'Belum ada rute buatan. Router hanya memakai rute bawaan (kontrol, info, bahaya, obrol).'));
+    rtSementara.forEach((r, i) => {
+      const li = mk('li'); li.appendChild(mk('span', '', `${r.nama}: ${r.aksi === 'manual' ? 'jawab dari koleksi "' + (r.koleksi || 'semua') + '"' : r.aksi === 'balas' ? 'balas teks tetap' : 'tolak'} | pemicu: ${r.kata.join(', ')}`));
+      const b = mk('button', '', 'hapus'); b.type = 'button'; b.addEventListener('click', () => { rtSementara.splice(i, 1); renderRute(); }); li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  $('#rtTambah').addEventListener('click', () => {
+    const nama = $('#rtNama').value.trim(), kata = daftarKata($('#rtKata').value), aksi = $('#rtAksi').value, isi = $('#rtIsi').value.trim();
+    if (!nama || !kata.length) { $('#agStatus').textContent = 'Rute butuh nama dan minimal satu kata pemicu.'; return; }
+    let id = nama.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'rute'; if (!/^[a-z]/.test(id)) id = 'r' + id; while (rtSementara.some(r => r.id === id) || ['kontrol', 'info', 'bahaya', 'obrol'].includes(id)) id = id.slice(0, 13) + Math.floor(Math.random() * 9);
+    const warna = ['#2f5bff', '#8a4bff', '#1fb67f', '#ff8a3d', '#e0408a'][rtSementara.length % 5];
+    rtSementara.push(aksi === 'manual' ? { id, nama, kata, aksi, koleksi: isi.toLowerCase().replace(/[^a-z0-9_]/g, ''), warna } : { id, nama, kata, aksi, balasan: isi, intent: 'obrol', warna });
+    ['#rtNama', '#rtKata', '#rtIsi'].forEach(s => { $(s).value = ''; }); $('#agStatus').textContent = ''; renderRute();
+  });
+  $('#agReset').addEventListener('click', () => { renderAgen(); tampilGalatS([]); });
+  $('#agTerap').addEventListener('click', () => {
+    const d = defAktif();
+    d.agen = { nama: $('#agNama').value, warna: $('#agWarna').value, persona: $('#agPersona').value, sapaan: $('#agSapaan').value, siap: $('#agSiap').value, tolak: $('#agTolak').value, gaya: $('#agGaya').value };
+    d.orkestrator = Object.assign({}, d.orkestrator, { nama: $('#orNama').value, strategi: $('#orStrategi').value });
+    d.router = { rute: rtSementara };
+    const sin = {}; $('#rgSinonim').value.split('\n').forEach(b => { const [a, c] = b.split('='); if (a && c) sin[a.trim().toLowerCase()] = c.trim().toLowerCase(); });
+    d.rag = { k: +$('#rgK').value || 2, ambang: +$('#rgAmbang').value, sinonim: sin, stop: daftarKata($('#rgStop').value) };
+    d.guard = { input: { aktif: $('#gdInput').checked, pola: daftarKata($('#gdPola').value) }, aksi: { aktif: $('#gdAksi').checked }, interlock: { aktif: $('#gdInterlock').checked }, memori: { aktif: $('#gdMemori').checked }, output: { aktif: $('#gdOutput').checked, kata: daftarKata($('#gdKata').value) } };
+    d.ruang = d.ruang.map(r => salin(r));
+    if (simpanSemesta(d, 'Perubahan agen diterapkan.')) { $('#agStatus').textContent = 'Diterapkan. Coba kirim pesan di Chat dan lihat jalur pesan di tab Jejak.'; beriBadge('perancang'); }
   });
 
   /* ---------- input suara: Web Speech API (id-ID). Agen tidak bersuara, chat tetap jalur utama ---------- */
@@ -505,7 +716,7 @@
   function loop(now) {
     const nyata = Math.max(0, (now - last) / 1000); last = now;
     const dt = Math.min(nyata, 0.25); // batas longgar: di laptop lambat waktu permainan tetap berjalan wajar
-    DN.langkahFisika(R(), G.st, dt);
+    DN.langkahFisika(R(), G.st, dt, G.ekstra);
     adegan.update(dt, G.st);
     const p = adegan.proyeksiAgen(), r = $('#stage').getBoundingClientRect();
     bubble.style.left = clamp(p.x * r.width, 130, Math.max(130, r.width - 130)) + 'px'; bubble.style.top = clamp(p.y * r.height, 60, r.height) + 'px';
@@ -525,8 +736,8 @@
   // mulai
   chat('sis', 'Agen menunggu di depan ruangan. Tulis perintah, atau klik salah satu contoh di bawah.');
   renderBadge();
-  if (!masukRuang(G.ruang)) masukRuang('lab');
+  if (!masukSemesta(G.semesta, G.ruang)) { if (!masukSemesta('kampus', 'lab')) throw new Error('Semesta bawaan gagal dimuat'); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => adegan.gambarUlang());
   requestAnimationFrame(t => { last = t; loop(t); });
-  window.__ruangAgen = { G, kirim, mulaiMisi, terimaSerangan, masukRuang, adegan, get SPES() { const o = {}; adegan.namaSpesialis().forEach(n => { o[n] = true; }); return o; }, get MISI() { return MISI; } };
+  window.__ruangAgen = { G, kirim, mulaiMisi, terimaSerangan, masukRuang, masukSemesta, adegan, get SPES() { const o = {}; adegan.namaSpesialis().forEach(n => { o[n] = true; }); return o; }, get MISI() { return MISI; } };
 })();

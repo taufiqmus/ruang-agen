@@ -1,7 +1,7 @@
 /* Uji RAG (rak manual) dan orkestrasi (pembagian tugas ke spesialis). Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i) : ''); } else console.log('ok   :', n); };

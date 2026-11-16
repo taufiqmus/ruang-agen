@@ -10,7 +10,7 @@ if (!kunci && !ollama && !lokal) { console.error('Set OPENROUTER_API_KEY dulu.')
 const models = (process.argv[2] || 'openrouter/free').split(',');
 const suite = process.env.SUITE || 'dasar', jeda = +process.env.JEDA || 4000;
 const ctx = vm.createContext({ console, fetch, AbortController, setTimeout, clearTimeout, Date, Error, TypeError });
-for (const f of ['manual.js', 'dunia.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const O = ctx.Otak, L = ctx.OtakLLM, M = ctx.Manual;
 const RUANG = process.env.RUANG || 'lab';
 if (!ctx.Dunia.RUANG[RUANG] || !O.aturRuang(ctx.Dunia.RUANG[RUANG]).ok) { console.error('RUANG tidak dikenal: ' + RUANG); process.exit(1); }
