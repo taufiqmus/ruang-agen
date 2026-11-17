@@ -228,7 +228,9 @@
         if (!pekerja.length) { jejak('guard', 'Orkestrator belum punya agen pekerja. Sambungkan port "tugas" ke Agen.', id); return kirim(id, 'keluar', Object.assign({}, msg, { teks: 'Belum ada agen pekerja.' })); }
         const t = String(msg.teks).toLowerCase();
         const cocok = pekerja.filter(p => { const sb = sambunganAgen(p.id); const lk = [sb.alat.alat_sensor, sb.alat.alat_aktuator].filter(Boolean).map(c => c.lingkup).filter(l => l && l !== 'semua'); const kata = [String(p.cfg.nama).toLowerCase()].concat(...lk.map(l => l === 'rumah' ? ['rumah', 'kamar', 'tamu', 'dapur', 'gudang'] : (A().KATA_AREA[((ctx.W.area.find(a => a.id === l) || {}).tipe) || l] || [l]))); return kata.some(w => w && t.includes(w.replace(/^agen\s+/, ''))); });
-        const dipilih = b.cfg.mode === 'semua' || !cocok.length ? pekerja : cocok;
+        let dipilih = b.cfg.mode === 'semua' || !cocok.length ? pekerja : cocok;
+        // perintah menulis RAG cukup dikerjakan satu agen, supaya catatan tidak tertulis berkali-kali
+        if (A().perintahRAG(msg.teks)) { const rakTulis = p => sambunganAgen(p.id).rakBlok.some(r => r && r.cfg.tulis); dipilih = [dipilih.find(rakTulis) || pekerja.find(rakTulis) || dipilih[0]]; }
         jejak('delegasi', `Orkestrator membagi tugas ke: ${dipilih.map(p => p.cfg.nama).join(', ')} (${b.cfg.mode === 'semua' ? 'semua' : cocok.length ? 'sesuai wilayah' : 'tidak ada yang cocok, semua dilibatkan'}).`, id);
         const jawab = [];
         for (const p of dipilih) { const r = await kunjungi(p.id, Object.assign({}, msg, { untukOrkestrator: true }), { dari: id, port: 'tugas', ke: p.id, portKe: 'tugas' }); if (r && r.teks) jawab.push(`${r.agen}: ${r.teks}`); }

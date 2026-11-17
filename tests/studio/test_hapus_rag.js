@@ -50,6 +50,19 @@ const cek = (n, c, info) => { if (!c) { gagal++; console.log('GAGAL:', n, info !
   cek('Delete menghapus blok terpilih beserta kabelnya', !(await S(() => window.__studio.H.blok.some(b => b.id === 'memori') || window.__studio.H.kabel.some(k => k.dari === 'memori'))));
   await page.keyboard.press('Control+z');
   cek('Ctrl+Z mengembalikan blok dan kabelnya', (await S(() => window.__studio.H.blok.length)) === nBlok && await S(() => window.__studio.H.kabel.some(k => k.dari === 'memori')));
+  // Ctrl+Z tidak boleh membatalkan pekerjaan lain sesudah penghapusan
+  await page.click('#svgPapan .blok[data-id="memori"]'); await page.keyboard.press('Delete');
+  await S(() => { const s = window.__studio; s.KV.muat(s.H); });
+  await page.click('#svgPapan .blok[data-id="agen"]'); await page.fill('#inspektur label:text-is("Nama agen") + input', 'Agen Baru'); await page.press('#inspektur label:text-is("Nama agen") + input', 'Tab');
+  await S(() => document.activeElement.blur()); await page.keyboard.press('Control+z');
+  cek('Ctrl+Z sesudah ada perubahan lain: ditolak, perubahan baru aman', await S(() => window.__studio.H.blok.find(b => b.id === 'agen').cfg.nama === 'Agen Baru' && !window.__studio.H.blok.some(b => b.id === 'memori')) && /Tidak bisa mengurungkan/.test(await page.textContent('#toast')), await page.textContent('#toast'));
+  // Ctrl+Z blok tidak mengembalikan perubahan rumah
+  await page.click('#svgPapan .blok[data-id="pengaman"]'); await page.keyboard.press('Delete');
+  await S(() => { const s = window.__studio; s.W.perangkat.find(p => p.id === 'dht_kandang').nama = 'DHT ubah'; });
+  await page.keyboard.press('Control+z');
+  cek('Ctrl+Z blok hanya mengembalikan papan, rumah tidak tersentuh', await S(() => window.__studio.H.blok.some(b => b.id === 'pengaman') && window.__studio.W.perangkat.find(p => p.id === 'dht_kandang').nama === 'DHT ubah'));
+  await S(() => { const s = window.__studio; s.W.perangkat.find(p => p.id === 'dht_kandang').nama = 'DHT22 kandang'; });
+  await page.click('[data-mode="bangun"]'); await page.click('[data-mode="otak"]');
 
   /* 5. RAG: nama baru, editor, tombol Simpan */
   cek('blok bernama RAG di palet', await page.isVisible('.item[data-drag="blok:rak"]:has-text("RAG")'));

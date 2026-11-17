@@ -1538,10 +1538,14 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 
   /* ---------- orkestrasi: aksi dibagi menjadi tahap (berurutan) berisi tugas per spesialis (paralel) ---------- */
   /* Perintah dipecah di kata urutan. "A setelah B" berarti B dulu. Perangkat yang disebut tiap segmen menentukan tahapnya. */
-  function segmenUrut(teks) {
-    const m = teks.match(/^(.*?)\s+(?:setelah|sesudah)\s+(.*)$/);
+  /* Pemecah urutan murni teks (dipakai juga orkestrator studio). "setelah itu" berarti urutan maju, bukan dibalik. */
+  function pecahUrutan(teks) {
+    const m = teks.match(/^(.*?)\s+(?:setelah|sesudah)(?!\s+itu\b)\s+(.*)$/);
     const t2 = m ? `${m[2]} lalu ${m[1]}` : teks;
-    return t2.split(/\s+(?:lalu|terus|kemudian|habis itu|setelah itu|baru)\s+/).map(c => {
+    return t2.split(/\s+(?:lalu|terus|kemudian|habis itu|setelah itu|sesudah itu|baru)\s+/).map(x => x.trim()).filter(Boolean);
+  }
+  function segmenUrut(teks) {
+    return pecahUrutan(teks).map(c => {
       const d = new Set(ids().filter(k => POLA[k].test(c)));
       if (pertama('buka') && /\b(buka|bukain|bukakan|tutup|tutupin|tutupkan)\b/.test(c)) d.add(pertama('buka'));
       if (/\bsemua(nya)?\b/.test(c)) ids().forEach(k => d.add(k));
@@ -1981,7 +1985,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 
   aturSemesta(D.SEMESTA.kampus);
   aturRuang(D.RUANG.lab);
-  const api = { namaAgen, fakta: () => Object.assign({}, FAKTA), aturFakta: (k, v) => { if (k in FAKTA) FAKTA[k] = String(v || '').slice(0, 32); }, resetFakta: () => { FAKTA.namaAgen = ''; FAKTA.namaPengguna = ''; },
+  const api = { pecahUrutan, namaAgen, fakta: () => Object.assign({}, FAKTA), aturFakta: (k, v) => { if (k in FAKTA) FAKTA[k] = String(v || '').slice(0, 32); }, resetFakta: () => { FAKTA.namaAgen = ''; FAKTA.namaPengguna = ''; },
     cocokObrolan, adaKemampuan, tolakGuardModel, aksiBerisiko, kasusUji, aturSemesta, semesta: () => U, rag: () => U.rag, adaRute, setEkstra: e => { EKS.suhu = +e.suhu || 0; EKS.cahaya = +e.cahaya || 0; }, ekstra: () => EKS, pikir, cekInjeksi, adaInjeksi, adaMemori, bagiTugas, dariUsulan, validasi, terapkan, deskripsi, laporSensor, stateAwal, norm, aturRuang, ruang: () => R };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Otak = api;

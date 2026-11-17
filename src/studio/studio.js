@@ -26,7 +26,8 @@
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
   const riwayat = {};
   let mode = 'bangun', cepat = param.get('cepat') != null ? +param.get('cepat') : 1, pilihan = null, pilihArea = null, menaruh = null, sibuk = false;
-  const simpanDunia = () => tulis(K.dunia, W), simpanGraf = () => tulis(K.graf, H), simpanStat = () => tulis(K.stat, stat), simpanData = () => tulis(K.data, data);
+  const versi = { W: 0, H: 0 };
+  const simpanDunia = () => { versi.W++; tulis(K.dunia, W); }, simpanGraf = () => { versi.H++; tulis(K.graf, H); }, simpanStat = () => tulis(K.stat, stat), simpanData = () => tulis(K.data, data);
   const cfgModel = () => ({ mode: cfg.mode, ollamaUrl: cfg.ollamaUrl, ollamaModel: cfg.ollamaModel, lokalUrl: cfg.lokalUrl, lokalModel: cfg.lokalModel, apiKey: String(cfg.apiKey || '').trim(), models: String(cfg.models || '').split(',').map(s => s.trim()).filter(Boolean), timeoutMs: cfg.mode === 'kunci' ? 30000 : 120000 });
 
   /* ---------- toast dan chat ---------- */
@@ -240,7 +241,11 @@
     if (!g.gerak) return;
     if (g.salah) { toast('Area tidak bisa ditaruh di situ: ' + g.salah.alasan + '.'); muat3D(); return; }
     if (g.jenis === 'pindah') { g.a.x = g.x0 + g.dx; g.a.z = g.z0 + g.dz; g.isi.forEach(q => { q.p.x = q.x + g.dx; q.p.z = q.z + g.dz; }); }
-    else { g.a.w = g.w; g.a.d = g.d; }
+    else {
+      const tertinggal = W.perangkat.filter(p => I.areaDi(W, p.x, p.z) === g.a && !(p.x <= g.a.x + g.w && p.z <= g.a.z + g.d));
+      if (tertinggal.length) { toast(`Area tidak diperkecil: ${tertinggal.map(p => p.nama).join(', ')} akan berada di luar area. Pindahkan perangkatnya dulu.`); muat3D(); return; }
+      g.a.w = g.w; g.a.d = g.d;
+    }
     W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
   });
   window.addEventListener('pointermove', e => {
@@ -268,33 +273,37 @@
     else if (pilihan && pilihan.startsWith('p:') && mode === 'bangun') hapusPerangkat(pilihan.slice(2));
     else if (pilihArea && mode === 'bangun') hapusArea(pilihArea);
     else if (pilihan && pilihan.startsWith('b:') && mode === 'otak') hapusBlok(pilihan.slice(2));
-    else if (pilihan === 'kabel' && mode === 'otak') { const k = KV.kabelTerpilih(); if (k) { simpanUrung('Kabel papan'); KV.hapusKabel(k); pilihan = null; renderInspektur(); toast('Kabel dihapus. Ctrl+Z untuk mengurungkan.', true); } }
+    else if (pilihan === 'kabel' && mode === 'otak') { const k = KV.kabelTerpilih(); if (k) { simpanUrung('Kabel papan', 'H'); KV.hapusKabel(k); kunciUrung(); pilihan = null; renderInspektur(); toast('Kabel dihapus. Ctrl+Z untuk mengurungkan.', true); } }
   });
   /* satu langkah urung untuk penghapusan (tombol maupun keyboard) */
   let urung = null;
-  function simpanUrung(apa) { urung = { apa, W: salin(W), H: salin(H) }; }
+  function simpanUrung(apa, bagian) { urung = { apa, bagian, isi: salin(bagian === 'H' ? H : W) }; }
+  const kunciUrung = () => { if (urung) urung.versi = versi[urung.bagian]; };   // dipanggil sesudah penghapusan tersimpan
   function kembalikanHapus() {
     const u = urung; urung = null;
-    W = I.periksaDunia(u.W).dunia; H = GR.periksaGraf(u.H).graf; syncSim(); simpanDunia(); simpanGraf(); muat3D(); KV.muat(H); renderSaran(); renderPetunjuk(); renderInspektur();
+    if (u.versi !== versi[u.bagian]) { toast('Tidak bisa mengurungkan: sudah ada perubahan lain sesudah penghapusan.'); return; }
+    if (u.bagian === 'H') { H = GR.periksaGraf(u.isi).graf; simpanGraf(); KV.muat(H); renderSaran(); }
+    else { W = I.periksaDunia(u.isi).dunia; syncSim(); simpanDunia(); muat3D(); }
+    renderPetunjuk(); renderInspektur();
     toast(u.apa + ' dikembalikan.', true);
   }
   function hapusPerangkat(id) {
     const p = W.perangkat.find(q => q.id === id); if (!p) return;
-    simpanUrung(p.nama);
+    simpanUrung(p.nama, 'W');
     W.perangkat = W.perangkat.filter(q => q.id !== id); W.perangkat.forEach(q => { if (q.daya === id) delete q.daya; if (q.sambung && (q.sambung.esp === id || q.sambung.relay === id)) delete q.sambung; });
-    pilihan = null; D3.pilih(null); W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+    pilihan = null; D3.pilih(null); W = I.periksaDunia(W).dunia; simpanDunia(); kunciUrung(); muat3D(); renderInspektur(); renderPetunjuk();
     toast(p.nama + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
   }
   function hapusArea(id) {
     const a = W.area.find(x => x.id === id); if (!a) return;
-    simpanUrung('Area ' + a.nama);
-    W.area = W.area.filter(x => x.id !== id); pilihArea = null; D3.pilihArea(null); W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+    simpanUrung('Area ' + a.nama, 'W');
+    W.area = W.area.filter(x => x.id !== id); pilihArea = null; D3.pilihArea(null); W = I.periksaDunia(W).dunia; simpanDunia(); kunciUrung(); muat3D(); renderInspektur(); renderPetunjuk();
     toast('Area ' + a.nama + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
   }
   function hapusBlok(id) {
     const b = H.blok.find(x => x.id === id); if (!b) return;
-    simpanUrung('Blok ' + GR.JENIS[b.jenis].judul);
-    KV.hapusBlok(id); pilihan = null; renderInspektur();
+    simpanUrung('Blok ' + GR.JENIS[b.jenis].judul, 'H');
+    KV.hapusBlok(id); kunciUrung(); pilihan = null; renderInspektur();
     toast('Blok ' + GR.JENIS[b.jenis].judul + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
   }
   window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); } });
@@ -339,7 +348,14 @@
     P.appendChild(mk('h3', '', 'Area: ' + a.nama));
     const nama = field(P, 'Nama', mk('input')); nama.type = 'text'; nama.value = a.nama; nama.maxLength = 24;
     const row = mk('div', 'baris'); P.appendChild(row);
-    const num = (lbl, k, min, max) => { const w = mk('div'); const i = mk('input'); i.type = 'number'; i.min = min; i.max = max; i.step = 0.5; i.value = a[k]; field(w, lbl, i); row.appendChild(w); i.onchange = () => { const b = I.areaBentrok(W, { ...a, [k]: +i.value }); if (b) { toast('Tidak bisa: area ' + b.alasan + '.'); i.value = a[k]; return; } a[k] = +i.value; terap(); }; return i; };
+    const num = (lbl, k, min, max) => { const w = mk('div'); const i = mk('input'); i.type = 'number'; i.min = min; i.max = max; i.step = 0.5; i.value = a[k]; field(w, lbl, i); row.appendChild(w); i.onchange = () => {
+      const v = Math.round(+i.value * 2) / 2, calon = { ...a, [k]: v }, b = Number.isFinite(v) && I.areaBentrok(W, calon);
+      if (!Number.isFinite(v) || b) { toast('Tidak bisa: area ' + (b ? b.alasan : 'angka tidak sah') + '.'); i.value = a[k]; return; }
+      const isi = W.perangkat.filter(p => I.areaDi(W, p.x, p.z) === a);
+      if (k === 'x' || k === 'z') isi.forEach(p => { p[k] += v - a[k]; });   // perangkat di dalam area ikut pindah
+      else { const luar = isi.filter(p => !(p.x <= calon.x + calon.w && p.z <= calon.z + calon.d)); if (luar.length) { toast(`Tidak bisa: ${luar.map(p => p.nama).join(', ')} akan berada di luar area.`); i.value = a[k]; return; } }
+      a[k] = v; terap();
+    }; return i; };
     num('X', 'x', 0, W.lebar); num('Z', 'z', 0, W.dalam); num('Lebar', 'w', 2, 20); num('Dalam', 'd', 2, 20);
     const terap = () => { a.nama = nama.value; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); };
     P.appendChild(mk('p', 'note', 'Seret area yang terpilih (bergaris kuning) untuk memindahkannya: perangkat di dalamnya ikut pindah. Seret kotak kuning di sudut untuk mengubah ukuran. Garis menjadi merah bila area menimpa area lain atau keluar lahan.'));

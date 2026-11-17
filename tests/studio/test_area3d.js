@@ -51,10 +51,20 @@ const cek = (n, c, info) => { if (!c) { gagal++; console.log('GAGAL:', n, info !
   const pg = await S(() => { const D = window.__studio.D3, a = window.__studio.W.area.find(x => x.id === 'kandang'), c = document.querySelector('#c3d').getBoundingClientRect(); for (let y = c.top; y < c.bottom; y += 3) for (let x = c.left; x < c.right; x += 3) if (D.ambilPegangan(x, y)) return { x, y }; return null; });
   cek('pegangan ukuran tampil di sudut area terpilih', !!pg, await area('kandang'));
   const a3 = await area('kandang');
-  const tuju = await layarLantai(a3.x + a3.w - 2, a3.z + a3.d - 1.5);
+  const tuju = await layarLantai(a3.x + a3.w + 2, a3.z + a3.d + 1.5);
   await seret(pg, tuju);
   const a4 = await area('kandang');
-  cek('seret pegangan: area mengecil', a4.w < a3.w && a4.d < a3.d && a4.x === a3.x, { a3, a4 });
+  cek('seret pegangan: area membesar', a4.w > a3.w && a4.d > a3.d && a4.x === a3.x, { a3, a4 });
+  // memperkecil sampai perangkat tertinggal di luar: ditolak
+  const pg2 = await S(() => { const D = window.__studio.D3, c = document.querySelector('#c3d').getBoundingClientRect(); for (let y = c.top; y < c.bottom; y += 3) for (let x = c.left; x < c.right; x += 3) if (D.ambilPegangan(x, y)) return { x, y }; return null; });
+  const a5 = await area('kandang');
+  await seret(pg2, await layarLantai(a5.x + 2.5, a5.z + 2.5));
+  cek('perkecil sampai perangkat di luar area: ditolak dengan nama perangkat', JSON.stringify(await area('kandang')) === JSON.stringify(a5) && /di luar area/.test(await page.textContent('#toast')), await page.textContent('#toast'));
+  // X di Inspektur: perangkat ikut pindah
+  const dA = await pos('dht_kandang'), xIn0 = await page.$('#inspektur label:text-is("X") + input');
+  await xIn0.fill(String(a5.x - 1)); await xIn0.press('Tab'); await page.waitForTimeout(150);
+  const dB = await pos('dht_kandang');
+  cek('ubah X di Inspektur: perangkat di dalam area ikut pindah', Math.abs(dB.x - (dA.x - 1)) < 0.01 && dB.z === dA.z, { dA, dB });
 
   /* 5. klik lantai kosong melepas pilihan */
   t = await layarLantai(38, 2); await page.mouse.click(t.x, t.y); await page.waitForTimeout(100);

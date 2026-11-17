@@ -207,6 +207,27 @@ const teksAI = t => ({ model: 'tiruan', message: { role: 'assistant', content: t
     const H2 = graf('chatbot'), c2 = konteks(), o2 = []; c2.keluaran = (j, x) => o2.push(x);
     await GR.jalankan(H2, 'chat', { teks: 'ingat ya, kunci gudang di laci dapur', sumber: 'chat' }, c2);
     cek('agen tanpa RAG: menjelaskan perlu blok RAG', /Sambungkan blok RAG/.test(o2.join(' ')), o2);
+    // tidak membajak pesan untuk alat lain
+    cek('"ingatkan aku ..." bukan perintah RAG (milik Penjadwal)', !P('ingatkan aku jam 7 kasih pakan'));
+    cek('"catat: ..." milik Logger bila Logger tersambung', !P('catat: pompa bocor', { logger: true }) && P('catat: pompa bocor').jenis === 'catat' && P('ingat ya pompa bocor', { logger: true }).jenis === 'catat');
+    {
+      const Hl = graf('agen_rumah'); Hl.blok.push({ id: 'log', jenis: 'alat_logger', x: 0, y: 0, cfg: {} }); Hl.kabel.push({ dari: 'log', port: 'keluar', ke: 'agen', portKe: 'alat' });
+      const rk = Hl.blok.find(b => b.jenis === 'rak'); rk.cfg.tulis = true;
+      const c = konteks(), o = []; c.keluaran = (j, x) => o.push(x);
+      await GR.jalankan(Hl, 'chat', { teks: 'catat: pompa bocor', sumber: 'chat' }, c);
+      cek('Logger tersambung: "catat:" tidak masuk RAG', !(rk.cfg.dokumen || []).some(d => /bocor/.test(d.teks)), o);
+      const Hc = graf('chatbot'), c3 = konteks(), o3 = []; c3.keluaran = (j, x) => o3.push(x);
+      await GR.jalankan(Hc, 'chat', { teks: 'ingatkan aku jam 7 kasih pakan', sumber: 'chat' }, c3);
+      cek('agen tanpa RAG: pesan "ingatkan" tidak dijawab soal RAG', !/RAG/.test(o3.join(' ')), o3);
+    }
+    // multi-agen: catatan hanya ditulis sekali
+    {
+      const Hm = graf('multi_agen'); Hm.blok.filter(b => b.jenis === 'rak').forEach(b => { b.cfg.tulis = true; });
+      const c = konteks(), o = []; c.keluaran = (j, x) => o.push(x);
+      await GR.jalankan(Hm, 'chat', { teks: 'ingat ya, kode gerbang belakang 4321', sumber: 'chat' }, c);
+      const n = Hm.blok.filter(b => b.jenis === 'rak').filter(b => (b.cfg.dokumen || []).some(d => /4321/.test(d.teks))).length;
+      cek('multi-agen: perintah ingat ditulis ke satu RAG saja', n === 1, { n, o });
+    }
     const H3 = graf('agen_rumah'); H3.blok = H3.blok.filter(b => b.jenis !== 'guard_masukan'); H3.blok.find(b => b.jenis === 'rak').cfg.tulis = true;
     cek('saran: RAG bisa ditulis tanpa Guard Masukan', GR.saran(H3).some(s => /RAG bisa ditulis/.test(s.teks)));
   }
