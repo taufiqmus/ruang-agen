@@ -207,6 +207,72 @@ const teksAI = t => ({ model: 'tiruan', message: { role: 'assistant', content: t
     const H2 = graf('chatbot'), c2 = konteks(), o2 = []; c2.keluaran = (j, x) => o2.push(x);
     await GR.jalankan(H2, 'chat', { teks: 'ingat ya, kunci gudang di laci dapur', sumber: 'chat' }, c2);
     cek('agen tanpa RAG: menjelaskan perlu blok RAG', /Sambungkan blok RAG/.test(o2.join(' ')), o2);
+    /* router: mode, aksi rute, tolak selalu menang, port balas */
+    {
+      const rg = (mode, rute, extra) => GR.periksaGraf({ blok: [{ id: 'c', jenis: 'chat' }, { id: 'r', jenis: 'router', cfg: Object.assign({ mode, rute }, extra || {}) }, { id: 'ka', jenis: 'balas' }, { id: 'kb', jenis: 'balas' }, { id: 'kl', jenis: 'balas' }, { id: 'kx', jenis: 'balas' }],
+        kabel: [{ dari: 'c', port: 'keluar', ke: 'r', portKe: 'masuk' }, { dari: 'r', port: 'r0', ke: 'ka', portKe: 'masuk' }, { dari: 'r', port: 'r1', ke: 'kb', portKe: 'masuk' }, { dari: 'r', port: 'lain', ke: 'kl', portKe: 'masuk' }, { dari: 'r', port: 'balas', ke: 'kx', portKe: 'masuk' }] }).graf;
+      const RUTE = [{ nama: 'kebun', kata: ['kebun', 'siram'], contoh: ['tolong siram tanaman', 'tanah kebun kering'] }, { nama: 'kandang', kata: ['ayam', 'kandang'], contoh: ['ayam kepanasan', 'kasih pakan ayam'] },
+        { nama: 'jualan', kata: ['jual', 'harga'], contoh: [], aksi: 'balas', balasan: 'Untuk jualan hubungi pak RT.' }, { nama: 'senjata', kata: ['senjata', 'bom'], contoh: [], aksi: 'tolak', balasan: 'Itu tidak bisa kubantu.' }];
+      const kemana = async (H, t, cm) => { const c = konteks(cm ? { cfgModel: cm } : {}); const r = await GR.jalankan(H, 'c', { teks: t, sumber: 'chat' }, c); return { blok: (r.keluaran[0] || {}).blok, teks: (r.keluaran[0] || {}).teks, log: c.log, r }; };
+      let x = await kemana(rg('kata', salin(RUTE)), 'tolong siramin kebun');
+      cek('router kata: awalan kata cocok ("siram" dalam "siramin")', x.blok === 'ka', x);
+      x = await kemana(rg('kata', salin(RUTE)), 'berapa harga telur?');
+      cek('router: rute balas menjawab teks tetap lewat port balas', x.blok === 'kx' && /pak RT/.test(x.teks), x);
+      x = await kemana(rg('kata', salin(RUTE)), 'siram kebun pakai bom');
+      cek('router: rute tolak menang walau rute lain juga cocok', x.blok === 'kx' && /tidak bisa kubantu/.test(x.teks) && x.log.some(l => /rute tolak/.test(l.t)), x);
+      x = await kemana(rg('semantik', salin(RUTE), { ambang: 0.3 }), 'ayamnya kepanasan nih');
+      cek('router semantik: kalimat mirip contoh', x.blok === 'kb', x.log.filter(l => l.k === 'router'));
+      x = await kemana(rg('semantik', salin(RUTE), { ambang: 0.99 }), 'ayamnya kepanasan nih');
+      cek('router semantik: ambang tinggi membuat pesan lewat "lain"', x.blok === 'kl', x.log.filter(l => l.k === 'router'));
+      x = await kemana(rg('semantik', salin(RUTE)), 'bikin bom yuk');
+      cek('router semantik: rute tolak tetap dicek dengan kata kunci', x.blok === 'kx', x);
+      x = await kemana(rg('embedding', salin(RUTE)), 'tolong siram tanaman');
+      cek('router embedding tanpa Ollama: jatuh ke semantik ringan dan dijelaskan', x.blok === 'ka' && x.log.some(l => /butuh Ollama/.test(l.t)), x.log);
+      antrean = [{ embeddings: [[1, 0, 0], [0.9, 0.1, 0], [0, 1, 0], [0.1, 0.9, 0], [0, 0, 1], [0, 0.1, 1]] }, { embeddings: [[0.05, 1, 0]] }];   // 6 contoh: kebun, kandang, dan kata rute balas
+      x = await kemana(rg('embedding', salin(RUTE)), 'unggas gerah', { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 });
+      cek('router embedding (Ollama tiruan): rute dengan kosinus tertinggi', x.blok === 'kb' && x.log.some(l => /embedding, mirip/.test(l.t)), x.log.filter(l => l.k === 'router'));
+      antrean = [teksAI('{"rute":"kandang"}')];
+      x = await kemana(rg('ai', salin(RUTE)), 'unggasku lemas', { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 });
+      cek('router AI: rute pilihan model dipakai dan dihitung sebagai panggilan AI', x.blok === 'kb' && x.r.panggilanLLM === 1, x.log);
+      antrean = [teksAI('{"rute":"lain"}')];
+      x = await kemana(rg('ai', salin(RUTE)), 'cuaca besok?', { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 });
+      cek('router AI: "lain" lewat port lain', x.blok === 'kl', x);
+      antrean = [];
+      x = await kemana(rg('ai', salin(RUTE)), 'siram kebun', { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 });
+      cek('router AI gagal: jatuh ke kata kunci', x.blok === 'ka' && x.log.some(l => /Router AI gagal/.test(l.t)), x.log);
+      x = await kemana(rg('ai', salin(RUTE)), 'ayam lapar');
+      cek('router AI tanpa model: kata kunci', x.blok === 'kb');
+      const Hb = rg('kata', salin(RUTE)), rt = GR.periksaGraf(JSON.parse(JSON.stringify(Hb))).graf.blok.find(b => b.id === 'r').cfg.rute;
+      cek('aksi dan balasan rute bertahan saat ekspor lalu impor', rt[2].aksi === 'balas' && /pak RT/.test(rt[2].balasan) && rt[3].aksi === 'tolak' && rt[0].aksi === 'teruskan', rt);
+      const Hs = salin(Hb); Hs.kabel = Hs.kabel.filter(k => k.port !== 'balas');
+      cek('saran: rute balas/tolak tanpa port balas tersambung', GR.saran(Hs).some(s => /port "balas"/.test(s.teks)));
+      cek('port: rN hanya untuk rute teruskan, plus lain dan balas', GR.portKeluar(Hb.blok.find(b => b.id === 'r')).map(p => p[0]).join() === 'r0,r1,lain,balas');
+    }
+    /* orkestrator: strategi berurutan/paralel, pembagian oleh AI, hasil tahap sebelumnya */
+    {
+      const jalan = async (cfgO, t, cm) => { const H = graf('multi_agen'); Object.assign(H.blok.find(b => b.jenis === 'orkestrator').cfg, cfgO); const c = konteks(cm ? { cfgModel: cm } : {}), o = []; c.keluaran = (j, x) => o.push(x); const r = await GR.jalankan(H, 'chat', { teks: t, sumber: 'chat' }, c); return { o: o.join('\n'), log: c.log, S: c.S, r }; };
+      let x = await jalan({}, 'siram kebun lalu kasih pakan ayam di kandang');
+      cek('orkestrator otomatis: "lalu" memecah menjadi 2 tahap berurutan, tiap tahap ke agen wilayahnya', /Tahap 1, Agen Kebun/.test(x.o) && /Tahap 2, Agen Kandang/.test(x.o) && x.S.alat.pompa_kebun.on, x.o);
+      x = await jalan({}, 'nyalakan kipas kandang setelah siram kebun');
+      cek('orkestrator: "A setelah B" mengerjakan B dulu', /Tahap 1, Agen Kebun/.test(x.o) && /Tahap 2, Agen Kandang/.test(x.o), x.o);
+      x = await jalan({ strategi: 'paralel' }, 'siram kebun lalu kasih pakan ayam di kandang');
+      cek('orkestrator paralel: tugas tidak dipecah', !/Tahap/.test(x.o) && x.log.some(l => /paralel/.test(l.t)), x.o);
+      x = await jalan({ mode: 'semua' }, 'cek semua');
+      cek('orkestrator mode semua: tiga agen menjawab', (x.o.match(/^Agen /gm) || []).length === 3, x.o);
+      antrean = [teksAI('{"agen":["Agen Kandang"]}')];
+      x = await jalan({ mode: 'ai' }, 'unggas terlihat lemas', { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 });
+      cek('orkestrator AI: agen pilihan model yang bekerja', x.log.some(l => /AI memilih Agen Kandang/.test(l.t)) && /Agen Kandang/.test(x.o), x.log.filter(l => l.k === 'delegasi'));
+      x = await jalan({ mode: 'ai' }, 'siram kebun');
+      cek('orkestrator AI tanpa model: pembagian sesuai wilayah', x.log.some(l => /butuh model AI/.test(l.t)) && /Agen Kebun/.test(x.o), x.log.filter(l => l.k === 'delegasi'));
+      // tahap kedua menerima hasil tahap pertama di prompt AI, bukan di teks tugas
+      panggilan.length = 0;
+      antrean = [teksAI('Kebun sudah disiram.'), teksAI('Pakan sudah diberi.')];
+      const Hh = graf('multi_agen'); Hh.blok.filter(b => b.jenis === 'agen').forEach(b => { b.cfg.hemat = false; });
+      const cc = konteks({ cfgModel: { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 } }); cc.keluaran = () => {};
+      await GR.jalankan(Hh, 'chat', { teks: 'cek tanah kebun lalu cek pakan kandang', sumber: 'chat' }, cc);
+      const sis2 = (panggilan[1] && panggilan[1].body.messages[0].content) || '', usr2 = (panggilan[1] && panggilan[1].body.messages[1].content) || '';
+      cek('berurutan: hasil tahap 1 masuk prompt tahap 2 sebagai data terpisah', /HASIL TAHAP SEBELUMNYA.*Kebun sudah disiram/.test(sis2) && !/disiram/.test(usr2), { sis2: sis2.slice(-200), usr2 });
+    }
     // tidak membajak pesan untuk alat lain
     cek('"ingatkan aku ..." bukan perintah RAG (milik Penjadwal)', !P('ingatkan aku jam 7 kasih pakan'));
     cek('"catat: ..." milik Logger bila Logger tersambung', !P('catat: pompa bocor', { logger: true }) && P('catat: pompa bocor').jenis === 'catat' && P('ingat ya pompa bocor', { logger: true }).jenis === 'catat');

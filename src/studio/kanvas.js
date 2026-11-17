@@ -36,7 +36,8 @@
       if (b.jenis === 'alat_sensor' || b.jenis === 'alat_aktuator') return 'lingkup: ' + (c.lingkup || 'semua');
       if (b.jenis === 'rak') return c.dokumen && c.dokumen.length ? c.dokumen.length + ' dokumen' : 'bawaan ' + (c.preset || '');
       if (b.jenis === 'jadwal') return 'jam ' + c.jam;
-      if (b.jenis === 'router') return (c.mode === 'semantik' ? 'semantik' : 'kata kunci') + ', ' + (c.rute || []).length + ' rute';
+      if (b.jenis === 'orkestrator') return ({ semua: 'semua agen', ai: 'dipilih AI' }[c.mode] || 'sesuai wilayah') + ', ' + ({ paralel: 'paralel', berurutan: 'berurutan' }[c.strategi] || 'otomatis');
+      if (b.jenis === 'router') return ({ semantik: 'semantik', embedding: 'embedding', ai: 'dipilih AI' }[c.mode] || 'kata kunci') + ', ' + (c.rute || []).length + ' rute';
       if (b.jenis === 'memori') return c.konteks + ' pesan terakhir';
       if (b.jenis === 'aturan' || b.jenis === 'pemicu_sensor') return `${c.variabel || ''} ${c.op || ''} ${c.nilai == null ? '' : c.nilai}`;
       if (b.jenis === 'guard_masukan') return c.model ? 'regex + ' + c.model : 'regex';

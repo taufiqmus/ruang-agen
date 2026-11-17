@@ -457,6 +457,27 @@
     uji.onchange = () => { hasil.replaceChildren(); const h = window.Manual.cari(uji.value, tersimpan().map((d, i) => ({ id: 'd' + i, ...d })), 3, 0.4); if (!h.length) hasil.appendChild(mk('li', '', 'Tidak ada dokumen yang cocok: agen akan mengaku belum tahu.')); h.forEach(x => hasil.appendChild(mk('li', '', `${x.judul} (skor ${x.skor})`))); };
     tandai();
   }
+  /* Editor rute router: satu kartu per rute. Aksi teruskan = lewat port rute, balas/tolak = lewat port "balas". */
+  function editorRute(P, c, terap) {
+    c.rute = c.rute || [];
+    P.appendChild(mk('p', 'note', 'Satu kartu satu rute. Teruskan: pesan keluar lewat port rute itu. Balas: dijawab teks tetap lewat port "balas". Tolak: ditolak lewat port "balas", hanya dipicu kata kunci, dan selalu menang.'));
+    c.rute.forEach((r, i) => {
+      const kartu = mk('div', 'ragDok ruteDok');
+      const nm = mk('input'); nm.type = 'text'; nm.maxLength = 16; nm.value = r.nama; nm.placeholder = 'Nama rute'; nm.className = 'ruteNama';
+      const kata = mk('input'); kata.type = 'text'; kata.value = r.kata.join(', '); kata.placeholder = 'Kata kunci, dipisah koma'; kata.className = 'ruteKata';
+      const ct = mk('input'); ct.type = 'text'; ct.value = r.contoh.join('; '); ct.placeholder = 'Contoh kalimat (untuk semantik, embedding, AI), dipisah titik koma'; ct.className = 'ruteContoh';
+      const ak = pilihanEl([['teruskan', 'Teruskan ke port rute'], ['balas', 'Balas dengan teks tetap'], ['tolak', 'Tolak']], r.aksi || 'teruskan'); ak.className = 'ruteAksi';
+      const bl = mk('input'); bl.type = 'text'; bl.maxLength = 200; bl.value = r.balasan || ''; bl.placeholder = 'Teks balasan atau penolakan'; bl.className = 'ruteBalasan'; bl.hidden = (r.aksi || 'teruskan') === 'teruskan';
+      const h = mk('button', 'btn sm', 'Hapus rute'); h.type = 'button';
+      const terapR = () => { r.nama = nm.value.trim() || 'rute'; r.kata = kata.value.split(',').map(s => s.trim()).filter(Boolean); r.contoh = ct.value.split(';').map(s => s.trim()).filter(Boolean); r.aksi = ak.value; r.balasan = bl.value; terap(); renderInspektur(); };
+      nm.onchange = kata.onchange = ct.onchange = bl.onchange = ak.onchange = terapR;
+      h.onclick = () => { c.rute.splice(i, 1); terap(); renderInspektur(); };
+      kartu.append(nm, kata, ct, ak, bl, h); P.appendChild(kartu);
+    });
+    const t = mk('button', 'btn sm', 'Tambah rute'); t.type = 'button'; t.id = 'ruteTambah'; t.disabled = c.rute.length >= 6;
+    t.onclick = () => { c.rute.push({ nama: 'rute' + (c.rute.length + 1), kata: [], contoh: [], aksi: 'teruskan', balasan: '' }); terap(); renderInspektur(); };
+    P.appendChild(t);
+  }
   function inspekturBlok(P, id) {
     const b = H.blok.find(x => x.id === id); if (!b) { pilihan = null; return renderInspektur(); }
     const J = GR.JENIS[b.jenis], c = b.cfg;
@@ -466,7 +487,7 @@
     const teksF = (lbl, k, maks) => { const i = field(P, lbl, mk('input')); i.type = 'text'; i.value = c[k] == null ? '' : c[k]; i.maxLength = maks || 60; i.onchange = () => { c[k] = i.value; terap(); }; return i; };
     const angkaF = (lbl, k) => { const i = field(P, lbl, mk('input')); i.type = 'number'; i.value = c[k]; i.onchange = () => { c[k] = +i.value; terap(); }; return i; };
     const cekF = (lbl, k) => { const l = mk('label', 'cek'); const i = mk('input'); i.type = 'checkbox'; i.checked = !!c[k]; l.append(i, document.createTextNode(lbl)); P.appendChild(l); i.onchange = () => { c[k] = i.checked; terap(); }; };
-    const pilihF = (lbl, k, opsi) => { const s = field(P, lbl, pilihanEl(opsi, c[k])); s.onchange = () => { c[k] = s.value === 'true' ? true : s.value === 'false' ? false : (opsi.every(o => typeof o[0] === 'number') ? +s.value : s.value); terap(); if (k === 'sensor') renderInspektur(); }; return s; };
+    const pilihF = (lbl, k, opsi) => { const s = field(P, lbl, pilihanEl(opsi, c[k])); s.onchange = () => { c[k] = s.value === 'true' ? true : s.value === 'false' ? false : (opsi.every(o => typeof o[0] === 'number') ? +s.value : s.value); terap(); if (k === 'sensor' || k === 'mode') renderInspektur(); }; return s; };
     const lingkup = [['semua', 'Semua area'], ['rumah', 'Semua ruang di dalam rumah']].concat(W.area.map(a => [a.id, a.nama]));
     const sensorOps = [['', '(pilih sensor)']].concat(W.perangkat.filter(p => I.KATALOG[p.jenis].kategori === 'sensor').map(p => [p.id, p.nama]));
     const varOps = () => { const s = W.perangkat.find(p => p.id === c.sensor); return (s ? I.KATALOG[s.jenis].baca : Object.keys(I.VAR)).map(v => [v, I.VAR[v].nama]); };
@@ -485,12 +506,14 @@
     if (b.jenis === 'pemicu_sensor' || b.jenis === 'aturan') { pilihF('Sensor', 'sensor', sensorOps); pilihF('Variabel', 'variabel', varOps()); pilihF('Kondisi', 'op', [['>', 'lebih dari'], ['<', 'kurang dari']]); angkaF('Nilai ambang', 'nilai'); }
     if (b.jenis === 'pemicu_sensor') teksF('Pesan (boleh pakai {sensor} {variabel} {nilai})', 'pesan', 200);
     if (b.jenis === 'aturan') { pilihF('Aktuator', 'aktuator', [['', '(pilih)']].concat(W.perangkat.filter(p => I.KATALOG[p.jenis].kategori === 'aktuator').map(p => [p.id, p.nama]))); pilihF('Aksi saat kondisi benar', 'aksi', [['nyala', 'nyalakan'], ['mati', 'matikan']]); cekF('Lakukan kebalikannya saat kondisi salah', 'sebaliknya'); }
-    if (b.jenis === 'orkestrator') pilihF('Pembagian tugas', 'mode', [['otomatis', 'Sesuai wilayah agen'], ['semua', 'Selalu semua agen']]);
+    if (b.jenis === 'orkestrator') {
+      pilihF('Pembagian tugas', 'mode', [['otomatis', 'Sesuai wilayah agen'], ['semua', 'Selalu semua agen'], ['ai', 'Dipilih AI (butuh model AI)']]);
+      pilihF('Strategi', 'strategi', [['otomatis', 'Otomatis (berurutan bila ada "lalu" atau "setelah")'], ['paralel', 'Paralel: semua mengerjakan tugas yang sama'], ['berurutan', 'Berurutan: tugas dipecah per tahap']]);
+    }
     if (b.jenis === 'router') {
-      pilihF('Cara memilih', 'mode', [['kata', 'Kata kunci'], ['semantik', 'Kemiripan makna (semantik)']]);
-      const ta = field(P, 'Rute (satu per baris: nama: kata1, kata2 | contoh kalimat; contoh lain)', mk('textarea'));
-      ta.value = (c.rute || []).map(r => `${r.nama}: ${r.kata.join(', ')}${r.contoh.length ? ' | ' + r.contoh.join('; ') : ''}`).join('\n');
-      ta.onchange = () => { c.rute = ta.value.split('\n').filter(x => x.includes(':')).map(l => { const [n, isi] = l.split(/:(.*)/s); const [kata, contoh] = (isi || '').split('|'); return { nama: n.trim(), kata: (kata || '').split(',').map(s => s.trim()).filter(Boolean), contoh: (contoh || '').split(';').map(s => s.trim()).filter(Boolean) }; }); terap(); renderInspektur(); };
+      pilihF('Cara memilih', 'mode', [['kata', 'Kata kunci'], ['semantik', 'Kemiripan kalimat (semantik ringan)'], ['embedding', 'Kemiripan makna (embedding, butuh Ollama)'], ['ai', 'AI yang memilih (butuh model AI)']]);
+      if (c.mode === 'semantik' || c.mode === 'embedding') angkaF('Ambang keyakinan (0 sampai 1)', 'ambang');
+      editorRute(P, c, terap);
     }
     if (b.jenis === 'rak') { cekF('Agen boleh menulis lewat chat (ingat ..., ralat: ..., hapus catatan ...)', 'tulis'); editorRAG(P, b, terap); }
     const masuk = H.kabel.filter(k => k.ke === id).map(k => `${k.dari} (${k.portKe})`), keluar = H.kabel.filter(k => k.dari === id).map(k => `${k.ke} (${k.port})`);
