@@ -174,6 +174,7 @@ Agen tidak bersuara. Tombol **Bicara** mengubah ucapan menjadi pesan, lalu dipro
 | "kuota model gratis habis atau sedang penuh (429)" | Batas 50 per hari atau model penuh. Agen memakai parser. Coba lagi nanti |
 | Jejak OTAK: "LLM gagal" | Normal. Alasannya tertulis dan agen tetap bekerja lewat parser |
 | Model lokal: "Server model lokal tidak terjangkau" | `python server_lokal.py` belum berjalan atau jendelanya tertutup. Cek alamat di tab Otak (`http://localhost:8000/v1`) |
+| `pip` gagal dengan `TomlError ... pyproject.toml` | venv dibuat dengan Python lama (3.8, pip 19). Hapus folder `venv`, buat ulang dengan Python 3.10 sampai 3.12 (cek `python --version`), lalu `python -m pip install --upgrade pip` sebelum `pip install -r requirements-lokal.txt` |
 | `pip install` gagal untuk `llama-cpp-python` | Butuh Python 3.10 sampai 3.12 (64-bit). Pakai `requirements-lokal.txt` (memuat sumber paket siap pakai CPU) |
 | Model lokal terasa lambat | Normal di laptop lama (sekitar 4 sampai 5 detik per panggilan). Pastikan Router hemat hidup, coba `--ukuran 0.5b` atau `--threads`, atau pakai parser |
 | Ollama: "tidak terjangkau" | Ollama belum berjalan, atau `OLLAMA_ORIGINS` belum mengizinkan alamat halaman (HTTP 403) |
