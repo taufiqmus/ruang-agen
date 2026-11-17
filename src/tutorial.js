@@ -16,13 +16,15 @@
 .tur-sorot.kosong { border: 0; width: 0; height: 0; left: 50%; top: 50%; }
 .tur-gelembung { position: fixed; z-index: 41; width: min(340px, calc(100vw - 24px)); background: #fffdf8; color: #161a2e; border: 2px solid #161a2e; border-radius: 12px; box-shadow: 4px 4px 0 #161a2e; padding: 12px 14px; font: 400 14px/1.45 "Onest", system-ui, sans-serif; }
 .tur-gelembung h4 { margin: 0 0 4px; font: 800 15px "Bricolage Grotesque", system-ui, sans-serif; }
-.tur-gelembung .kecil { color: #5d6276; font-size: 12px; }
+.tur-gelembung .kecil { color: #5d6276; font-size: 12px; cursor: move; user-select: none; touch-action: none; }
+.tur-gelembung .kecil::after { content: '  (seret di sini untuk memindah)'; opacity: .7; }
 .tur-gelembung .status { margin-top: 6px; font-size: 12.5px; padding: 4px 8px; border-radius: 8px; background: #fff0c2; border: 1px dashed #161a2e; }
 .tur-gelembung .status.ok { background: #d3f5e6; }
 .tur-gelembung .tombol { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .tur-gelembung button { border: 2px solid #161a2e; border-radius: 8px; background: #fff; padding: 3px 10px; cursor: pointer; font-weight: 600; }
 .tur-gelembung button.pri { background: #2f5bff; color: #fff; }
 .tur-gelembung button:disabled { opacity: .45; cursor: not-allowed; }
+.tur-gelembung.tembus { opacity: .3; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .tur-sorot { transition: none; } }`;
     document.head.appendChild(s);
   }
@@ -31,7 +33,7 @@
   function buat(o) {
     pasangGaya();
     const kunci = o.kunci || 'tutorial';
-    let langkah = [], i = 0, aktif = false, tm = null, berhasil = false;
+    let langkah = [], i = 0, aktif = false, tm = null, berhasil = false, posManual = null;
     const sorot = mk('div', 'tur-sorot'), gel = mk('div', 'tur-gelembung'); gel.setAttribute('role', 'dialog'); gel.setAttribute('aria-live', 'polite');
     function kotak(L) {
       let t = typeof L.sorot === 'function' ? L.sorot() : L.sorot ? document.querySelector(L.sorot) : null;
@@ -46,7 +48,9 @@
       else { sorot.classList.add('kosong'); sorot.removeAttribute('style'); }
       const gw = gel.offsetWidth || 340, gh = gel.offsetHeight || 160;
       let x, y;
-      if (!k) { x = (vw - gw) / 2; y = (vh - gh) / 2; }
+      if (posManual) { x = posManual.x; y = posManual.y; }
+      else if (!k) { x = (vw - gw) / 2; y = (vh - gh) / 2; }
+      else if (k.h > vh * 0.5 || k.w > vw * 0.5) { x = k.x + k.w + gw + 24 < vw ? k.x + k.w + 16 : vw - gw - 16; y = vh - gh - 16; }   // target besar (palet, papan, dunia 3D): gelembung di bawah, tidak menutupi tengah
       else if (k.x + k.w + gw + 24 < vw) { x = k.x + k.w + 16; y = k.y; }        // kanan target
       else if (k.x - gw - 24 > 0) { x = k.x - gw - 16; y = k.y; }                 // kiri target
       else if (k.y + k.h + gh + 24 < vh) { x = k.x; y = k.y + k.h + 16; }         // bawah target
@@ -56,7 +60,13 @@
     }
     function gambar() {
       const L = langkah[i]; gel.replaceChildren();
-      gel.appendChild(mk('div', 'kecil', `${o.judul ? o.judul + ' | ' : ''}langkah ${i + 1} dari ${langkah.length}`));
+      const kepala = mk('div', 'kecil', `${o.judul ? o.judul + ' | ' : ''}langkah ${i + 1} dari ${langkah.length}`); gel.appendChild(kepala);
+      kepala.onpointerdown = e => {
+        e.preventDefault(); const r = gel.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+        const gerak = ev => { posManual = { x: ev.clientX - dx, y: ev.clientY - dy }; letakkan(); };
+        const lepas = () => { window.removeEventListener('pointermove', gerak); window.removeEventListener('pointerup', lepas); };
+        window.addEventListener('pointermove', gerak); window.addEventListener('pointerup', lepas);
+      };
       gel.appendChild(mk('h4', '', L.judul));
       gel.appendChild(mk('div', '', L.teks));
       const st = mk('div', 'status'); st.id = 'turStatus';
@@ -85,7 +95,7 @@
       letakkan();
     }
     function mulai(daftar, dari) {
-      langkah = daftar; aktif = true;
+      langkah = daftar; aktif = true; posManual = null;
       document.body.append(sorot, gel);
       clearInterval(tm); tm = setInterval(periksa, 400);
       ke(dari || 0);
@@ -96,6 +106,15 @@
       if (o.onTutup) o.onTutup(!!selesai);
     }
     window.addEventListener('keydown', e => { if (aktif && e.key === 'Escape') tutup(false); });
+    // selama pengguna menyeret (kabel, blok, kamera, seret-lepas palet), gelembung tembus supaya tidak menghalangi titik lepas
+    const tembus = on => gel.classList.toggle('tembus', on);
+    window.addEventListener('pointerdown', e => { if (aktif && !gel.contains(e.target)) tembus(true); }, true);
+    // dilepas sesudah handler lain membaca titik lepas (elementFromPoint), bukan sebelumnya
+    const lepasTembus = () => setTimeout(() => tembus(false), 0);
+    window.addEventListener('pointerup', lepasTembus, true);
+    window.addEventListener('dragstart', () => { if (aktif) tembus(true); }, true);
+    window.addEventListener('dragend', lepasTembus, true);
+    window.addEventListener('drop', lepasTembus, true);
     window.addEventListener('resize', letakkan);
     return { mulai, tutup, aktif: () => aktif, langkahKe: () => i, simpanan: () => baca(kunci, null) };
   }

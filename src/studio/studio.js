@@ -857,7 +857,7 @@
     onTutup: ok => {
       if (ok && babAktif) { selesaiBab.add(babAktif); tulis('studio-tutorial-selesai', [...selesaiBab]); }
       const daftar = window.TutorialStudio.bab(), i = daftar.findIndex(b => b.id === babAktif), berikut = daftar[i + 1];
-      if (ok && berikut) { tab('chat'); const li = chat('sis', 'Bab selesai. '); const b = mk('button', 'btn sm pri', 'Lanjut: ' + berikut.judul); b.type = 'button'; b.className = 'btn sm pri babBerikut'; b.onclick = () => mulaiBab(berikut.id); li.appendChild(b); }
+      if (ok && berikut) { tab('chat'); $$('.babBerikut').forEach(x => x.remove()); const li = chat('sis', 'Bab selesai. '); const b = mk('button', 'btn sm pri', 'Lanjut: ' + berikut.judul); b.type = 'button'; b.className = 'btn sm pri babBerikut'; b.onclick = () => mulaiBab(berikut.id); li.appendChild(b); }
       babAktif = null;
     }
   });

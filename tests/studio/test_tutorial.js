@@ -33,7 +33,7 @@ const URL = f => require('url').pathToFileURL(ALAT.AKAR + '/' + f).href;
 
   /* Pertemuan 2: merakit rumah */
   const kb = await (await page.$('#c3d')).boundingBox();
-  const lepas = (d, fx, fy) => page.dragAndDrop(`.item[data-drag="${d}"]`, '#c3d', { targetPosition: { x: kb.width * fx, y: kb.height * fy } });
+  const lepas = (d, fx, fy) => page.dragAndDrop(`.item[data-drag="${d}"]`, '#c3d', { targetPosition: { x: kb.width * fx, y: kb.height * fy }, force: true });
   const T2 = 11;
   await keLangkah(1, T2); await page.click('#turAksi'); await lanjut();
   await keLangkah(2, T2); await lepas('area:kamar', 0.45, 0.55);
@@ -57,7 +57,7 @@ const URL = f => require('url').pathToFileURL(ALAT.AKAR + '/' + f).href;
 
   /* Pertemuan 3: otak pertama */
   const svg = await (await page.$('#svgPapan')).boundingBox();
-  const lepasBlok = (j, x, y) => page.dragAndDrop(`.item[data-drag="blok:${j}"]`, '#svgPapan', { targetPosition: { x, y } });
+  const lepasBlok = (j, x, y) => page.dragAndDrop(`.item[data-drag="blok:${j}"]`, '#svgPapan', { targetPosition: { x, y }, force: true });
   const tarik = async (dari, port, ke, portKe) => {
     const a = await (await page.$(`.port.keluar[data-blok="${dari}"][data-port="${port}"]`)).boundingBox();
     const b = await (await page.$(`.port.masuk[data-blok="${ke}"][data-port="${portKe}"]`)).boundingBox();
@@ -65,7 +65,7 @@ const URL = f => require('url').pathToFileURL(ALAT.AKAR + '/' + f).href;
   };
   const T3 = 11;
   await keLangkah(1, T3); await page.click('#turAksi'); await lanjut();
-  await keLangkah(2, T3); await lepasBlok('chat', 120, 200);
+  await lepasBlok('chat', 120, 200);
   await keLangkah(3, T3); await lepasBlok('agen', 380, 200);
   await keLangkah(4, T3); await lepasBlok('balas', 640, 200);
   await keLangkah(5, T3); await tarik('chat1', 'keluar', 'agen1', 'masuk');
