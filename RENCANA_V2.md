@@ -45,8 +45,7 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 
 Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh token pengguna), Open-Meteo nyata.
 
-## TODO: tutorial (ditunda atas permintaan pengguna, 18 November 2026)
+## Tutorial (19 November 2026)
 
-- Sudah ada: `materi/kurikulum.json` (6 pertemuan), mesin `src/tutorial.js`, bab Studio di `src/studio/tutorial-studio.js` (Kenalan dan Pertemuan 2 sampai 6), tur Ruang Agen (Pertemuan 1) di `src/game.js`, tombol Tutorial, centang di wizard, lanjut setelah muat ulang.
-- Uji `tests/studio/test_tutorial.js`: Kenalan dan Pertemuan 2 lulus jalan penuh. Pertemuan 3 macet: setelah bab berikutnya dimulai, palet masih mode Bangun saat langkah 2 (blok Chat) dicari. Periksa `siapkan: otak` dan urutan `aturMode`.
-- Belum: Pertemuan 3 sampai 6 diverifikasi jalan penuh, slide .pptx, serial video dengan skill speak (cek profil suara dulu; jangan jalankan sebelum disetujui pengguna).
+- Selesai: `materi/kurikulum.json` (6 pertemuan), mesin `src/tutorial.js` (gelembung bisa digeser, tembus saat menyeret), bab Studio di `src/studio/tutorial-studio.js` (Kenalan dan Pertemuan 2 sampai 6, termasuk putus/sambung kabel, isi RAG, tulis RAG lewat chat, tugas berurutan), tur Ruang Agen (Pertemuan 1). Uji `tests/studio/test_tutorial.js` lulus penuh dan masuk `npm run test:studio:browser`.
+- Belum: slide .pptx dan serial video. Video memakai suara pengguna (skill speak) dan menunggu persetujuan pengguna sebelum audio dibuat.

@@ -46,6 +46,8 @@ Kamu juga memilih titik awal: **Lahan kosong** (ikuti misi dari ESP pertama) ata
 | **Otak** | Merakit papan otak agen dari blok |
 | **Main** | Menjalankan simulasi dan mengobrol dengan agen |
 
+**Tutorial.** Tombol **Tutorial** di bagian atas membuka satu bab per pertemuan: Kenalan dengan studio, lalu Pertemuan 2 sampai 6. Setiap langkah praktik baru selesai saat kamu benar-benar melakukannya, misalnya kabelnya benar-benar tersambung. Gelembung tutorial bisa digeser lewat baris atasnya, dan menjadi tembus saat kamu menyeret supaya tidak menghalangi. Tutup dengan Esc; tutorial yang belum selesai bisa dilanjutkan setelah halaman dimuat ulang.
+
 Jam simulasi tampil di atas. Tombol **II, 1x, 10x, 60x** menjeda atau mempercepat waktu (60x berarti satu jam simulasi per menit). Siang dan malam, cuaca, tanah yang mengering, pakan yang berkurang, dan suhu kandang semuanya bergerak mengikuti jam ini.
 
 ## 3. Mode Bangun: merakit rumah
@@ -113,8 +115,8 @@ Seret blok dari palet ke papan. Tarik kabel dari titik **keluar** (kanan blok) k
 | Kelompok | Blok |
 |---|---|
 | Pemicu | Chat, Telegram, Jadwal (jam tertentu), Pemicu Sensor (saat nilai melewati ambang) |
-| Proses | Guard Masukan (regex, bisa ditambah guard model Llama Guard), Penyamar Data Pribadi, Router (kata kunci atau semantik), Aturan JIKA-MAKA (tanpa AI) |
-| Otak | Agen (persona, model khusus, router hemat, batas langkah), Orkestrator (membagi tugas ke beberapa agen) |
+| Proses | Guard Masukan (regex, bisa ditambah guard model Llama Guard), Penyamar Data Pribadi, Router (kata kunci, semantik, embedding, atau dipilih AI), Aturan JIKA-MAKA (tanpa AI) |
+| Otak | Agen (persona, model khusus, router hemat, batas langkah), Orkestrator (membagi tugas ke beberapa agen, paralel atau berurutan) |
 | Pendukung otak | RAG (dokumen yang dibaca agen), Memori (context window), Guard Aksi (batas aman dan persetujuan manusia) |
 | Alat | Sensor, Aktuator, Kalender, Kalkulator, Cuaca (simulasi atau Open-Meteo nyata), Logger, Kirim Telegram, Jam, Penjadwal |
 | Keluaran | Balas, Kirim ke Telegram, Log |
@@ -162,6 +164,34 @@ Perintah ini dikerjakan kode, bukan AI, dan tercatat di Jejak sebagai CATAT. Has
 | Aturan JIKA-MAKA | Batas aman Guard Aksi juga berlaku untuk aturan buatanmu, misalnya aturan tidak bisa menyalakan pemanas di kandang yang sudah panas |
 
 **Router hemat** (centang di blok Agen): perintah dan pertanyaan yang jelas dikerjakan parser tanpa AI, sehingga lebih cepat dan andal. Matikan untuk melihat AI bekerja sendiri.
+
+**Blok Router.** Klik blok Router lalu atur di Inspektur.
+
+| Cara memilih | Cara kerja | Butuh |
+|---|---|---|
+| Kata kunci | Rute pertama yang kata kuncinya ada di pesan ("siram" juga cocok dengan "siramin") | Tidak ada |
+| Semantik | Kemiripan pesan dengan contoh kalimat tiap rute, di atas ambang keyakinan | Tidak ada |
+| Embedding | Kemiripan makna dengan contoh kalimat | Ollama dan `embeddinggemma`. Tanpa itu, otomatis memakai semantik dan dicatat di Jejak |
+| Dipilih AI | Model AI memilih satu rute dari daftar | Model AI. Tanpa itu, memakai kata kunci |
+
+Setiap rute adalah satu kartu: nama, kata kunci, contoh kalimat, dan aksi.
+
+| Aksi rute | Hasil |
+|---|---|
+| Teruskan | Pesan keluar lewat port rute itu, misalnya ke Agen Kebun |
+| Balas | Dijawab dengan teks tetap lewat port **balas** |
+| Tolak | Ditolak lewat port **balas**. Hanya dipicu kata kunci, dan selalu menang atas rute lain di semua cara memilih |
+
+Pesan yang tidak cocok rute mana pun keluar lewat port **lain**. Saran di papan mengingatkan bila port **balas** belum disambungkan ke blok Balas.
+
+**Blok Orkestrator.**
+
+| Pengaturan | Pilihan |
+|---|---|
+| Pembagian tugas | Sesuai wilayah agen (dari lingkup alatnya), selalu semua agen, atau dipilih AI (tanpa model AI: sesuai wilayah) |
+| Strategi | Otomatis: berurutan bila pesan memuat "lalu", "kemudian", "setelah", dan sejenisnya. Paralel: semua agen terpilih mengerjakan tugas yang sama. Berurutan: tugas dipecah per tahap, dan "A setelah B" berarti B dulu |
+
+Pada strategi berurutan, tiap tahap melihat hasil tahap sebelumnya sebagai data terpisah, bukan sebagai perintah. Contoh: `siram kebun lalu kasih pakan ayam` dikerjakan Agen Kebun dulu, lalu Agen Kandang. Perintah menulis RAG (`ingat ya, ...`) hanya diserahkan ke satu agen, supaya catatan tidak tertulis berkali-kali.
 
 ## 5. Mode Main dan tab-tab
 
