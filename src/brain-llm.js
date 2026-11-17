@@ -461,7 +461,7 @@
     return { model, ms: Date.now() - t0 };
   }
 
-  const api = { pikirAsync, uji, ringkasRiwayat, normalisasi, parseLonggar, GalatOtak };
+  const api = { pikirAsync, uji, ringkasRiwayat, normalisasi, parseLonggar, GalatOtak, panggilModel, cekGuardModel, embed, kosinus };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OtakLLM = api;
 })(typeof window !== 'undefined' ? window : globalThis);
