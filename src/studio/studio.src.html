@@ -140,6 +140,9 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 @media (prefers-reduced-motion: reduce) { .kabel.alir, .msg.ngetik i { animation: none; } }
 #panggung.menyambung #c3d { cursor: crosshair; }
 #panggung.menyambung::after { content: "Klik perangkat tujuan"; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: #161a2e; color: #fff; padding: 4px 12px; border-radius: 99px; font-size: 13px; pointer-events: none; }
+.ragDok { border: 2px solid var(--garis, #161a2e); border-radius: 8px; padding: 6px; margin: 6px 0; display: grid; gap: 4px; background: #fffdf5; }
+.ragDok input, .ragDok textarea { width: 100%; box-sizing: border-box; }
+.ragDok .btn { justify-self: end; }
 </style>
 </head>
 <body>

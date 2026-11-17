@@ -2,7 +2,7 @@
    Setiap blok punya port bertipe. Sambungan hanya boleh antar port bertipe sama:
      pesan       : aliran pesan (pemicu -> proses -> keluaran)
      alat        : blok Alat -> port "alat" pada Agen
-     pengetahuan : blok Rak -> Agen
+     pengetahuan : blok RAG -> Agen
      memori      : blok Memori -> Agen
      pengaman    : blok Guard Aksi -> Agen
      tugas       : Orkestrator -> Agen pekerja
@@ -25,7 +25,7 @@
     aturan: { kelompok: 'proses', judul: 'Aturan JIKA-MAKA', warna: '#1f9e6e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan']], cfg: { sensor: '', variabel: 'suhu', op: '>', nilai: 30, aktuator: '', aksi: 'nyala', sebaliknya: true }, konsep: 'Otomasi tanpa AI. Untuk keputusan sederhana, aturan lebih cepat, murah, dan pasti daripada AI.' },
     orkestrator: { kelompok: 'otak', judul: 'Orkestrator', warna: '#0f766e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan'], ['tugas', 'tugas']], cfg: { mode: 'otomatis' }, konsep: 'Membagi pesan ke beberapa agen pekerja (multi-agen), lalu menggabungkan jawabannya.' },
     agen: { kelompok: 'otak', judul: 'Agen', warna: '#16a34a', masuk: [['masuk', 'pesan'], ['tugas', 'tugas'], ['alat', 'alat'], ['pengetahuan', 'pengetahuan'], ['memori', 'memori'], ['pengaman', 'pengaman']], keluar: [['keluar', 'pesan']], cfg: { nama: 'Agen Rumah', persona: 'asisten rumah yang ramah', model: '', hemat: true, maksLangkah: 4 }, konsep: 'Otak yang berpikir dengan model AI (atau parser) dan memanggil alat yang tersambung ke port "alat".' },
-    rak: { kelompok: 'pendukung', judul: 'Rak Pengetahuan', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah' }, konsep: 'RAG: dokumen yang dicari dan dibaca agen sebelum menjawab.' },
+    rak: { kelompok: 'pendukung', judul: 'RAG', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah' }, konsep: 'RAG (Retrieval-Augmented Generation): dokumen yang dicari dan dibaca agen sebelum menjawab.' },
     memori: { kelompok: 'pendukung', judul: 'Memori', warna: '#9333ea', keluar: [['keluar', 'memori']], cfg: { konteks: 4 }, konsep: 'Context window: beberapa pesan terakhir ikut diingat agen.' },
     guard_aksi: { kelompok: 'pendukung', judul: 'Guard Aksi', warna: '#dc2626', keluar: [['keluar', 'pengaman']], cfg: { batas: true, persetujuan: true }, konsep: 'Batas aman di kode: pemanas di atas 33 C, pompa saat tandon kosong, kipas dan pemanas bersamaan, plus persetujuan manusia untuk aksi berisiko.' },
     alat_sensor: { kelompok: 'alat', judul: 'Alat Sensor', warna: '#0891b2', keluar: [['keluar', 'alat']], cfg: { lingkup: 'semua' }, konsep: 'Tool baca_sensor: membaca sensor lewat ESP.' },
@@ -43,7 +43,7 @@
   };
   const KELOMPOK = { pemicu: 'Pemicu', proses: 'Proses', otak: 'Otak', pendukung: 'Pendukung otak', alat: 'Alat (tool)', keluaran: 'Keluaran' };
 
-  /* Rak pengetahuan bawaan (bisa diedit di inspektur). */
+  /* Dokumen RAG bawaan (bisa diedit di inspektur). */
   const RAK = {
     rumah: [
       { id: 'r_suhu', judul: 'Suhu nyaman rumah', teks: 'Suhu nyaman kamar 24 sampai 28 C. Di atas 29 C nyalakan kipas level 2. Malam hari kipas cukup level 1.' },

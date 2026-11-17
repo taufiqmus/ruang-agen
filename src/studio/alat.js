@@ -272,7 +272,7 @@
   async function laksanakanRencana(r, pesan, k, rak, nodeCfg) {
     const { W, S, st } = k;
     if (r.jenis === 'sapa') return `Halo! Aku ${nodeCfg.nama || 'Agen Rumah'}. ${Object.keys(k.cfgAlat).length ? 'Coba tanya kondisi rumah atau minta nyalakan perangkat.' : 'Aku belum punya alat apa pun. Sambungkan blok Alat ke aku.'}`;
-    if (r.jenis === 'kemampuan') return `Alat yang kupunya: ${Object.keys(k.cfgAlat).map(j => ALAT[j] ? ALAT[j].judul : j).join(', ') || 'belum ada'}${rak.length ? ', ditambah pengetahuan dari rak' : ''}.`;
+    if (r.jenis === 'kemampuan') return `Alat yang kupunya: ${Object.keys(k.cfgAlat).map(j => ALAT[j] ? ALAT[j].judul : j).join(', ') || 'belum ada'}${rak.length ? ', ditambah pengetahuan dari RAG' : ''}.`;
     if (r.jenis === 'tanya_balik') return r.balasan;
     if (r.jenis === 'aksi') {
       if (!k.cfgAlat.alat_aktuator) return 'Aku belum bisa mengatur perangkat. Sambungkan blok Alat Aktuator ke aku.';

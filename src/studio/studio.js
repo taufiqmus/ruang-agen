@@ -224,8 +224,43 @@
   window.addEventListener('keydown', e => {
     if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
     if (e.key === 'Escape' && menyambung) { menyambung = null; panggung.classList.remove('menyambung'); toast('Sambung dibatalkan.'); }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && pilihan && pilihan.startsWith('kabel3d:') && mode === 'bangun') { e.preventDefault(); putuskanKabel(pilihan.slice(8)); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && urung) { e.preventDefault(); kembalikanHapus(); return; }
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    if (!pilihan && !pilihArea) return;
+    e.preventDefault();
+    if (pilihan && pilihan.startsWith('kabel3d:') && mode === 'bangun') putuskanKabel(pilihan.slice(8));
+    else if (pilihan && pilihan.startsWith('p:') && mode === 'bangun') hapusPerangkat(pilihan.slice(2));
+    else if (pilihArea && mode === 'bangun') hapusArea(pilihArea);
+    else if (pilihan && pilihan.startsWith('b:') && mode === 'otak') hapusBlok(pilihan.slice(2));
+    else if (pilihan === 'kabel' && mode === 'otak') { const k = KV.kabelTerpilih(); if (k) { simpanUrung('Kabel papan'); KV.hapusKabel(k); pilihan = null; renderInspektur(); toast('Kabel dihapus. Ctrl+Z untuk mengurungkan.', true); } }
   });
+  /* satu langkah urung untuk penghapusan (tombol maupun keyboard) */
+  let urung = null;
+  function simpanUrung(apa) { urung = { apa, W: salin(W), H: salin(H) }; }
+  function kembalikanHapus() {
+    const u = urung; urung = null;
+    W = I.periksaDunia(u.W).dunia; H = GR.periksaGraf(u.H).graf; syncSim(); simpanDunia(); simpanGraf(); muat3D(); KV.muat(H); renderSaran(); renderPetunjuk(); renderInspektur();
+    toast(u.apa + ' dikembalikan.', true);
+  }
+  function hapusPerangkat(id) {
+    const p = W.perangkat.find(q => q.id === id); if (!p) return;
+    simpanUrung(p.nama);
+    W.perangkat = W.perangkat.filter(q => q.id !== id); W.perangkat.forEach(q => { if (q.daya === id) delete q.daya; if (q.sambung && (q.sambung.esp === id || q.sambung.relay === id)) delete q.sambung; });
+    pilihan = null; D3.pilih(null); W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+    toast(p.nama + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
+  }
+  function hapusArea(id) {
+    const a = W.area.find(x => x.id === id); if (!a) return;
+    simpanUrung('Area ' + a.nama);
+    W.area = W.area.filter(x => x.id !== id); pilihArea = null; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+    toast('Area ' + a.nama + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
+  }
+  function hapusBlok(id) {
+    const b = H.blok.find(x => x.id === id); if (!b) return;
+    simpanUrung('Blok ' + GR.JENIS[b.jenis].judul);
+    KV.hapusBlok(id); pilihan = null; renderInspektur();
+    toast('Blok ' + GR.JENIS[b.jenis].judul + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
+  }
   window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); } });
 
   /* ---------- tab ---------- */
@@ -272,7 +307,7 @@
     num('X', 'x', 0, W.lebar); num('Z', 'z', 0, W.dalam); num('Lebar', 'w', 2, 20); num('Dalam', 'd', 2, 20);
     const terap = () => { a.nama = nama.value; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); };
     nama.onchange = terap;
-    const h = mk('button', 'btn bahaya', 'Hapus area'); h.type = 'button'; h.style.marginTop = '10px'; h.onclick = () => { W.area = W.area.filter(x => x.id !== id); pilihArea = null; terap(); renderInspektur(); }; P.appendChild(h);
+    const h = mk('button', 'btn bahaya', 'Hapus area (Delete)'); h.type = 'button'; h.style.marginTop = '10px'; h.onclick = () => hapusArea(id); P.appendChild(h);
     P.appendChild(mk('div', 'konsep', I.AREA[a.tipe].dinding ? 'Dinding ruang melemahkan sinyal Wi-Fi sekitar 6 dB per dinding yang ditembus.' : 'Area luar tanpa dinding. Butuh ESP tahan cuaca dan sering jauh dari router: pertimbangkan repeater dan panel surya.'));
   }
   function inspekturPerangkat(P, id) {
@@ -315,7 +350,7 @@
       P.appendChild(mk('p', 'note', `Arus ${Kt.arus} mA, daya ${Kt.watt} W.${Kt.berisiko ? ' Termasuk aksi berisiko: agen butuh persetujuanmu bila ada Guard Aksi.' : ''}`));
     }
     const row2 = mk('div', 'baris'); row2.style.marginTop = '10px';
-    const oto = mk('button', 'btn sm', 'Sambung otomatis'), hap = mk('button', 'btn sm bahaya', 'Hapus'); oto.type = hap.type = 'button';
+    const oto = mk('button', 'btn sm', 'Sambung otomatis'), hap = mk('button', 'btn sm bahaya', 'Hapus (Delete)'); oto.type = hap.type = 'button';
     const adaKabel = !!(p.sambung || p.daya), bisaKabel = Kt.kategori !== 'jaringan' && Kt.kategori !== 'daya' && p.jenis !== 'tandon';
     if (bisaKabel) {
       const sb = mk('button', 'btn sm', 'Sambung ke...'); sb.type = 'button'; sb.id = 'sambungKe'; sb.title = 'Lalu klik perangkat tujuan di dunia 3D';
@@ -324,11 +359,50 @@
     }
     if (adaKabel) { const pt = mk('button', 'btn sm', 'Putuskan kabel'); pt.type = 'button'; pt.id = 'putusPerangkat'; pt.onclick = () => { I.putuskan(W, p.id); ubah(); toast('Kabel ' + p.nama + ' diputus.', true); }; row2.appendChild(pt); }
     oto.onclick = () => { if (!I.sambungOtomatis(W, p.id)) toast('Tidak ada ESP, relay, atau pin bebas yang cocok.'); ubah(); };
-    hap.onclick = () => { W.perangkat = W.perangkat.filter(q => q.id !== p.id); W.perangkat.forEach(q => { if (q.daya === p.id) delete q.daya; if (q.sambung && (q.sambung.esp === p.id || q.sambung.relay === p.id)) delete q.sambung; }); pilihan = null; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); };
+    hap.onclick = () => hapusPerangkat(p.id);
     if (bisaKabel && !adaKabel) row2.appendChild(oto);
     row2.appendChild(hap); P.appendChild(row2);
     const konsep = { papan: 'Pin digital hanya tahu 0 dan 1. Pin analog (ADC) membaca tegangan bertingkat. Di ESP32, pin 34 sampai 39 hanya bisa input.', sensor: 'Sensor analog butuh pin ADC. Bila salah pin, ESP membaca angka acak: NaN di simulasi ini.', aktuator: Kt.butuhRelay ? 'Beban besar dikendalikan lewat relay. ESP hanya mengirim sinyal kecil ke relay; relay yang menyambung listrik besar.' : 'Beban kecil boleh langsung ke pin ESP.', jaringan: 'Sinyal Wi-Fi melemah oleh jarak dan dinding. Lingkaran biru menunjukkan jangkauan kira-kira.', daya: 'ESP butuh daya stabil 5 V. Adaptor mati saat listrik padam; baterai dan panel surya tetap menyala.', modul: Kt.kanal ? 'Relay adalah saklar yang digerakkan magnet. Satu modul 4 kanal bisa mengendalikan empat beban.' : 'Tandon menyimpan air untuk pompa.' };
     P.appendChild(mk('div', 'konsep', konsep[Kt.kategori] || ''));
+  }
+  /* Editor RAG: dokumen diedit di draf, baru dipakai agen setelah "Simpan RAG".
+     Tersimpan di browser ini bersama papan otak, dan ikut file proyek saat diekspor. */
+  const drafRAG = {};
+  function editorRAG(P, b, terap) {
+    const c = b.cfg, bawaan = GR.RAK[c.preset] || [];
+    const tersimpan = () => (c.dokumen && c.dokumen.length ? c.dokumen : bawaan).map(d => ({ judul: d.judul, teks: d.teks }));
+    if (!drafRAG[b.id]) drafRAG[b.id] = tersimpan();
+    const D = drafRAG[b.id], beda = () => JSON.stringify(D) !== JSON.stringify(tersimpan());
+    P.appendChild(mk('p', 'note', 'Dokumen di bawah inilah yang dicari agen sebelum menjawab. Ubah, tambah, atau hapus, lalu klik Simpan RAG. Isinya tersimpan di browser ini bersama papan otak, dan ikut file proyek saat diekspor (Proyek).'));
+    const st = mk('div', 'ok'); st.id = 'ragStatus'; P.appendChild(st);
+    const tandai = () => { const b2 = beda(); st.className = b2 ? 'masalah' : 'ok'; st.textContent = b2 ? 'Ada perubahan yang belum disimpan.' : `Tersimpan: ${D.length} dokumen${c.dokumen && c.dokumen.length ? '' : ' (bawaan ' + c.preset + ')'}.`; simpan.disabled = !b2; };
+    const daftar = mk('div', 'ragDaftar'); P.appendChild(daftar);
+    D.forEach((d, i) => {
+      const kartu = mk('div', 'ragDok');
+      const j = mk('input'); j.type = 'text'; j.maxLength = 50; j.value = d.judul; j.placeholder = 'Judul'; j.className = 'ragJudul'; j.oninput = () => { d.judul = j.value; tandai(); };
+      const t = mk('textarea'); t.maxLength = 400; t.rows = 3; t.value = d.teks; t.placeholder = 'Isi dokumen (maksimal 400 huruf)'; t.className = 'ragIsi'; t.oninput = () => { d.teks = t.value; tandai(); };
+      const h = mk('button', 'btn sm', 'Hapus'); h.type = 'button'; h.onclick = () => { D.splice(i, 1); renderInspektur(); };
+      kartu.append(j, t, h); daftar.appendChild(kartu);
+    });
+    const baris = mk('div', 'baris'); baris.style.marginTop = '8px'; P.appendChild(baris);
+    const tambah = mk('button', 'btn sm', 'Tambah dokumen'); tambah.type = 'button'; tambah.id = 'ragTambah'; tambah.disabled = D.length >= 16;
+    tambah.onclick = () => { D.push({ judul: '', teks: '' }); renderInspektur(); const js = $$('#inspektur .ragJudul'); if (js.length) js[js.length - 1].focus(); };
+    const simpan = mk('button', 'btn sm pri', 'Simpan RAG'); simpan.type = 'button'; simpan.id = 'ragSimpan';
+    simpan.onclick = () => {
+      const bersih = D.filter(d => d.judul.trim() && d.teks.trim()).map(d => ({ judul: d.judul.trim(), teks: d.teks.trim() }));
+      if (D.length && !bersih.length) { toast('Isi judul dan isi dokumen dulu.'); return; }
+      c.dokumen = bersih; terap(); drafRAG[b.id] = tersimpan(); renderInspektur(); toast(`RAG disimpan: ${bersih.length} dokumen.`, true);
+    };
+    const batal = mk('button', 'btn sm', 'Batalkan perubahan'); batal.type = 'button'; batal.onclick = () => { drafRAG[b.id] = tersimpan(); renderInspektur(); };
+    baris.append(tambah, simpan, batal);
+    P.appendChild(mk('p', 'note', 'Maksimal 16 dokumen, masing-masing 400 huruf. Dokumen yang judul atau isinya kosong tidak disimpan.'));
+    const pr = field(P, 'Atau mulai dari dokumen bawaan', pilihanEl([['', '(pilih)']].concat(Object.keys(GR.RAK).map(k => [k, k])), ''));
+    pr.onchange = () => { if (!pr.value) return; c.preset = pr.value; c.dokumen = []; terap(); drafRAG[b.id] = tersimpan(); renderInspektur(); toast('RAG memakai dokumen bawaan ' + pr.value + '.', true); };
+    // uji pencarian: melihat dokumen mana yang akan dibaca agen untuk sebuah pertanyaan
+    const uji = field(P, 'Uji pencarian (dokumen mana yang dibaca agen?)', mk('input')); uji.type = 'text'; uji.placeholder = 'misalnya: gimana cara hemat listrik?'; uji.id = 'ragUji';
+    const hasil = mk('ul', 'note'); hasil.id = 'ragHasil'; P.appendChild(hasil);
+    uji.onchange = () => { hasil.replaceChildren(); const h = window.Manual.cari(uji.value, tersimpan().map((d, i) => ({ id: 'd' + i, ...d })), 3, 0.4); if (!h.length) hasil.appendChild(mk('li', '', 'Tidak ada dokumen yang cocok: agen akan mengaku belum tahu.')); h.forEach(x => hasil.appendChild(mk('li', '', `${x.judul} (skor ${x.skor})`))); };
+    tandai();
   }
   function inspekturBlok(P, id) {
     const b = H.blok.find(x => x.id === id); if (!b) { pilihan = null; return renderInspektur(); }
@@ -365,16 +439,10 @@
       ta.value = (c.rute || []).map(r => `${r.nama}: ${r.kata.join(', ')}${r.contoh.length ? ' | ' + r.contoh.join('; ') : ''}`).join('\n');
       ta.onchange = () => { c.rute = ta.value.split('\n').filter(x => x.includes(':')).map(l => { const [n, isi] = l.split(/:(.*)/s); const [kata, contoh] = (isi || '').split('|'); return { nama: n.trim(), kata: (kata || '').split(',').map(s => s.trim()).filter(Boolean), contoh: (contoh || '').split(';').map(s => s.trim()).filter(Boolean) }; }); terap(); renderInspektur(); };
     }
-    if (b.jenis === 'rak') {
-      pilihF('Rak bawaan', 'preset', Object.keys(GR.RAK).map(k => [k, k]));
-      const ta = field(P, 'Dokumen sendiri (satu per baris: judul: isi). Kosong = rak bawaan', mk('textarea'));
-      ta.value = (c.dokumen || []).map(d => `${d.judul}: ${d.teks}`).join('\n');
-      ta.onchange = () => { c.dokumen = ta.value.split('\n').filter(x => x.includes(':')).map(l => { const [j, t] = l.split(/:(.*)/s); return { judul: j.trim(), teks: (t || '').trim() }; }); terap(); };
-      const isi = (c.dokumen && c.dokumen.length ? c.dokumen : GR.RAK[c.preset] || []); const ul = mk('ul', 'note'); isi.forEach(d => ul.appendChild(mk('li', '', d.judul + ': ' + potong(d.teks, 90)))); P.appendChild(ul);
-    }
+    if (b.jenis === 'rak') editorRAG(P, b, terap);
     const masuk = H.kabel.filter(k => k.ke === id).map(k => `${k.dari} (${k.portKe})`), keluar = H.kabel.filter(k => k.dari === id).map(k => `${k.ke} (${k.port})`);
     P.appendChild(mk('p', 'note', `Masuk dari: ${masuk.join(', ') || '-'}. Keluar ke: ${keluar.join(', ') || '-'}.`));
-    const h = mk('button', 'btn bahaya', 'Hapus blok'); h.type = 'button'; h.style.marginTop = '8px'; h.onclick = () => { KV.hapusBlok(id); pilihan = null; renderInspektur(); }; P.appendChild(h);
+    const h = mk('button', 'btn bahaya', 'Hapus blok (Delete)'); h.type = 'button'; h.style.marginTop = '8px'; h.onclick = () => hapusBlok(id); P.appendChild(h);
   }
 
   /* ---------- menjalankan papan otak ---------- */

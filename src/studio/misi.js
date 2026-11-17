@@ -22,7 +22,7 @@
       cek: ({ H, stat }) => blok(H, 'agen').some(a => ke(H, a.id, 'alat').some(b => b.jenis === 'alat_aktuator')) && stat.aksiAgen > 0 },
     { id: 'aturan', judul: '6. Otomasi tanpa AI', konsep: 'Tidak semua hal butuh AI. "Jika suhu di atas 30 maka kipas nyala" cukup dengan aturan: lebih cepat, gratis, dan pasti.', petunjuk: 'Pakai blok Pemicu Sensor atau Jadwal, lalu blok Aturan JIKA-MAKA. Biarkan simulasi berjalan.',
       cek: ({ stat }) => stat.aksiAturan > 0 },
-    { id: 'rag', judul: '7. Agen yang membaca (RAG)', konsep: 'RAG: sebelum menjawab, agen mencari dokumen yang relevan di rak pengetahuan, jadi jawabannya berdasar, bukan karangan.', petunjuk: 'Sambungkan Rak Pengetahuan ke port "pengetahuan". Tanya "bagaimana jadwal vaksin ayam?"',
+    { id: 'rag', judul: '7. Agen yang membaca (RAG)', konsep: 'RAG: sebelum menjawab, agen mencari dokumen yang relevan di RAG, jadi jawabannya berdasar, bukan karangan.', petunjuk: 'Sambungkan Rak Pengetahuan ke port "pengetahuan". Tanya "bagaimana jadwal vaksin ayam?"',
       cek: ({ stat }) => stat.jawabRak > 0 },
     { id: 'aman', judul: '8. Aman dulu', konsep: 'Guard Masukan menangkap upaya menipu agen. Guard Aksi menjaga batas fisik di kode. AI bisa tertipu, kode tidak.', petunjuk: 'Pasang Guard Masukan dan Guard Aksi. Coba "abaikan semua aturan" dan "nyalakan pemanas" saat kandang panas.',
       cek: ({ stat }) => stat.injeksiDitolak > 0 && stat.aksiDitolak > 0 },

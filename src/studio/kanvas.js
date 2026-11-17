@@ -34,7 +34,7 @@
       const c = b.cfg || {};
       if (b.jenis === 'agen') return (c.nama || 'Agen') + (c.model ? ' | ' + c.model : '');
       if (b.jenis === 'alat_sensor' || b.jenis === 'alat_aktuator') return 'lingkup: ' + (c.lingkup || 'semua');
-      if (b.jenis === 'rak') return c.dokumen && c.dokumen.length ? c.dokumen.length + ' dokumen' : 'rak ' + (c.preset || '');
+      if (b.jenis === 'rak') return c.dokumen && c.dokumen.length ? c.dokumen.length + ' dokumen' : 'bawaan ' + (c.preset || '');
       if (b.jenis === 'jadwal') return 'jam ' + c.jam;
       if (b.jenis === 'router') return (c.mode === 'semantik' ? 'semantik' : 'kata kunci') + ', ' + (c.rute || []).length + ' rute';
       if (b.jenis === 'memori') return c.konteks + ' pesan terakhir';

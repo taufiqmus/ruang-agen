@@ -34,9 +34,9 @@
       "judul": "Aturan atau AI? Dan agen yang membaca",
       "aplikasi": "Studio Rumah Agen",
       "misi": [6, 7],
-      "konsep": ["aturan JIKA-MAKA tanpa AI", "kapan AI memang dibutuhkan", "RAG: mencari di rak pengetahuan sebelum menjawab", "agen jujur saat tidak tahu"],
-      "label": ["Aturan JIKA-MAKA", "Pemicu Sensor", "Rak Pengetahuan"],
-      "tujuan": "Membandingkan otomasi berbasis aturan dengan agen AI, dan memberi agen pengetahuan dari rak."
+      "konsep": ["aturan JIKA-MAKA tanpa AI", "kapan AI memang dibutuhkan", "RAG: mencari dokumen sebelum menjawab", "agen jujur saat tidak tahu"],
+      "label": ["Aturan JIKA-MAKA", "Pemicu Sensor", "RAG"],
+      "tujuan": "Membandingkan otomasi berbasis aturan dengan agen AI, dan memberi agen pengetahuan lewat RAG."
     },
     {
       "no": 5,

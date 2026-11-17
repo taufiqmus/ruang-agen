@@ -1,6 +1,6 @@
 # Studio Rumah Agen
 
-Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor, relay, kabel, Wi-Fi), lalu rakit otak agennya dengan menyeret blok: pemicu, guard, router, orkestrator, agen, rak pengetahuan, memori, dan alat. Agen yang sama bisa kamu ajak bicara di chat atau lewat bot Telegram sungguhan dari HP.
+Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor, relay, kabel, Wi-Fi), lalu rakit otak agennya dengan menyeret blok: pemicu, guard, router, orkestrator, agen, RAG, memori, dan alat. Agen yang sama bisa kamu ajak bicara di chat atau lewat bot Telegram sungguhan dari HP.
 
 ## 1. Membuka studio
 
@@ -114,7 +114,7 @@ Seret blok dari palet ke papan. Tarik kabel dari titik **keluar** (kanan blok) k
 | Pemicu | Chat, Telegram, Jadwal (jam tertentu), Pemicu Sensor (saat nilai melewati ambang) |
 | Proses | Guard Masukan (regex, bisa ditambah guard model Llama Guard), Penyamar Data Pribadi, Router (kata kunci atau semantik), Aturan JIKA-MAKA (tanpa AI) |
 | Otak | Agen (persona, model khusus, router hemat, batas langkah), Orkestrator (membagi tugas ke beberapa agen) |
-| Pendukung otak | Rak Pengetahuan (RAG), Memori (context window), Guard Aksi (batas aman dan persetujuan manusia) |
+| Pendukung otak | RAG (dokumen yang dibaca agen), Memori (context window), Guard Aksi (batas aman dan persetujuan manusia) |
 | Alat | Sensor, Aktuator, Kalender, Kalkulator, Cuaca (simulasi atau Open-Meteo nyata), Logger, Kirim Telegram, Jam, Penjadwal |
 | Keluaran | Balas, Kirim ke Telegram, Log |
 
@@ -128,6 +128,15 @@ Seret blok dari palet ke papan. Tarik kabel dari titik **keluar** (kanan blok) k
 | Hijau tua | Tugas dari orkestrator ke agen pekerja |
 
 Setiap blok punya kartu konsep di Inspektur. **Saran** di pojok kanan atas papan memberi tahu bila ada yang kurang, misalnya agen tanpa alat, aktuator tanpa Guard Aksi (mode rentan), atau Telegram tanpa Guard Masukan. **Papan siap pakai** di palet: Chatbot pertama, Agen rumah lengkap, dan Multi-agen (Agen Rumah, Agen Kebun, Agen Kandang).
+
+**Mengisi RAG.** Klik blok RAG, lalu di Inspektur:
+1. Ubah judul dan isi dokumen yang ada, klik **Tambah dokumen** untuk dokumen baru, atau **Hapus** untuk membuangnya.
+2. Klik **Simpan RAG**. Sebelum disimpan, agen masih memakai isi lama dan status menulis "Ada perubahan yang belum disimpan". **Batalkan perubahan** mengembalikan isi terakhir yang tersimpan.
+3. Ketik pertanyaan di **Uji pencarian** untuk melihat dokumen mana yang akan dibaca agen. Bila tidak ada yang cocok, agen akan mengaku belum tahu.
+
+Isi RAG tersimpan di browser ini bersama papan otak, dan ikut file proyek saat diekspor lewat **Proyek**. Batasnya 16 dokumen, masing-masing 400 huruf. **Atau mulai dari dokumen bawaan** mengganti isinya dengan kumpulan bawaan (rumah, kebun, ternak).
+
+**Menghapus dengan keyboard.** Pilih perangkat, area, kabel, atau blok, lalu tekan **Delete** (atau Backspace). **Ctrl+Z** mengembalikan hapusan terakhir.
 
 **Alat berlingkup.** Alat Sensor dan Alat Aktuator punya lingkup wilayah: semua area, semua ruang di dalam rumah, atau satu area. Agen kebun tidak bisa menyalakan kipas kandang, sehingga tugas terbagi jelas.
 

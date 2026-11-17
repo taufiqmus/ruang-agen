@@ -149,7 +149,7 @@ const srvTg = http.createServer((q, r) => {
   r = await kirim('nyalakan kipas kandang');
   cek('Guard Aksi: kipas dan pemanas tidak boleh bersamaan', /bersamaan/.test(r), r);
   r = await kirim('bagaimana cara hemat listrik?');
-  cek('RAG: menjawab dari rak pengetahuan', /Hemat listrik/.test(r), r);
+  cek('RAG: menjawab dari dokumen RAG', /Hemat listrik/.test(r), r);
   await page.click('#palet .btn:has-text("Multi-agen")');
   r = await kirim('siram kebun dong');
   cek('multi-agen: orkestrator menyerahkan ke Agen Kebun, pompa menyala', /Agen Kebun/.test(r) && (await ST()).alat.pompa_kebun.on, r);
