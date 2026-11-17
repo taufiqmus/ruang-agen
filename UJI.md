@@ -109,9 +109,24 @@ Hasil akhir model lokal 1,5B dengan prompt dari data (prompt ringkas, CPU, 17 No
 
 JSON valid 100 persen berkat grammar.
 
-### 4.4 Ollama (`qwen2.5:3b`, pernah diuji)
+### 4.4 Ollama
 
-JSON valid 20 dari 20, perilaku benar 19 dari 22. Tanpa `OLLAMA_ORIGINS`, halaman `file://` dan `https://*.github.io` ditolak HTTP 403 (hanya origin `localhost` diterima).
+Diuji ulang setelah refactor semesta (17 November 2026): Ollama 0.40.16 versi portable di folder sementara drive D (dihapus setelah uji), model `qwen2.5:1.5b`, GPU RTX 3060. Waktu per panggilan model 0,35 sampai 0,8 detik.
+
+| Ruang | Tanpa router hemat | Dengan router hemat |
+|---|---|---|
+| Lab (28 pesan) | 15 dari 28 | 25 dari 28 (5 panggilan model) |
+| Kafe (7) | 6 dari 7 | 7 dari 7 |
+| Studio (6) | 6 dari 6 | 6 dari 6 |
+| Perpustakaan (6) | 5 dari 6 | 6 dari 6 |
+| Dapur (6) | 4 dari 6 | 6 dari 6 |
+| Kebun (6) | 3 dari 6 | 6 dari 6 |
+
+Dari browser (`test_browser_live.js` dengan `OLLAMA=1`, router hemat hidup):
+- Tanpa `OLLAMA_ORIGINS`: halaman `http://localhost` lulus semua (Tes koneksi, pesan dikenal ke parser, pesan baru ke Ollama sungguhan). Halaman `file://` ditolak Ollama (preflight 403), dan game jatuh ke parser dengan pesan yang menyebut `OLLAMA_ORIGINS`, tanpa galat JS. Origin `http://127.0.0.1:8000` dan `http://localhost:8000` (alamat `MULAI.bat`) diterima tanpa pengaturan.
+- Dengan `OLLAMA_ORIGINS=*`: kedua asal halaman lulus semua.
+
+Sebelumnya `qwen2.5:3b` (22 pesan): JSON valid 20 dari 20, perilaku benar 19 dari 22.
 
 ### 4.5 Tampilan
 

@@ -16,7 +16,7 @@ async function jalankan(nama, url, browser) {
   console.log('\n--- asal halaman:', nama);
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
   await ctx.route(/three(\.min)?\.js/, r => r.fulfill({ path: THREE, contentType: 'application/javascript' }));
-  await ctx.addInitScript(([k, oll, lok]) => { localStorage.setItem('ruangagen-otak', JSON.stringify(lok ? { mode: 'lokal', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true } : oll ? { mode: 'ollama', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', hemat: false } : { mode: 'kunci', apiKey: k, models: 'openrouter/free', batasSesi: 30 })); }, [KUNCI, OLL, LOK]);
+  await ctx.addInitScript(([k, oll, lok]) => { localStorage.setItem('ruangagen-otak', JSON.stringify(lok ? { mode: 'lokal', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true } : oll ? { mode: 'ollama', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', hemat: true } : { mode: 'kunci', apiKey: k, models: 'openrouter/free', batasSesi: 30 })); }, [KUNCI, OLL, LOK]);
   const page = await ctx.newPage();
   const galat = []; page.on('pageerror', e => galat.push(String(e)));
   const reqOR = []; page.on('response', r => { if (r.url().startsWith(LOK ? 'http://localhost:8000/' : OLL ? 'http://localhost:11434/' : 'https://openrouter.ai/')) reqOR.push(r.status()); });
@@ -34,7 +34,7 @@ async function jalankan(nama, url, browser) {
   cek('Tes koneksi dari browser berhasil', /Berhasil/.test(tes), tes);
 
   await page.evaluate(() => window.__ruangAgen.mulaiMisi(3));
-  if (LOK) {
+  if (LOK || OLL) {
     const base = reqOR.length;
     await kirim('bikin nyaman dong');
     const jh = (await jejak()).join('\n');
@@ -43,7 +43,7 @@ async function jalankan(nama, url, browser) {
     await kirim('hawanya bikin ngantuk');
     const jl = (await jejak()).join('\n');
     console.log('   balasan model lokal:', (await balasan()).replace(/\s+/g, ' ').slice(0, 160));
-    cek('pesan baru diteruskan ke model lokal nyata dan dijawab (bukan cadangan parser)', /Otak: LLM lokal:/.test(jl) && reqOR.length === base + 1, { reqOR, otak: jl.split('\n').filter(x => /OTAK/.test(x)) });
+    cek('pesan baru diteruskan ke model lokal nyata dan dijawab (bukan cadangan parser)', /Otak: LLM (lokal|ollama):/.test(jl) && reqOR.length === base + 1, { reqOR, otak: jl.split('\n').filter(x => /OTAK/.test(x)) });
     await page.evaluate(() => window.__ruangAgen.mulaiMisi(3));
   }
   await kirim('bikin nyaman dong');
