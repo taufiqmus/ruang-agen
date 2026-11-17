@@ -189,6 +189,12 @@ const srvTg = http.createServer((q, r) => {
   await new Promise(r => setTimeout(r, 300));
   cek('pesan Telegram dijawab agen dan dikirim balik lewat sendMessage', tg.kirim.some(k => k.chat_id === '555' && /suhu/.test(k.text)), tg.kirim.map(k => k.text));
   cek('token tidak muncul di jejak', !(await page.textContent('#jejak')).includes('AAHdq'));
+  tg.antre.push({ update_id: 12, message: { chat: { id: 555 }, from: { username: 'pemilik' }, text: 'nyalakan pemanas kandang', date: 3 } });
+  await page.waitForSelector('#setujuTidak', { timeout: 15000 });
+  await new Promise(r => setTimeout(r, 300));
+  cek('aksi berisiko dari Telegram: pengirim diberi tahu butuh persetujuan di laptop', tg.kirim.some(k => k.chat_id === '555' && /persetujuan pemilik/.test(k.text)) && /dari Telegram/.test(await page.textContent('#chatlog')), tg.kirim.map(k => k.text));
+  await page.click('#setujuTidak');
+  await page.waitForFunction(() => !document.querySelector('#kirim').disabled, null, { timeout: 15000 });
   tg.konflik = true;
   await page.waitForFunction(() => /bentrok/.test(document.querySelector('#tgStatus').textContent), null, { timeout: 8000 });
   cek('409: bentrok dijelaskan', /409/.test(await page.textContent('#tgStatus')));
@@ -220,7 +226,18 @@ const srvTg = http.createServer((q, r) => {
   await page.reload(); await page.waitForTimeout(1500);
   cek('rumah dan papan otak tersimpan setelah muat ulang, wizard tidak muncul lagi', (await ST()).H.blok.length === blokSebelum && (await ST()).W.perangkat.length > 10 && await page.isHidden('#wizard'));
 
-  /* 10. layar HP */
+  /* 10. wizard dibuka ulang dan preset tidak menghapus rakitan tanpa jalan kembali */
+  const sebelumW = JSON.stringify((await ST()).W), sebelumH = JSON.stringify((await ST()).H);
+  await page.click('#btnWizard'); await page.waitForSelector('#wizardMulai');
+  cek('wizard dibuka ulang: pilihan bawaan "pertahankan rumah dan papanku"', /Pertahankan rumah dan papanku/.test(await page.textContent('#wizardIsi')) && (await page.getAttribute('#wizardIsi .pilihan button[data-v="tetap"]', 'aria-pressed')) === 'true');
+  await page.click('#wizardIsi .pilihan button[data-v="parser"]'); await page.click('#wizardMulai');
+  cek('ganti model lewat wizard tidak mengubah rumah dan papan', JSON.stringify((await ST()).W) === sebelumW && JSON.stringify((await ST()).H) === sebelumH && /parser/.test(await page.textContent('#lencanaOtak')));
+  await page.click('[data-mode="otak"]'); await page.click('#palet .btn:has-text("Chatbot pertama")');
+  cek('preset papan menimpa, tetapi ada tombol Kembalikan', (await ST()).H.blok.length === 3 && await page.isVisible('#chatlog .kembalikan'));
+  await page.click('[data-tab="chat"]'); await page.click('#chatlog .kembalikan >> nth=-1');
+  cek('Kembalikan memulihkan papan sebelumnya', JSON.stringify((await ST()).H.blok.map(b => b.id)) === JSON.stringify(JSON.parse(sebelumH).blok.map(b => b.id)));
+
+  /* 11. layar HP */
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400);
   const lebar = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
   cek('layar 390 px: tanpa gulir ke samping', lebar.sw <= lebar.iw + 1, lebar);

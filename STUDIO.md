@@ -20,7 +20,7 @@ Saat pertama dibuka, studio memeriksa laptopmu (jumlah inti CPU, RAM, kartu graf
 | Model lokal Python | Laptop tanpa Ollama, lewat `MULAI.bat` |
 | OpenRouter | Model besar lewat internet, kunci gratis milikmu sendiri |
 
-Kamu juga memilih titik awal: **Lahan kosong** (ikuti misi dari ESP pertama) atau **Rumah, kebun, dan kandang** (rumah siap pakai untuk dijelajahi). Pilihan model bisa diubah kapan saja di tab **Model**, dan wizard bisa dibuka lagi lewat tombol **Pilih model**.
+Kamu juga memilih titik awal: **Lahan kosong** (ikuti misi dari ESP pertama) atau **Rumah, kebun, dan kandang** (rumah siap pakai untuk dijelajahi). Pilihan model bisa diubah kapan saja di tab **Model**, dan wizard bisa dibuka lagi lewat tombol **Pilih model** (pilihan bawaannya mempertahankan rumah dan papanmu). Setiap kali preset menimpa rumah atau papan, chat menampilkan tombol **Kembalikan yang tadi**.
 
 ## 2. Tiga mode
 
@@ -100,9 +100,10 @@ Setiap blok punya kartu konsep di Inspektur. **Saran** di pojok kanan atas papan
 | Penjaga | Isi |
 |---|---|
 | Guard Aksi | Level di luar batas ditolak. Pemanas dilarang di atas 33 C. Pompa dilarang saat tandon hampir kosong. Kipas dan pemanas tidak boleh menyala bersamaan di area yang sama |
-| Persetujuan manusia | Aksi berisiko (pemanas, kunci pintu) menunggu tombol **Setujui** |
+| Persetujuan manusia | Aksi berisiko (pemanas, kunci pintu) menunggu tombol **Setujui**. Untuk pesan dari Telegram, pengirim diberi tahu dan persetujuan kedaluwarsa setelah 75 detik (dianggap ditolak) |
 | Klaim tanpa aksi | Bila AI mengaku sudah menyalakan sesuatu padahal tidak memanggil alat, jawabannya diberi catatan "tidak ada perangkat yang benar-benar diubah" |
-| Batas eksekusi | Maksimal 30 langkah dan 8 panggilan AI per pesan |
+| Batas eksekusi | Maksimal 30 langkah dan 8 panggilan AI per pesan. Pesan diproses satu per satu |
+| Aturan JIKA-MAKA | Batas aman Guard Aksi juga berlaku untuk aturan buatanmu, misalnya aturan tidak bisa menyalakan pemanas di kandang yang sudah panas |
 
 **Router hemat** (centang di blok Agen): perintah dan pertanyaan yang jelas dikerjakan parser tanpa AI, sehingga lebih cepat dan andal. Matikan untuk melihat AI bekerja sendiri.
 

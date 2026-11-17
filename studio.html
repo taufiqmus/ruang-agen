@@ -3165,6 +3165,9 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
         const nyala = kena ? c.aksi !== 'mati' : (c.sebaliknya ? c.aksi === 'mati' : null);
         jejak('pikir', `Aturan: ${c.variabel} ${x} ${c.op} ${c.nilai}? ${kena ? 'ya' : 'tidak'}.`, id);
         let teksH = `${sen.nama}: ${c.variabel} ${x}. `;
+        // guard aksi juga berlaku untuk aturan: batas aman diperiksa di kode, bukan diserahkan ke pembuat aturan
+        const g = nyala ? A().cekGuardAksi(ctx.W, ctx.S, I.status(ctx.W, ctx.S), akt, true, null) : null;
+        if (g) { jejak('guard', `Guard aksi menolak aturan: ${g}`, id); return kirim(id, 'keluar', Object.assign({}, msg, { teks: (teksH + `${akt.nama} tidak dinyalakan: ${g}`).trim() })); }
         if (nyala !== null) { const a = I.aturAktuator(ctx.W, ctx.S, akt.id, nyala); teksH += a.ok ? `${akt.nama} ${nyala ? 'dinyalakan' : 'dimatikan'}.` : `${akt.nama} gagal: ${a.alasan}.`; if (a.ok) (hasil.aksi = hasil.aksi || []).push({ perangkat: akt.id, nyala }); jejak('aksi', teksH, id); }
         return kirim(id, 'keluar', Object.assign({}, msg, { teks: teksH.trim() }));
       }
@@ -3912,7 +3915,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   let H = GR.periksaGraf(param.get('graf') ? salin(GR.GRAF_PRESET[param.get('graf')] || GR.GRAF_PRESET.agen_rumah) : baca(K.graf, salin(GR.GRAF_PRESET.agen_rumah))).graf;
   let S = I.buatSim(W, { mulai: +(param.get('jam') || 7) * 60 });
   let st = I.status(W, S);
-  const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: location.origin + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
+  const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: (/^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:8000') + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
   const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, ekspor: 0 }, baca(K.stat, {}));
   const misiSelesai = new Set(baca(K.misi, []));
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
@@ -3929,11 +3932,13 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     li.appendChild(document.createTextNode(txt)); const log = $('#chatlog'); log.appendChild(li); log.scrollTop = log.scrollHeight; return li;
   }
   function ngetik(on) { const ada = $('#chatlog .ngetik'); if (!on) { if (ada) ada.remove(); return; } if (ada) return; const li = mk('li', 'msg agen ngetik'); li.appendChild(mk('span', 'who', 'Agen')); for (let i = 0; i < 3; i++) li.appendChild(mk('i')); $('#chatlog').appendChild(li); }
-  function setuju(teks) {
+  function setuju(teks, batasMs) {
     return new Promise(res => {
       const li = chat('sis', 'Persetujuan diperlukan: ' + teks); const row = mk('div', 'baris'); row.style.marginTop = '6px';
       const ya = mk('button', 'btn sm pri', 'Setujui'), tidak = mk('button', 'btn sm', 'Tolak'); ya.type = tidak.type = 'button'; ya.id = 'setujuYa'; tidak.id = 'setujuTidak';
-      const selesai = v => { ya.disabled = tidak.disabled = true; ya.removeAttribute('id'); tidak.removeAttribute('id'); li.appendChild(document.createTextNode(v ? ' Disetujui.' : ' Ditolak.')); res(v); };
+      let beres = false;
+      const selesai = (v, ket) => { if (beres) return; beres = true; ya.disabled = tidak.disabled = true; ya.removeAttribute('id'); tidak.removeAttribute('id'); li.appendChild(document.createTextNode(ket || (v ? ' Disetujui.' : ' Ditolak.'))); res(v); };
+      if (batasMs) setTimeout(() => selesai(false, ' Kedaluwarsa (tidak dijawab), dianggap ditolak.'), batasMs);
       ya.onclick = () => selesai(true); tidak.onclick = () => selesai(false); row.append(ya, tidak); li.appendChild(row);
       tab('chat');
     });
@@ -4009,7 +4014,14 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       for (const j of Object.keys(I.KATALOG).filter(j => I.KATALOG[j].kategori === kat)) p.appendChild(itemPalet(I.KATALOG[j].nama, IKON[kat], kat.slice(0, 2).toUpperCase(), 'alat:' + j, Math.round(I.KATALOG[j].harga / 1000) + 'k'));
     }
   }
-  const confirmGanti = () => true;   // tanpa dialog (dialog browser memblokir); papan lama tetap bisa diekspor lebih dulu
+  /* Sebelum menimpa rumah atau papan (preset, wizard), simpan cadangan dan tawarkan tombol Kembalikan. */
+  function cadangkan(apa) {
+    tulis('studio-cadangan', { W: salin(W), H: salin(H) });
+    const li = chat('sis', `${apa} diganti. `); const b = mk('button', 'btn sm', 'Kembalikan yang tadi'); b.type = 'button'; b.className = 'btn sm kembalikan';
+    b.onclick = () => { const c = baca('studio-cadangan', null); if (!c) return; W = I.periksaDunia(c.W).dunia; H = GR.periksaGraf(c.H).graf; S = I.buatSim(W, { mulai: S.menit % 1440 }); simpanDunia(); simpanGraf(); muat3D(); KV.muat(H); renderSaran(); renderPetunjuk(); b.disabled = true; toast('Rumah dan papan otak dikembalikan.', true); };
+    li.appendChild(b);
+  }
+  const confirmGanti = () => { cadangkan('Papan otak'); return true; };
 
   /* ---------- menaruh (seret-lepas atau klik) ---------- */
   function taruh(data, cx, cy) {
@@ -4211,12 +4223,17 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   }
   const kacau = () => S.kekacauan.wifi || S.kekacauan.listrik || !!S.kekacauan.sensorRusak;
   let klien = null;
-  async function jalankanGraf(pemicu, pesan, idPemicu) {
+  /* Satu pesan diproses sampai selesai sebelum pesan berikutnya (chat, Telegram, jadwal) supaya tidak saling mengganggu. */
+  let rantai = Promise.resolve();
+  function jalankanGraf(pemicu, pesan, idPemicu) { const p = rantai.then(() => jalankanGrafInti(pemicu, pesan, idPemicu)); rantai = p.catch(() => null); return p; }
+  async function jalankanGrafInti(pemicu, pesan, idPemicu) {
     const awalPemicu = H.blok.filter(b => b.jenis === pemicu && (!idPemicu || b.id === idPemicu));
     if (!awalPemicu.length) { if (pemicu === 'chat') chat('sis', 'Belum ada blok Chat di papan otak. Buka mode Otak dan seret blok Chat, Agen, dan Balas.'); return null; }
     jejakKe++; const ul = $('#jejak'); ul.appendChild(Object.assign(mk('li', 'k-sep', `Pesan #${jejakKe} (${pesan.sumber}, ${AL.sekarang(S)})`), {}));
     const ctx = {
-      W, S, cfgModel: cfgModel(), riwayat, setuju, kalender: data.kalender, log: data.log, pengingat: data.pengingat,
+      W, S, cfgModel: cfgModel(), riwayat, kalender: data.kalender,
+      // pesan dari Telegram: pemilik mungkin jauh dari laptop, jadi persetujuan dibatasi 75 detik dan pengirim diberi tahu
+      setuju: /^telegram/.test(pesan.sumber) ? async t => { if (klien && pesan.chatId) klien.kirim(pesan.chatId, 'Aksi ini butuh persetujuan pemilik di laptop (maksimal 75 detik): ' + t); return setuju(t + ' (dari Telegram ' + (pesan.nama || '') + ')', 75000); } : t => setuju(t), log: data.log, pengingat: data.pengingat,
       jejak, lewatKabel: k => KV.sorotKabel(k), maksLLM: 8,
       kirimTelegram: klien && klien.izin.size ? t => klien.kirimPemilik(t) : null,
       cekGuardModel: (t, model) => window.OtakLLM.cekGuardModel(t, { ollamaUrl: cfg.ollamaUrl, guardModel: model }),
@@ -4491,6 +4508,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     const ol = await muatOllama();
     let lokal = false; if (/^https?:$/.test(location.protocol)) { try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; } }
     const gpuAsli = gpu && !/swiftshader|llvmpipe|basic render|software/i.test(gpu);
+    if (location.protocol === 'file:') P.appendChild(mk('p', 'note', 'Halaman ini dibuka sebagai berkas. Ollama menolak halaman berkas, jadi bila Ollama terpasang tetapi tidak terdeteksi, buka studio lewat MULAI.bat --tanpa-model --studio.'));
     P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}. Server model lokal: ${lokal ? 'ada' : 'tidak ada'}.`));
     const saranM = ol.find(m => /gemma4:e4b|qwen2\.5:7b/.test(m.nama)) || ol[0];
     const opsi = [
@@ -4505,14 +4523,18 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     opsi.forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === dipilih); b.append(mk('b', '', j + (v === rek ? ' (disarankan)' : '')), mk('small', '', d)); b.onclick = () => { dipilih = v; grid.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid.appendChild(b); });
     P.appendChild(mk('p', 'note', 'Mulai dari mana?'));
     const grid2 = mk('div', 'pilihan'); P.appendChild(grid2);
-    let mulai = 'lengkap';
-    [['kosong', 'Lahan kosong', 'Ikuti misi dari ESP pertama. Paling bagus untuk belajar.'], ['lengkap', 'Rumah, kebun, kandang', 'Rumah siap pakai untuk dijelajahi dan diubah.']].forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === mulai); b.append(mk('b', '', j), mk('small', '', d)); b.onclick = () => { mulai = v; grid2.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid2.appendChild(b); });
+    const pernah = baca(K.wizard, false);
+    let mulai = pernah ? 'tetap' : 'lengkap';
+    (pernah ? [['tetap', 'Pertahankan rumah dan papanku', 'Hanya ganti model, rakitanmu tidak berubah.']] : []).concat([['kosong', 'Lahan kosong', 'Ikuti misi dari ESP pertama. Paling bagus untuk belajar.'], ['lengkap', 'Rumah, kebun, kandang', 'Rumah siap pakai untuk dijelajahi dan diubah.']]).forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === mulai); b.append(mk('b', '', j), mk('small', '', d)); b.onclick = () => { mulai = v; grid2.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid2.appendChild(b); });
     const ok = mk('button', 'btn pri', 'Mulai'); ok.type = 'button'; ok.id = 'wizardMulai'; P.appendChild(ok);
     ok.onclick = () => {
       cfg.mode = dipilih; if (dipilih === 'ollama' && saranM) cfg.ollamaModel = saranM.nama; simpanCfg();
-      if (mulai === 'kosong') { W = I.periksaDunia(salin(I.PRESET.kosong)).dunia; H = GR.periksaGraf(salin(GR.GRAF_PRESET.kosong)).graf; }
-      else { W = I.periksaDunia(salin(I.PRESET.rumah_kebun_kandang)).dunia; H = GR.periksaGraf(salin(GR.GRAF_PRESET.agen_rumah)).graf; }
-      S = I.buatSim(W); simpanDunia(); simpanGraf(); muat3D(); D3.resetKamera(); KV.muat(H); renderPetunjuk();
+      if (mulai !== 'tetap') {
+        if (pernah) cadangkan('Rumah dan papan otak');
+        if (mulai === 'kosong') { W = I.periksaDunia(salin(I.PRESET.kosong)).dunia; H = GR.periksaGraf(salin(GR.GRAF_PRESET.kosong)).graf; }
+        else { W = I.periksaDunia(salin(I.PRESET.rumah_kebun_kandang)).dunia; H = GR.periksaGraf(salin(GR.GRAF_PRESET.agen_rumah)).graf; }
+        S = I.buatSim(W); simpanDunia(); simpanGraf(); muat3D(); D3.resetKamera(); KV.muat(H); renderPetunjuk();
+      }
       tulis(K.wizard, true); M.hidden = true; if (dipilih !== 'parser') tab('model');
     };
   }
@@ -4524,7 +4546,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     P.appendChild(mk('h2', '', 'Proyek'));
     P.appendChild(mk('p', 'note', 'Proyek berisi rumah dan papan otak. Token Telegram dan kunci API tidak pernah ikut diekspor.'));
     const g = mk('div', 'pilihan'); P.appendChild(g);
-    Object.keys(I.PRESET).forEach(k => { const b = mk('button'); b.type = 'button'; b.append(mk('b', '', I.PRESET[k].nama), mk('small', '', 'Ganti rumah dengan preset ini')); b.onclick = () => { W = I.periksaDunia(salin(I.PRESET[k])).dunia; S = I.buatSim(W); simpanDunia(); muat3D(); D3.resetKamera(); M.hidden = true; renderPetunjuk(); }; g.appendChild(b); });
+    Object.keys(I.PRESET).forEach(k => { const b = mk('button'); b.type = 'button'; b.append(mk('b', '', I.PRESET[k].nama), mk('small', '', 'Ganti rumah dengan preset ini')); b.onclick = () => { cadangkan('Rumah'); W = I.periksaDunia(salin(I.PRESET[k])).dunia; S = I.buatSim(W); simpanDunia(); muat3D(); D3.resetKamera(); M.hidden = true; renderPetunjuk(); }; g.appendChild(b); });
     const row = mk('div', 'baris');
     const ek = mk('button', 'btn', 'Ekspor proyek'), im = mk('button', 'btn', 'Impor proyek'), tutup = mk('button', 'btn', 'Tutup'); ek.type = im.type = tutup.type = 'button';
     ek.onclick = () => unduh('rumah-agen.json', JSON.stringify({ format: 'studio-rumah-agen/1', dunia: W, graf: H }, null, 2), 'application/json');

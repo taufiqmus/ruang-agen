@@ -108,6 +108,11 @@ const teksAI = t => ({ model: 'tiruan', message: { role: 'assistant', content: t
   await GR.jalankan(G4, 'c', { teks: 'cek', sumber: 'chat' }, c);
   cek('aturan "sebaliknya": suhu turun, kipas mati', !c.S.alat.kipas_kandang.on, out);
 
+  const G4b = GR.periksaGraf({ blok: [{ id: 'c', jenis: 'chat' }, { id: 'a', jenis: 'aturan', cfg: { sensor: 'dht_kandang', variabel: 'suhu', op: '>', nilai: 30, aktuator: 'pemanas_kandang', aksi: 'nyala', sebaliknya: false } }, { id: 'b', jenis: 'balas' }], kabel: [{ dari: 'c', port: 'keluar', ke: 'a', portKe: 'masuk' }, { dari: 'a', port: 'keluar', ke: 'b', portKe: 'masuk' }] }).graf;
+  c = konteks(); out = []; c.keluaran = (j, t) => out.push(t); c.S.area.kandang.suhu = 36;
+  await GR.jalankan(G4b, 'c', { teks: 'cek', sumber: 'chat' }, c);
+  cek('aturan buatan mahasiswa tetap dijaga Guard Aksi: pemanas tidak menyala di 36 C', !c.S.alat.pemanas_kandang.on && /tidak dinyalakan/.test(out[0]) && c.log.some(x => /Guard aksi menolak aturan/.test(x.t)), out);
+
   /* agen AI dengan tool calling (fetch tiruan) */
   c = konteks({ cfgModel: { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 } }); out = []; c.keluaran = (j, t) => out.push(t);
   antrean = [toolCall('baca_sensor', { area: 'kandang' }), toolCall('atur_perangkat', { perangkat: 'kipas_kandang', aksi: 'nyala', level: 9 }), toolCall('atur_perangkat', { perangkat: 'kipas_kandang', aksi: 'nyala', level: 3 }), teksAI('Kandang 33 C, kipas kunyalakan level 3.')]; panggilan = [];

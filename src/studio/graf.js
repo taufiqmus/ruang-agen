@@ -207,6 +207,9 @@
         const nyala = kena ? c.aksi !== 'mati' : (c.sebaliknya ? c.aksi === 'mati' : null);
         jejak('pikir', `Aturan: ${c.variabel} ${x} ${c.op} ${c.nilai}? ${kena ? 'ya' : 'tidak'}.`, id);
         let teksH = `${sen.nama}: ${c.variabel} ${x}. `;
+        // guard aksi juga berlaku untuk aturan: batas aman diperiksa di kode, bukan diserahkan ke pembuat aturan
+        const g = nyala ? A().cekGuardAksi(ctx.W, ctx.S, I.status(ctx.W, ctx.S), akt, true, null) : null;
+        if (g) { jejak('guard', `Guard aksi menolak aturan: ${g}`, id); return kirim(id, 'keluar', Object.assign({}, msg, { teks: (teksH + `${akt.nama} tidak dinyalakan: ${g}`).trim() })); }
         if (nyala !== null) { const a = I.aturAktuator(ctx.W, ctx.S, akt.id, nyala); teksH += a.ok ? `${akt.nama} ${nyala ? 'dinyalakan' : 'dimatikan'}.` : `${akt.nama} gagal: ${a.alasan}.`; if (a.ok) (hasil.aksi = hasil.aksi || []).push({ perangkat: akt.id, nyala }); jejak('aksi', teksH, id); }
         return kirim(id, 'keluar', Object.assign({}, msg, { teks: teksH.trim() }));
       }
