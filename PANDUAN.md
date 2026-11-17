@@ -262,7 +262,7 @@ Aturan penulisan:
 
 Agar ruang baru bisa dipakai guru lain: **Ekspor**, kirim berkas `.json`, lalu **Impor** di komputer lain.
 
-Mengubah ruang bawaan di kode (bukan lewat tab Dunia): edit `RUANG` di `dunia.js`, jalankan `python build.py`, unggah ulang `index.html`.
+Mengubah ruang bawaan di kode (bukan lewat tab Dunia): edit `RUANG` di `src/dunia.js` (atau semesta di `src/semesta.js`), jalankan `python build.py`, unggah ulang `index.html`.
 
 ### Definisi semesta
 

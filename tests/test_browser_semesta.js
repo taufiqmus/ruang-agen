@@ -1,8 +1,9 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji browser untuk semesta: Studio Agen, router buatan, guardrails, kejadian, misi lintas ruang, ekspor dan impor, pipeline.
-   Jaringan ditiru. Pakai: PW=... THREE=... CHROME=... node test_browser_semesta.js */
+   Jaringan ditiru. Pakai: PW=... THREE=... CHROME=... node tests/test_browser_semesta.js */
 const path = require('path'), fs = require('fs'), os = require('os');
-const { chromium } = require(process.env.PW || 'playwright-core');
-const THREE = process.env.THREE, CHROME = process.env.CHROME;
+const { chromium } = require(ALAT.PW);
+const THREE = ALAT.THREE, CHROME = ALAT.CHROME;
 if (!THREE || !CHROME) { console.error('Set THREE dan CHROME.'); process.exit(1); }
 const BASE = 'file:///' + path.resolve('index.html').split(path.sep).join('/');
 let gagal = 0;

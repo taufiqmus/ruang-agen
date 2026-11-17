@@ -72,24 +72,35 @@ Tiap pesan menyalakan tahap yang dilalui dan memerahkan yang menolak. Ini cara m
 
 ## Isi folder
 
+```
+ruang-agen/
+  index.html          game siap pakai (hasil build): klik dua kali, atau unggah ke GitHub Pages
+  MULAI.bat           satu klik: game dan model AI lokal (Windows)
+  mulai.sh            sama, untuk Mac dan Linux
+  README.md  PANDUAN.md  UJI.md
+  build.py            merakit index.html dari src/
+  package.json        perintah uji (npm test) dan alat uji browser
+  src/                kode game
+  server/             server model lokal (Python)
+  tests/              semua uji, dengan tests/vendor/three.min.js untuk uji tanpa internet
+```
+
+Dibuat otomatis dan tidak masuk git: `.venv/` (Python milik MULAI.bat), `model/` (berkas model), `node_modules/` (alat uji).
+
 | Berkas | Fungsi |
 |---|---|
-| `index.html` | Hasil build, satu berkas, siap diunggah ke GitHub Pages |
-| `index.src.html`, `game.js` | Template halaman, alur permainan, misi ruang dan semesta, kejadian, pipeline, tab Dunia, Agen, dan Manual |
-| `dunia.js` | Definisi ruang (data), pemeriksa definisi, fisika suhu dan cahaya, misi deklaratif |
-| `semesta.js` | Semesta: Kampus Nusantara, tiga ruang tambahan (perpustakaan, dapur, kebun), pemeriksa semesta, misi lintas ruang |
-| `adegan.js` | Adegan 3D: material realistis, bayangan, pantulan, mode ringan, totem router dan label agen dari data |
-| `brain.js` | Parser aturan, router (bawaan dan buatan), guardrails (masukan, aksi, interlock, keluaran), memori, pembagian tugas. Membaca semesta dan ruang aktif |
-| `manual.js` | Rak manual: retrieval TF-IDF tanpa API, angka dari teks manual, catatan memori, penjelasan skor |
-| `prompt.js` | Prompt LLM (lengkap dan ringkas) dirakit dari ruang aktif |
-| `brain-llm.js` | Memanggil LLM (server lokal Python, OpenRouter, atau Ollama), validasi skema, retry, router hemat, fallback |
-| `MULAI.bat`, `mulai.sh`, `jalankan.py` | Satu klik: mencari Python yang cocok (menawarkan pemasangan bila belum ada), menyiapkan `.venv`, memasang paket siap pakai, lalu menjalankan server |
-| `server_lokal.py`, `requirements-lokal.txt` | Server game dan model kecil di satu alamat (llama-cpp-python, CPU). Mengunduh model sekali ke `model/` |
-| `build.py` | Merakit `index.html` dan memeriksa tidak ada em dash |
-| `test_*.js` | Uji otomatis (lihat bagian Build dan uji) |
-| `live_check.js` | Uji nyata pesan contoh ke LLM sungguhan |
+| `src/index.src.html`, `src/game.js` | Template halaman, alur permainan, misi ruang dan semesta, kejadian, pipeline, tab Dunia, Agen, dan Manual |
+| `src/dunia.js` | Definisi ruang (data), pemeriksa definisi, fisika suhu dan cahaya, misi deklaratif |
+| `src/semesta.js` | Semesta Kampus Nusantara, tiga ruang tambahan (perpustakaan, dapur, kebun), pemeriksa semesta, misi lintas ruang |
+| `src/brain.js` | Parser aturan, router (bawaan dan buatan), guardrails (masukan, aksi, interlock, keluaran), memori, pembagian tugas |
+| `src/manual.js` | Rak manual: retrieval TF-IDF tanpa API, angka dari teks manual, catatan memori, penjelasan skor |
+| `src/prompt.js` | Prompt LLM (lengkap dan ringkas) dirakit dari semesta dan ruang aktif |
+| `src/brain-llm.js` | Memanggil LLM (model lokal, OpenRouter, atau Ollama), validasi skema, retry, router hemat, fallback ke parser |
+| `src/adegan.js` | Adegan 3D: material realistis, bayangan, pantulan, mode ringan, totem router dan label agen dari data |
+| `server/jalankan.py` | Dipanggil MULAI.bat: menyiapkan `.venv`, memasang paket siap pakai, lalu menjalankan server |
+| `server/server_lokal.py`, `server/requirements-lokal.txt` | Server game dan model kecil di satu alamat (llama-cpp-python, CPU). Mengunduh model sekali ke `model/` |
 
-Edit berkas sumber, bukan `index.html`. Setelah perubahan jalankan `python build.py`.
+Edit berkas di `src/`, bukan `index.html`. Setelah perubahan jalankan `python build.py`.
 
 ## Empat sumber otak
 
@@ -198,22 +209,21 @@ pesan -> input guard (kode) -> memori atau RAG: potongan dicari di kode -> otak 
 ## Build dan uji
 
 ```bash
-python build.py            # menghasilkan index.html
-node test_brain.js         # parser dan guardrail
-node test_manual.js        # RAG dan orkestrasi
-node test_dunia.js         # ruang, pemeriksa definisi, fisika, misi deklaratif, memori
-node test_semesta.js       # semesta: agen, orkestrator, router, RAG, guardrails, kejadian, misi lintas ruang
-node test_llm.js           # otak LLM dengan fetch tiruan, model lokal, Ollama, router hemat
+python build.py          # menghasilkan index.html dari src/
+npm install              # sekali: alat uji browser (playwright-core, memakai Chrome atau Edge yang sudah terpasang)
+npm test                 # uji tanpa jaringan: parser, RAG, dunia, semesta, otak LLM tiruan
+npm run test:browser     # uji alur browser, semesta, dan simulasi perangkat lemah
+```
 
-# uji browser (jaringan ditiru). Butuh playwright-core, Chrome, dan salinan lokal three@0.128.0:
-PW=<jalur playwright-core> THREE=<jalur three.min.js> CHROME=<jalur chrome> node test_browser.js
-PW=... THREE=... CHROME=... node test_browser_semesta.js   # Studio Agen, router, kejadian, semesta buatan, ekspor dan impor
-PW=... THREE=... CHROME=... [LAMBAT=6] node test_resource_rendah.js   # simulasi perangkat lemah
-PW=... CHROME=... node test_mulai_live.js   # setelah MULAI.bat berjalan: browser baru langsung memakai model lokal
+Uji satu per satu ada di `tests/` (misalnya `node tests/test_semesta.js`). Chrome dicari otomatis, atau tentukan lewat `CHROME=<jalur>`.
 
-# uji nyata (kunci lewat variabel lingkungan, jangan simpan di berkas):
-OPENROUTER_API_KEY=sk-or-... node live_check.js                  # 15 pesan dasar
-SUITE=ruang RUANG=kafe LOKAL=http://127.0.0.1:8000/v1 RINGKAS=1 node live_check.js q15   # server_lokal.py berjalan
+Uji nyata (butuh layanan sungguhan):
+
+```bash
+node tests/test_mulai_live.js                                  # setelah MULAI.bat berjalan: browser baru langsung memakai model lokal
+OPENROUTER_API_KEY=sk-or-... node tests/live_check.js         # 15 pesan dasar ke OpenRouter (kunci lewat variabel lingkungan)
+SUITE=ruang RUANG=kafe LOKAL=http://127.0.0.1:8000/v1 RINGKAS=1 RUTE=hemat node tests/live_check.js lokal   # ke model MULAI.bat
+OLLAMA=1 SUITE=semua node tests/live_check.js qwen2.5:1.5b    # ke Ollama
 ```
 
 Ringkasan hasil dan batasnya ada di [UJI.md](UJI.md).

@@ -1,3 +1,4 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 // Uji otak LLM dengan fetch tiruan: tidak ada koneksi nyata.
 const vm = require('vm'), fs = require('fs');
 let gagal = 0;
@@ -13,7 +14,7 @@ function fetchTiruan(url, opsi) {
   return Promise.resolve({ ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.json });
 }
 const ctx = vm.createContext({ console, fetch: fetchTiruan, AbortController, setTimeout, clearTimeout, Date, Error, TypeError });
-for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['src/manual.js', 'src/dunia.js', 'src/semesta.js', 'src/brain.js', 'src/prompt.js', 'src/brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const O = ctx.Otak, L = ctx.OtakLLM;
 const OR = (obj, model) => ({ status: 200, json: { model: model || 'google/gemma-4-31b-it:free', choices: [{ message: { content: typeof obj === 'string' ? obj : JSON.stringify(obj) } }] } });
 const baru = () => O.stateAwal();
@@ -185,7 +186,7 @@ const reset = (...r) => { antrean = r; panggilan = []; };
   const pr = ctx.bangunPrompt('halo <<<>>> ' + 'x'.repeat(500), baru());
   cek('prompt: delimiter dibersihkan dan panjang dibatasi', !/<<<>>>/.test(pr[1].content) && pr[1].content.length < 300, pr[1].content.length);
 
-  const semua = JSON.stringify(pr) + fs.readFileSync('brain-llm.js', 'utf8');
+  const semua = JSON.stringify(pr) + fs.readFileSync('src/brain-llm.js', 'utf8');
   cek('tanpa em dash', !/\u2014/.test(semua));
 
   console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');

@@ -1,14 +1,15 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji nyata alur mahasiswa: MULAI.bat sudah berjalan (game dan model di satu alamat). Browser baru tanpa pengaturan apa pun
-   harus langsung memakai model lokal. Pakai: PW=... CHROME=... [ALAMAT=http://127.0.0.1:8000/] node test_mulai_live.js */
-const { chromium } = require(process.env.PW || 'playwright-core');
+   harus langsung memakai model lokal. Pakai: PW=... CHROME=... [ALAMAT=http://127.0.0.1:8000/] node tests/test_mulai_live.js */
+const { chromium } = require(ALAT.PW);
 const ALAMAT = process.env.ALAMAT || 'http://127.0.0.1:8000/';
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 300) : ''); } else console.log('ok   :', n); };
 (async () => {
-  const b = await chromium.launch({ executablePath: process.env.CHROME, headless: true, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'] });
+  const b = await chromium.launch({ executablePath: ALAT.CHROME, headless: true, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'] });
   const ctx = await b.newContext({ viewport: { width: 1200, height: 760 } });
   // three.js tetap dari CDN bila ada internet; uji ini memakai salinan lokal bila THREE diisi
-  if (process.env.THREE) await ctx.route(/three(\.min)?\.js/, r => r.fulfill({ path: process.env.THREE, contentType: 'application/javascript' }));
+  if (ALAT.THREE) await ctx.route(/three(\.min)?\.js/, r => r.fulfill({ path: ALAT.THREE, contentType: 'application/javascript' }));
   const page = await ctx.newPage(); const galat = []; page.on('pageerror', e => galat.push(String(e)));
   await page.goto(ALAMAT + '?grafis=ringan&kejadian=mati');
   await page.waitForFunction(() => window.__ruangAgen, null, { timeout: 60000 });

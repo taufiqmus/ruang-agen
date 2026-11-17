@@ -16,4 +16,4 @@ if [ -z "$PY" ]; then
   exit 1
 fi
 echo "Memakai Python: $PY"
-exec "$PY" jalankan.py "$@"
+exec "$PY" server/jalankan.py "$@"

@@ -129,11 +129,12 @@ Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: te
 | Laptop berspesifikasi rendah fisik, RAM 4 GB | Hanya simulasi CPU dan sinyal perangkat |
 | Mikrofon dan pengenalan suara `id-ID` | Butuh suara manusia dan izin mikrofon |
 | Pemasangan `llama-cpp-python` di mesin lain | Diuji di Windows x64 dengan Python 3.12. macOS, Linux, dan Python lain belum |
-| Unduhan model dari nol lewat `server_lokal.py` | Berkas yang sudah ada dipakai |
 | GitHub Pages memanggil server lokal atau Ollama | Hanya diuji dari `file://` dan `http://localhost` |
 | Ruang buatan dengan definisi sangat besar atau sangat aneh | Pemeriksa membatasi jumlah dan panjang, tetapi tidak ada uji fuzzing |
 | Firefox, Safari, perangkat sentuh nyata | Hanya Chrome dan emulasi lebar 390 px |
 
 ## 6. Cara mengulang
+
+Semua uji ada di folder `tests/`. Uji tanpa jaringan: `npm test`. Uji browser: `npm install` sekali, lalu `npm run test:browser`.
 
 Lihat bagian "Build dan uji" di [README.md](README.md). Uji nyata OpenRouter memakai kunci lewat variabel lingkungan. Jangan menyimpan kunci di berkas dan hapus kunci uji setelah selesai.

@@ -1,6 +1,7 @@
-global.Manual = require('./manual.js');
-global.Dunia = require('./dunia.js'); require('./semesta.js');
-const O = require('./brain.js');
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
+global.Manual = require('../src/manual.js');
+global.Dunia = require('../src/dunia.js'); require('../src/semesta.js');
+const O = require('../src/brain.js');
 let gagal = 0;
 function cek(nama, cond, info) { if (!cond) { gagal++; console.log('GAGAL:', nama, info !== undefined ? JSON.stringify(info) : ''); } else console.log('ok   :', nama); }
 const ringkas = p => ({ intent: p.intent, aksi: p.aksi.map(a => `${a.device}:${a.op}${a.speed !== undefined ? ':' + a.speed : ''}`), tolak: p.ditolak.map(t => t.aturan) });

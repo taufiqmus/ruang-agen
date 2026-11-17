@@ -48,5 +48,5 @@ exit /b 1
 
 :ada
 echo Memakai Python: %PY%
-%PY% jalankan.py %*
+%PY% server\jalankan.py %*
 if errorlevel 1 pause

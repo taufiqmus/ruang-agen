@@ -1,7 +1,8 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji dunia berbasis data: ruang bawaan, ruang buatan, pemeriksa definisi, fisika, misi deklaratif, memori. Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['src/manual.js', 'src/dunia.js', 'src/semesta.js', 'src/brain.js', 'src/prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, D = ctx.Dunia, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 400) : ''); } else console.log('ok   :', n); };
@@ -146,7 +147,7 @@ cek('misi deklaratif: terpenuhi setelah keadaan berubah', n.every(x => x[1] === 
 n = D.nilaiMisi(K, K.misi[3], s, { tolak: 0, paralel: 0, tahapMaks: 0, ambil: ['resep'], memori: 1 });
 cek('misi deklaratif: syarat ambil dan memori', n.length === 2 && n.every(x => x[1]), n);
 
-const semua = ['dunia.js', 'brain.js', 'prompt.js', 'manual.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(tanya('bikin nyaman'));
+const semua = ['src/dunia.js', 'src/brain.js', 'src/prompt.js', 'src/manual.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(tanya('bikin nyaman'));
 cek('tanpa em dash', !/\u2014/.test(semua));
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

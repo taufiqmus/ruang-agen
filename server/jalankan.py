@@ -1,4 +1,4 @@
-"""Satu pintu untuk mahasiswa. Dipanggil oleh MULAI.bat atau mulai.sh, bisa juga langsung: python jalankan.py
+"""Satu pintu untuk mahasiswa. Dipanggil oleh MULAI.bat atau mulai.sh, bisa juga langsung: python server/jalankan.py
 
 Langkah otomatis:
 1. Membuat lingkungan Python terpisah di folder .venv (sekali saja).
@@ -6,14 +6,15 @@ Langkah otomatis:
 3. Mengunduh model kecil (sekali saja, sekitar 1 GB).
 4. Menjalankan game dan model di http://127.0.0.1:8000 lalu membuka browser.
 
-Semua pilihan server_lokal.py bisa ditambahkan, misalnya: python jalankan.py --ukuran 0.5b
+Semua pilihan server_lokal.py bisa ditambahkan, misalnya: MULAI.bat --ukuran 0.5b
 """
 import os
 import subprocess
 import sys
 import venv
 
-AKAR = os.path.dirname(os.path.abspath(__file__))
+SINI = os.path.dirname(os.path.abspath(__file__))
+AKAR = os.path.dirname(SINI)   # akar repo: tempat .venv, model, dan index.html
 VENV = os.path.join(AKAR, ".venv")
 PY = os.path.join(VENV, "Scripts", "python.exe") if os.name == "nt" else os.path.join(VENV, "bin", "python")
 PAKET_ADA = "import llama_cpp, huggingface_hub, uvicorn, fastapi"
@@ -56,12 +57,12 @@ def main() -> int:
         print("      Mengunduh sekitar 150 MB. Mohon tunggu...", flush=True)
         if subprocess.run([PY, "-m", "pip", "install", "--quiet", "--upgrade", "pip"], env=env).returncode != 0:
             return gagal("pip tidak bisa diperbarui. Periksa internet.")
-        r = subprocess.run([PY, "-m", "pip", "install", "--quiet", "--only-binary=:all:", "-r", os.path.join(AKAR, "requirements-lokal.txt")], env=env)
+        r = subprocess.run([PY, "-m", "pip", "install", "--quiet", "--only-binary=:all:", "-r", os.path.join(SINI, "requirements-lokal.txt")], env=env)
         if r.returncode != 0:
             return gagal("Paket tidak bisa dipasang. Periksa internet. Bila tetap gagal, pakai Python 3.12 64-bit.")
         print("      Terpasang.")
 
-    return subprocess.call([PY, os.path.join(AKAR, "server_lokal.py"), "--buka"] + args)
+    return subprocess.call([PY, os.path.join(SINI, "server_lokal.py"), "--buka"] + args)
 
 
 if __name__ == "__main__":

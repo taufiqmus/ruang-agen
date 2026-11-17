@@ -1,6 +1,10 @@
+# hasil MULAI.bat
 .venv/
 model/
+# alat uji
+node_modules/
+# lain-lain
 venv/
 __pycache__/
 *.gguf
-layar*.png
+*.png

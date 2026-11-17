@@ -1,7 +1,8 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Verifikasi nyata ke OpenRouter (atau Ollama lokal bila OLLAMA=1). Kunci dibaca dari env OPENROUTER_API_KEY, tidak pernah disimpan.
-   Pakai: OPENROUTER_API_KEY=... node live_check.js [model1,model2]
-          OLLAMA=1 node live_check.js qwen2.5:3b   (Ollama berjalan di localhost:11434)
-          LOKAL=http://localhost:8000/v1 node live_check.js nama-model   (server llama-cpp-python)
+   Pakai: OPENROUTER_API_KEY=... node tests/live_check.js [model1,model2]
+          OLLAMA=1 node tests/live_check.js qwen2.5:3b   (Ollama berjalan di localhost:11434)
+          LOKAL=http://localhost:8000/v1 node tests/live_check.js nama-model   (server llama-cpp-python)
    SUITE=dasar (15 pesan, default) | rag (7 pesan dengan rak manual) | sulit (6 pesan yang parser tidak kenal) | semua. RINGKAS=1 prompt ringkas, RUTE=hemat router biaya. JEDA=ms antar panggilan (default 4000). */
 const vm = require('vm'), fs = require('fs');
 const kunci = process.env.OPENROUTER_API_KEY;
@@ -10,7 +11,7 @@ if (!kunci && !ollama && !lokal) { console.error('Set OPENROUTER_API_KEY dulu.')
 const models = (process.argv[2] || 'openrouter/free').split(',');
 const suite = process.env.SUITE || 'dasar', jeda = +process.env.JEDA || 4000;
 const ctx = vm.createContext({ console, fetch, AbortController, setTimeout, clearTimeout, Date, Error, TypeError });
-for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['src/manual.js', 'src/dunia.js', 'src/semesta.js', 'src/brain.js', 'src/prompt.js', 'src/brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const O = ctx.Otak, L = ctx.OtakLLM, M = ctx.Manual;
 const RUANG = process.env.RUANG || 'lab';
 if (!ctx.Dunia.RUANG[RUANG] || !O.aturRuang(ctx.Dunia.RUANG[RUANG]).ok) { console.error('RUANG tidak dikenal: ' + RUANG); process.exit(1); }

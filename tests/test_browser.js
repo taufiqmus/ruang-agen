@@ -1,8 +1,9 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji alur browser (Playwright). Semua jaringan ditiru: three.js dari salinan lokal, OpenRouter dan Ollama.
-   Pakai: PW=<jalur playwright-core> THREE=<jalur three.min.js r128> CHROME=<jalur chrome> node test_browser.js */
+   Pakai: PW=<jalur playwright-core> THREE=<jalur three.min.js r128> CHROME=<jalur chrome> node tests/test_browser.js */
 const path = require('path');
-const { chromium } = require(process.env.PW || 'playwright-core');
-const THREE = process.env.THREE, CHROME = process.env.CHROME || '/usr/bin/google-chrome';
+const { chromium } = require(ALAT.PW);
+const THREE = ALAT.THREE, CHROME = ALAT.CHROME;
 if (!THREE) { console.error('Set THREE ke salinan lokal three@0.128.0 (three.min.js).'); process.exit(1); }
 const URL = 'file:///' + path.resolve('index.html').split(path.sep).join('/') + '?grafis=ringan&kejadian=mati';
 let gagal = 0;

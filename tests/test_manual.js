@@ -1,7 +1,8 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji RAG (rak manual) dan orkestrasi (pembagian tugas ke spesialis). Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['src/manual.js', 'src/dunia.js', 'src/semesta.js', 'src/brain.js', 'src/prompt.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i) : ''); } else console.log('ok   :', n); };
@@ -77,7 +78,7 @@ cek('jejak DELEGASI ada', O.pikir('nyalakan lampu dan kipas', baru()).jejak.some
 cek('aksi ditolak tidak didelegasikan', O.pikir('putar lengan robot 200%', baru()).didelegasikan_ke === null);
 
 const semua = JSON.stringify([O.pikir('bikin nyaman', baru(), { manual: M.MANUAL_AWAL }), O.pikir('berapa suhu nyaman?', baru(), { manual: M.MANUAL_AWAL })]);
-cek('tanpa em dash', !/\u2014/.test(semua) && !/\u2014/.test(fs.readFileSync('manual.js', 'utf8')));
+cek('tanpa em dash', !/\u2014/.test(semua) && !/\u2014/.test(fs.readFileSync('src/manual.js', 'utf8')));
 
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

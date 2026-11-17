@@ -26,7 +26,7 @@ import sys
 import threading
 import webbrowser
 
-AKAR = os.path.dirname(os.path.abspath(__file__))
+AKAR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # akar repo
 MODEL = {
     "0.5b": ("Qwen/Qwen2.5-0.5B-Instruct-GGUF", "qwen2.5-0.5b-instruct-q4_k_m.gguf"),
     "1.5b": ("Qwen/Qwen2.5-1.5B-Instruct-GGUF", "qwen2.5-1.5b-instruct-q4_k_m.gguf"),
@@ -62,7 +62,7 @@ def port_kosong(awal: int) -> int:
 
 def buat_app(berkas, n_ctx, threads):
     from fastapi import FastAPI
-    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
     if berkas:
         from llama_cpp.server.app import create_app
         from llama_cpp.server.settings import ModelSettings, ServerSettings
@@ -72,8 +72,12 @@ def buat_app(berkas, n_ctx, threads):
         app = create_app(server_settings=ServerSettings(host="127.0.0.1"), model_settings=[ModelSettings(**ms)])
     else:
         app = FastAPI()
-    # game disajikan dari folder yang sama: index.html di "/"
-    app.mount("/", StaticFiles(directory=AKAR, html=True), name="game")
+    # hanya index.html yang disajikan (bukan isi folder lain seperti .venv atau model)
+    halaman = os.path.join(AKAR, "index.html")
+
+    @app.get("/", include_in_schema=False)
+    def game():
+        return FileResponse(halaman, media_type="text/html")
     return app
 
 

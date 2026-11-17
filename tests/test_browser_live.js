@@ -1,12 +1,13 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji nyata dari browser ke OpenRouter atau Ollama (CORS, header, alur penuh). Hanya three.js yang dialihkan ke salinan lokal.
-   Pakai: OPENROUTER_API_KEY=... PW=... THREE=... CHROME=... node test_browser_live.js
-          OLLAMA=1 PW=... THREE=... CHROME=... node test_browser_live.js   (Ollama berjalan di localhost:11434)
-          LOKAL=1 PW=... THREE=... CHROME=... node test_browser_live.js    (python server_lokal.py berjalan di localhost:8000, router hemat)
+   Pakai: OPENROUTER_API_KEY=... PW=... THREE=... CHROME=... node tests/test_browser_live.js
+          OLLAMA=1 PW=... THREE=... CHROME=... node tests/test_browser_live.js   (Ollama berjalan di localhost:11434)
+          LOKAL=1 PW=... THREE=... CHROME=... node tests/test_browser_live.js    (python server_lokal.py berjalan di localhost:8000, router hemat)
    Dijalankan dua kali: dari file:// (origin null) dan dari http://localhost (server statis sementara). */
 const path = require('path'), http = require('http'), fs = require('fs');
-const { chromium } = require(process.env.PW || 'playwright-core');
+const { chromium } = require(ALAT.PW);
 const OLL = process.env.OLLAMA === '1', LOK = process.env.LOKAL === '1';
-const KUNCI = process.env.OPENROUTER_API_KEY, THREE = process.env.THREE, CHROME = process.env.CHROME || '/usr/bin/google-chrome';
+const KUNCI = process.env.OPENROUTER_API_KEY, THREE = ALAT.THREE, CHROME = ALAT.CHROME;
 if ((!KUNCI && !OLL && !LOK) || !THREE) { console.error('Set OPENROUTER_API_KEY dan THREE.'); process.exit(1); }
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 300) : ''); } else console.log('ok   :', n); };

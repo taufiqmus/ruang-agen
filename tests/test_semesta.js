@@ -1,7 +1,8 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji semesta: agen, orkestrator, router, RAG, guardrails, kejadian, dan misi lintas ruang bisa diubah lewat data. Tanpa jaringan. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console });
-for (const f of ['manual.js', 'dunia.js', 'semesta.js', 'brain.js', 'prompt.js', 'brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
+for (const f of ['src/manual.js', 'src/dunia.js', 'src/semesta.js', 'src/brain.js', 'src/prompt.js', 'src/brain-llm.js']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f });
 const M = ctx.Manual, D = ctx.Dunia, O = ctx.Otak;
 let gagal = 0;
 const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== undefined ? JSON.stringify(i).slice(0, 400) : ''); } else console.log('ok   :', n); };
@@ -176,7 +177,7 @@ cek('semesta: teks dibersihkan dan dipotong', !/[<>]/.test(hj.cerita + hj.agen.n
 pasang(KAMPUS());
 cek('semesta tidak sah tidak mengganti semesta aktif', !O.aturSemesta({ id: 'x' }).ok && O.semesta().id === 'kampus');
 
-const semua = ['semesta.js', 'brain.js', 'prompt.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(D.SEMESTA);
+const semua = ['src/semesta.js', 'src/brain.js', 'src/prompt.js'].map(f => fs.readFileSync(f, 'utf8')).join('') + JSON.stringify(D.SEMESTA);
 cek('tanpa em dash', !/\u2014/.test(semua));
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

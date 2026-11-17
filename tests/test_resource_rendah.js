@@ -1,9 +1,10 @@
+const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.js
 /* Uji simulasi perangkat lemah: CPU browser diperlambat, jumlah inti dan RAM dilaporkan kecil.
    Memeriksa: grafis otomatis memilih atau turun ke mode ringan, alur permainan tetap selesai, memori JS wajar.
-   Pakai: PW=... THREE=... CHROME=... [LAMBAT=6] node test_resource_rendah.js */
+   Pakai: PW=... THREE=... CHROME=... [LAMBAT=6] node tests/test_resource_rendah.js */
 const path = require('path');
-const { chromium } = require(process.env.PW || 'playwright-core');
-const THREE = process.env.THREE, CHROME = process.env.CHROME, LAMBAT = +process.env.LAMBAT || 6;
+const { chromium } = require(ALAT.PW);
+const THREE = ALAT.THREE, CHROME = ALAT.CHROME, LAMBAT = +process.env.LAMBAT || 6;
 if (!THREE || !CHROME) { console.error('Set THREE dan CHROME.'); process.exit(1); }
 const URL = 'file:///' + path.resolve('index.html').split(path.sep).join('/');
 let gagal = 0;
