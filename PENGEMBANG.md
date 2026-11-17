@@ -35,6 +35,26 @@ Dibuat otomatis dan tidak masuk git: `.venv/` (Python milik MULAI.bat), `model/`
 
 Edit berkas di `src/`, lalu jalankan `python build.py`. Ruang dan semesta bawaan ada di `src/dunia.js` dan `src/semesta.js`.
 
+## Studio Rumah Agen (v2)
+
+Entri terpisah `studio.html`, dirakit `build.py` dari `src/studio/studio.src.html` ditambah modul v1 yang dipakai ulang (manual, dunia, semesta, brain, router, brain-llm) dan modul studio:
+
+| Berkas | Isi |
+|---|---|
+| `src/studio/iot.js` | Katalog perangkat, skema dunia dan `periksaDunia`, rangkaian (pin, relay, daya), Wi-Fi (RSSI dari jarak dan dinding, repeater), simulasi per menit (suhu, cahaya, tanah, pakan, gas, tandon, baterai, tanaman, ayam), preset |
+| `src/studio/alat.js` | Manifest tool (gaya MCP), pelaksana tool, guard aksi, parser bahasa sehari-hari, prompt agen, pelaksana blok Agen (loop tool calling, router hemat, guard klaim tanpa aksi) |
+| `src/studio/graf.js` | Jenis blok dan port bertipe, `periksaGraf`, `cekKabel`, deteksi siklus, saran, mesin eksekusi (batas langkah dan anggaran AI), rak bawaan, graf preset |
+| `src/studio/telegram.js` | Klien Bot API langsung dari browser (simple request, long polling, 409, daftar izin, penyamaran token) |
+| `src/studio/ekspor.js` | Sketsa Arduino per ESP, kerangka Python, daftar belanja |
+| `src/studio/misi.js` | 12 misi dan kasus uji agen yang dirakit dari dunia |
+| `src/studio/dunia3d.js` | Adegan Three.js, kamera orbit, raycast, kabel, cincin Wi-Fi, LED ESP, hewan dan tanaman |
+| `src/studio/kanvas.js` | Papan SVG: seret blok, tarik kabel bertipe, geser dan zoom |
+| `src/studio/studio.js` | Perekat UI, loop simulasi, pemicu jadwal dan sensor, semua tab, wizard |
+
+Prinsip v1 tetap berlaku: AI hanya memilih tool; argumen tool divalidasi, guard aksi dan persetujuan di kode; graf tanpa Guard Aksi berjalan sebagai mode rentan dengan peringatan. Skema dunia dan graf punya `versi` dan pemeriksa, dan tidak pernah memuat rahasia. Rencana dan status kerja ada di `RENCANA_V2.md`.
+
+Parameter alamat studio: `?awal=<preset dunia>`, `?graf=<preset graf>`, `?jam=<jam mulai>`, `?cepat=<0|1|10|60>`, `?mode=<bangun|otak|main>`, `?grafis=<ringan|realistis>`, `?tanpaWizard=1`, `?tgbase=<alamat API Telegram tiruan untuk uji>`.
+
 ## Prinsip
 
 ```
@@ -85,6 +105,8 @@ python build.py          # menghasilkan index.html dari src/
 npm install              # sekali: alat uji browser (playwright-core, memakai Chrome atau Edge yang sudah terpasang)
 npm test                 # uji tanpa jaringan: parser, RAG, dunia, semesta, otak LLM tiruan
 npm run test:browser     # uji alur browser, semesta, dan simulasi perangkat lemah
+npm run test:studio      # uji studio tanpa jaringan: dunia IoT, papan otak, tool, Telegram tiruan, ekspor, misi
+npm run test:studio:browser   # uji browser studio (seret-lepas, kabel, Telegram dan Ollama tiruan, HP) dan perangkat lemah
 ```
 
 Uji satu per satu ada di `tests/` (misalnya `node tests/test_semesta.js`). Chrome dicari otomatis, atau tentukan lewat `CHROME=<jalur>`.

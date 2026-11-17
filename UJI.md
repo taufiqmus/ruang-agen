@@ -153,7 +153,40 @@ Sebelumnya `qwen2.5:3b` (22 pesan): JSON valid 20 dari 20, perilaku benar 19 dar
 
 Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan. Ring light Studio yang tampak hilang ternyata hanya tertutup kartu misi dan terlihat jelas saat kartu diringkas.
 
-## 5. Yang belum teruji
+## 5. Studio Rumah Agen (v2)
+
+Diuji 17 November 2026. Semua uji v1 tetap lulus di setiap commit.
+
+| Berkas | Cek | Cakupan |
+|---|---|---|
+| `studio/test_iot.js` | 37 | Preset sah, katalog, pemeriksa dunia (id, jenis, teks, batas jumlah dan ukuran, tanpa rahasia), relay wajib, pin analog, pin input-saja, kanal ganda, ESP tanpa daya, dinding dan RSSI, repeater, listrik padam, sensor rusak, Wi-Fi putus, servo pakan, efek kipas dan pompa, tandon kosong, tanah mengering dalam sehari, siang dan malam, sejarah sensor, baterai surya, gas dapur saat memasak, sambung otomatis |
+| `studio/test_graf.js` | 58 | Graf preset sah, kabel tipe salah, rahasia dibuang, siklus, port dinamis router, saran, parser (area, tanya balik, keluhan, imbuhan dan tanda hubung, "semua"), chatbot tanpa alat, guard masukan, guard aksi (bersamaan, 33 C), persetujuan, Wi-Fi putus, RAG, mode rentan, orkestrator dan lingkup (rumah, kebun, kandang), router kata kunci, aturan JIKA-MAKA, AI dengan tool calling (fetch tiruan): tools sesuai alat, loop hasil tool, guard menolak level 9 dari AI, perangkat karangan, router hemat, AI gagal ke parser, anggaran AI, memori, batas langkah, penyamar data pribadi, guard klaim tanpa aksi |
+| `studio/test_studio_lain.js` | 27 | Telegram (token sah, penyamaran, simple request GET dan POST urlencoded tanpa header, offset, daftar izin, 409, 401, galat jaringan tanpa token), sketsa ESP32 dan ESP8266, kerangka Python, daftar belanja, misi, kasus uji agen |
+| `studio/test_studio_browser.js` | 49 | Gerakan mouse sungguhan: wizard, seret-lepas palet ke dunia 3D, klik-untuk-menaruh, klik perangkat di 3D, menggeser perangkat, misi 1 sampai 3, seret blok ke papan, menarik kabel (tipe salah ditolak), hapus kabel, chat, guard, persetujuan, RAG, multi-agen, Wi-Fi putus, lab serangan, uji agen, unduh sketsa, daftar belanja, **Telegram lewat server tiruan** (getMe, izin, sendMessage, jawaban agen, 409, token tidak bocor), Ollama tiruan dengan tool calling dan titik tiga, dashboard, ekspor jejak, penyimpanan, layar 390 px |
+| `studio/test_studio_rendah.js` | 8 | 2 inti, RAM 2 GB, CPU 6x lebih lambat: grafis ringan otomatis, siap 1,2 detik, simulasi 60x tetap berjalan, chat menjawab, memori JS 12 MB. Angka gambar per detik (48) terlalu tinggi untuk dipercaya: perlambatan CPU tidak memengaruhi WebGL software sepenuhnya |
+
+**Uji nyata dengan Ollama** (RTX 3060, studio dibuka dari `http://127.0.0.1:8123/studio.html` lewat server sungguhan, 8 kasus uji agen ditambah 6 pesan sulit):
+
+| Model | Agen rumah, router hemat | Agen rumah, AI sendiri | Multi-agen, AI sendiri |
+|---|---|---|---|
+| `qwen2.5:1.5b` | 8/8 | belum diukur | belum diukur |
+| `qwen2.5:7b` | 8/8 | 7/8 | 8/8 |
+| `gemma4:e4b` | 8/8 | 8/8 | 7/8 (memilih tidak menyalakan kipas karena suhu di bawah ambang di rak) |
+
+- Dengan router hemat, sebagian besar pesan dikerjakan parser. "AI sendiri" berarti router hemat dimatikan di blok Agen.
+- Temuan yang diperbaiki dari uji nyata: kata berimbuhan dan bertanda hubung ("ayam-ayamnya", "kamarnya", "dihidupin"), "matikan semua", AI mengarang jadwal vaksin saat rak tidak berisi jawabannya (kini mengaku belum tahu), multi-agen tanpa agen untuk ruang di rumah, dan **gemma4:e4b mengaku menyalakan pompa tanpa memanggil alat**. Yang terakhir kini ditangkap guard klaim tanpa aksi.
+- Server lokal: `/` dan `/studio.html` disajikan, berkas lain 404.
+
+**Belum teruji di studio:**
+- **Bot Telegram dengan token sungguhan.** Hanya diuji dengan server tiruan yang meniru API Telegram, dan pemeriksaan CORS ke api.telegram.org sungguhan.
+- **Sketsa Arduino belum dikompilasi.** `arduino-cli` tidak tersedia di mesin uji.
+- **Cuaca Open-Meteo nyata.**
+- **Model lokal Python dan OpenRouter untuk loop tool studio.**
+- **Firefox dan Safari.**
+- **Layar sentuh sungguhan.** Hanya emulasi lebar 390 px.
+- **Laptop lemah fisik.**
+
+## 6. Yang belum teruji
 
 | Hal | Alasan dan risiko |
 |---|---|
@@ -172,7 +205,7 @@ Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: te
 | Router semantik di ruang selain Lab | Uji nyata dan kalibrasi ambang hanya di Lab |
 | Guard model untuk bahasa Indonesia secara luas | Hanya 12 contoh. Llama Guard tidak dirancang khusus untuk bahasa Indonesia |
 
-## 6. Cara mengulang
+## 7. Cara mengulang
 
 Semua uji ada di folder `tests/`. Uji tanpa jaringan: `npm test`. Uji browser: `npm install` sekali, lalu `npm run test:browser`.
 

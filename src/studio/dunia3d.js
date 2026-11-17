@@ -237,7 +237,7 @@
     function ukur() { const r = o.canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
     function resetKamera() { kam.theta = -0.75; kam.phi = 0.9; kam.jarak = Math.max(lebar, dalam) * 1.05; kam.target.set(lebar / 2, 0, dalam / 2); pasangKamera(); }
     pasangKamera();
-    return { muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer };
+    return { muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer, kualitas: () => (ringan ? 'ringan' : 'realistis'), info: () => ({ segitiga: renderer.info.render.triangles, gambar: renderer.info.render.calls }) };
   }
   root.Dunia3D = { buat };
 })(typeof window !== 'undefined' ? window : globalThis);

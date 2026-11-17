@@ -7,7 +7,7 @@
     "test": "node tests/test_brain.js && node tests/test_manual.js && node tests/test_dunia.js && node tests/test_semesta.js && node tests/test_llm.js && node tests/test_ingatan.js && node tests/test_pipeline.js",
     "test:browser": "node tests/test_browser.js && node tests/test_browser_semesta.js && node tests/test_resource_rendah.js",
     "test:studio": "node tests/studio/test_iot.js && node tests/studio/test_graf.js && node tests/studio/test_studio_lain.js",
-    "test:studio:browser": "node tests/studio/test_studio_browser.js"
+    "test:studio:browser": "node tests/studio/test_studio_browser.js && node tests/studio/test_studio_rendah.js"
   },
   "devDependencies": {
     "playwright-core": "1.49.0"

@@ -1,6 +1,6 @@
 # Panduan Ruang Agen
 
-Bagian 1 sampai 4 untuk semua pemain, bagian 5 untuk yang ingin membuat ruang dan semesta sendiri, bagian 6 untuk dosen.
+Bagian 1 sampai 4 untuk semua pemain, bagian 5 untuk yang ingin membuat ruang dan semesta sendiri, bagian 6 tentang Studio Rumah Agen, bagian 7 untuk dosen.
 
 ## 1. Memasang
 
@@ -354,7 +354,11 @@ Aturan penulisan ruang:
 - Bentuk 3D di luar daftar dan letak perangkat (diatur otomatis).
 - Kunci OpenRouter dan pilihan otak tidak ikut tersimpan di berkas semesta, supaya berkas yang dibagikan tidak membawa rahasia.
 
-## 6. Untuk dosen
+## 6. Studio Rumah Agen
+
+Selain game ini, ada **Studio Rumah Agen** (`studio.html`): mahasiswa merakit rumah pintar sendiri dalam 3D (ESP32, sensor, relay, kabel, Wi-Fi) dan otak agennya dari blok seret-lepas, lalu menyambungkannya ke bot Telegram sungguhan. Buka dengan klik dua kali `studio.html`, atau `MULAI.bat --studio` untuk memakai AI di laptop. Panduan lengkap ada di [STUDIO.md](STUDIO.md).
+
+## 7. Untuk dosen
 
 ### Menyiapkan kelas
 

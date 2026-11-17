@@ -19,6 +19,17 @@ Lalu ketik di tab **Chat**, misalnya:
 - `berapa suhu nyaman?`
 - `putar lengan robot 200%` (coba lihat apa yang terjadi)
 
+## Dua cara belajar
+
+| | Ruang Agen (`index.html`) | Studio Rumah Agen (`studio.html`) |
+|---|---|---|
+| Isi | Game: agen sudah jadi, kamu mengajarinya dan mencoba menipunya | Studio: kamu merakit rumah pintar dan otak agennya sendiri dari nol |
+| Dunia | Enam ruang kampus siap pakai | Rumah, kebun, dan kandang ayam rakitanmu, lengkap dengan ESP32, sensor, relay, kabel, dan Wi-Fi |
+| Otak | Pipeline tetap yang bisa diatur | Papan blok seret-lepas: pemicu, guard, router, orkestrator, agen, RAG, memori, alat |
+| Keluar ke dunia nyata | | Bot Telegram sungguhan, sketsa Arduino untuk ESP, kerangka Python, daftar belanja |
+
+Panduan studio ada di **[STUDIO.md](STUDIO.md)**.
+
 ## Yang bisa kamu lakukan
 
 - **Lihat agen berpikir.** Tab **Jejak** memperlihatkan jalur pesan: guard masukan, memori, router, rak manual, otak, guard aksi, orkestrator, spesialis, dan guard keluaran. Tahap yang dilalui menyala hijau, yang menolak menyala merah.
@@ -31,5 +42,6 @@ Lalu ketik di tab **Chat**, misalnya:
 ## Dokumen
 
 - **[PANDUAN.md](PANDUAN.md)**: cara memasang, cara bermain, semua tab, membuat ruang dan semesta sendiri, pemecahan masalah, dan saran untuk dosen.
+- **[STUDIO.md](STUDIO.md)**: Studio Rumah Agen, dari ESP pertama sampai bot Telegram.
 - [UJI.md](UJI.md): laporan pengujian.
 - [PENGEMBANG.md](PENGEMBANG.md): untuk yang ingin mengubah kode game.

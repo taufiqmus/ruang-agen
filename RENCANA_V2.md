@@ -34,9 +34,13 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 
 - [x] T1 Skema, katalog, pemeriksa, simulasi, Wi-Fi, listrik + uji
 - [x] T2 Mesin graf + tool + parser v2 + guard aksi + uji
-- [ ] T3 Irisan main: preset rumah, ESP + DHT22 + kipas, chat, agen, balasan (headless dan browser)
-- [ ] T4 Editor 3D (palet, seret-lepas, kabel, Wi-Fi, hewan dan tanaman)
-- [ ] T5 Papan blok seret-lepas + inspektur + dashboard + log
-- [ ] T6 Telegram nyata (+ server tiruan untuk uji)
-- [ ] T7 Lapisan belajar: misi, kekacauan, lab serangan, ekspor kode, daftar belanja, kartu konsep
-- [ ] T8 Uji lengkap (unit, Playwright seret-lepas, Ollama nyata, sumber daya rendah, regresi v1) + dokumen
+- [x] T3 Irisan main: preset rumah, ESP + DHT22 + kipas, chat, agen, balasan (headless dan browser)
+- [x] T4 Editor 3D (palet, seret-lepas, kabel, Wi-Fi, hewan dan tanaman)
+- [x] T5 Papan blok seret-lepas + inspektur + dashboard + log
+- [x] T6 Telegram nyata (+ server tiruan untuk uji)
+- [x] T7 Lapisan belajar: misi, kekacauan, lab serangan, ekspor kode, daftar belanja, kartu konsep
+- [x] T8 Uji lengkap (unit, Playwright seret-lepas, Ollama nyata, sumber daya rendah, regresi v1) + dokumen
+
+## Status
+
+Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh token pengguna), kompilasi sketsa Arduino (`arduino-cli` tidak tersedia), Open-Meteo nyata.
