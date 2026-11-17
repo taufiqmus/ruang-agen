@@ -259,7 +259,7 @@
     const angkaF = (lbl, k) => { const i = field(P, lbl, mk('input')); i.type = 'number'; i.value = c[k]; i.onchange = () => { c[k] = +i.value; terap(); }; return i; };
     const cekF = (lbl, k) => { const l = mk('label', 'cek'); const i = mk('input'); i.type = 'checkbox'; i.checked = !!c[k]; l.append(i, document.createTextNode(lbl)); P.appendChild(l); i.onchange = () => { c[k] = i.checked; terap(); }; };
     const pilihF = (lbl, k, opsi) => { const s = field(P, lbl, pilihanEl(opsi, c[k])); s.onchange = () => { c[k] = s.value === 'true' ? true : s.value === 'false' ? false : (opsi.every(o => typeof o[0] === 'number') ? +s.value : s.value); terap(); if (k === 'sensor') renderInspektur(); }; return s; };
-    const lingkup = [['semua', 'Semua area']].concat(W.area.map(a => [a.id, a.nama]));
+    const lingkup = [['semua', 'Semua area'], ['rumah', 'Semua ruang di dalam rumah']].concat(W.area.map(a => [a.id, a.nama]));
     const sensorOps = [['', '(pilih sensor)']].concat(W.perangkat.filter(p => I.KATALOG[p.jenis].kategori === 'sensor').map(p => [p.id, p.nama]));
     const varOps = () => { const s = W.perangkat.find(p => p.id === c.sensor); return (s ? I.KATALOG[s.jenis].baca : Object.keys(I.VAR)).map(v => [v, I.VAR[v].nama]); };
     if (b.jenis === 'agen') {

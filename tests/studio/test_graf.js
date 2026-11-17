@@ -132,6 +132,28 @@ const teksAI = t => ({ model: 'tiruan', message: { role: 'assistant', content: t
   await GR.jalankan(graf('agen_rumah'), 'chat', { teks: 'ceritakan semuanya dengan detail', sumber: 'chat' }, c2);
   cek('anggaran panggilan AI per pesan membatasi loop', c2.anggaranLLM.n <= 3 && out.length === 1, c2.anggaranLLM);
 
+  /* guard keluaran: klaim aksi tanpa tool */
+  c = konteks({ cfgModel: { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 } }); out = []; c.keluaran = (j, t) => out.push(t);
+  const gh = graf('agen_rumah'); gh.blok.find(b => b.jenis === 'agen').cfg.hemat = false;
+  antrean = [teksAI('Pompa kebun sudah dinyalakan untuk menyiram.')];
+  await GR.jalankan(gh, 'chat', { teks: 'tolong kebun diperhatikan', sumber: 'chat' }, c);
+  cek('AI mengaku menyalakan tanpa memanggil tool: catatan jujur dan jejak guard', /tidak ada perangkat yang benar-benar diubah/.test(out[0]) && !c.S.alat.pompa_kebun.on && c.log.some(x => /Guard keluaran/.test(x.t)), out);
+
+  /* lingkup "rumah" dan multi-agen tiga wilayah */
+  c = konteks(); out = []; c.keluaran = (j, t) => out.push(t);
+  await GR.jalankan(graf('multi_agen'), 'chat', { teks: 'nyalakan kipas kamar', sumber: 'chat' }, c);
+  cek('orkestrator: "kipas kamar" ke Agen Rumah (lingkup rumah)', c.S.alat.kipas_kamar.on && /Agen Rumah/.test(out[0]) && !/Agen Kebun/.test(out[0]), out);
+  cek('lingkup rumah hanya ruang berdinding', AL.diLingkup(c.W, 'kamar', 'rumah') && !AL.diLingkup(c.W, 'kebun', 'rumah') && AL.diLingkup(c.W, 'kebun', 'semua') && AL.diLingkup(c.W, 'kebun', 'kebun'));
+  out = []; await GR.jalankan(graf('multi_agen'), 'chat', { teks: 'nyalakan pompa kebun', sumber: 'chat' }, Object.assign(c, { keluaran: (j, t) => out.push(t) }));
+  cek('Agen Rumah tidak bisa menyalakan pompa kebun, Agen Kebun bisa', c.S.alat.pompa_kebun.on && /Agen Kebun/.test(out[0]));
+
+  /* parser: imbuhan, tanda hubung, "semua" */
+  const P2 = t => AL.parse(t, W, st, semua, []);
+  cek('parser: "ayam-ayamnya kepanasan" hanya kipas kandang', JSON.stringify(P2('ayam-ayamnya kayak lagi stres kepanasan deh').aksi) === JSON.stringify([{ perangkat: 'kipas_kandang', aksi: 'nyala' }]));
+  cek('parser: "kipas kamarnya dihidupin"', P2('tolong kipas kamarnya dihidupin dong').aksi[0].perangkat === 'kipas_kamar');
+  cek('parser: "matikan semua di kandang" termasuk pemanas', P2('matikan semua yang nyala di kandang').aksi.map(a => a.perangkat).sort().join() === 'kipas_kandang,pemanas_kandang,servo_kandang');
+  cek('parser: "nyalakan semua" tanpa perangkat berisiko', !P2('nyalakan semuanya').aksi.some(a => /pemanas|kunci/.test(a.perangkat)));
+
   /* memori */
   c = konteks({ cfgModel: { mode: 'ollama', ollamaModel: 'tiruan', timeoutMs: 1000 } }); out = []; c.keluaran = (j, t) => out.push(t);
   antrean = [teksAI('Halo Budi!')];

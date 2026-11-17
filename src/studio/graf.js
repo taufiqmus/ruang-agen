@@ -223,7 +223,7 @@
         const pekerja = keluarDari(id, 'tugas').map(k => blok(k.ke)).filter(x => x && x.jenis === 'agen');
         if (!pekerja.length) { jejak('guard', 'Orkestrator belum punya agen pekerja. Sambungkan port "tugas" ke Agen.', id); return kirim(id, 'keluar', Object.assign({}, msg, { teks: 'Belum ada agen pekerja.' })); }
         const t = String(msg.teks).toLowerCase();
-        const cocok = pekerja.filter(p => { const sb = sambunganAgen(p.id); const lk = [sb.alat.alat_sensor, sb.alat.alat_aktuator].filter(Boolean).map(c => c.lingkup).filter(l => l && l !== 'semua'); const kata = [String(p.cfg.nama).toLowerCase()].concat(...lk.map(l => (A().KATA_AREA[l] || [l]))); return kata.some(w => w && t.includes(w.replace(/^agen\s+/, ''))); });
+        const cocok = pekerja.filter(p => { const sb = sambunganAgen(p.id); const lk = [sb.alat.alat_sensor, sb.alat.alat_aktuator].filter(Boolean).map(c => c.lingkup).filter(l => l && l !== 'semua'); const kata = [String(p.cfg.nama).toLowerCase()].concat(...lk.map(l => l === 'rumah' ? ['rumah', 'kamar', 'tamu', 'dapur', 'gudang'] : (A().KATA_AREA[((ctx.W.area.find(a => a.id === l) || {}).tipe) || l] || [l]))); return kata.some(w => w && t.includes(w.replace(/^agen\s+/, ''))); });
         const dipilih = b.cfg.mode === 'semua' || !cocok.length ? pekerja : cocok;
         jejak('delegasi', `Orkestrator membagi tugas ke: ${dipilih.map(p => p.cfg.nama).join(', ')} (${b.cfg.mode === 'semua' ? 'semua' : cocok.length ? 'sesuai wilayah' : 'tidak ada yang cocok, semua dilibatkan'}).`, id);
         const jawab = [];
@@ -261,10 +261,12 @@
       blok: [b('chat', 'chat', 20, 60), b('guard', 'guard_masukan', 230, 60), b('ork', 'orkestrator', 460, 60), b('balas', 'balas', 460, 260), b('tolak', 'balas', 230, 260),
         b('s_kebun', 'alat_sensor', 700, 0, { lingkup: 'kebun' }), b('x_kebun', 'alat_aktuator', 700, 95, { lingkup: 'kebun' }), b('rk_kebun', 'rak', 700, 190, { preset: 'kebun' }),
         b('s_kandang', 'alat_sensor', 700, 320, { lingkup: 'kandang' }), b('x_kandang', 'alat_aktuator', 700, 415, { lingkup: 'kandang' }), b('rk_ternak', 'rak', 700, 510, { preset: 'ternak' }), b('pg', 'guard_aksi', 460, 420),
-        b('a_kebun', 'agen', 940, 20, { nama: 'Agen Kebun', persona: 'petani hidroponik yang teliti' }), b('a_kandang', 'agen', 940, 330, { nama: 'Agen Kandang', persona: 'peternak ayam yang sabar' })],
+        b('s_rumah', 'alat_sensor', 700, 640, { lingkup: 'rumah' }), b('x_rumah', 'alat_aktuator', 700, 735, { lingkup: 'rumah' }), b('rk_rumah', 'rak', 700, 830, { preset: 'rumah' }),
+        b('a_kebun', 'agen', 940, 20, { nama: 'Agen Kebun', persona: 'petani hidroponik yang teliti' }), b('a_kandang', 'agen', 940, 330, { nama: 'Agen Kandang', persona: 'peternak ayam yang sabar' }), b('a_rumah', 'agen', 940, 640, { nama: 'Agen Rumah', persona: 'pengurus rumah yang hemat listrik' })],
       kabel: [k('chat', 'keluar', 'guard', 'masuk'), k('guard', 'lolos', 'ork', 'masuk'), k('guard', 'tolak', 'tolak', 'masuk'), k('ork', 'keluar', 'balas', 'masuk'), k('ork', 'tugas', 'a_kebun', 'tugas'), k('ork', 'tugas', 'a_kandang', 'tugas'),
         k('s_kebun', 'keluar', 'a_kebun', 'alat'), k('x_kebun', 'keluar', 'a_kebun', 'alat'), k('rk_kebun', 'keluar', 'a_kebun', 'pengetahuan'), k('s_kandang', 'keluar', 'a_kandang', 'alat'), k('x_kandang', 'keluar', 'a_kandang', 'alat'), k('rk_ternak', 'keluar', 'a_kandang', 'pengetahuan'),
-        k('pg', 'keluar', 'a_kebun', 'pengaman'), k('pg', 'keluar', 'a_kandang', 'pengaman')]
+        k('pg', 'keluar', 'a_kebun', 'pengaman'), k('pg', 'keluar', 'a_kandang', 'pengaman'), k('pg', 'keluar', 'a_rumah', 'pengaman'),
+        k('ork', 'tugas', 'a_rumah', 'tugas'), k('s_rumah', 'keluar', 'a_rumah', 'alat'), k('x_rumah', 'keluar', 'a_rumah', 'alat'), k('rk_rumah', 'keluar', 'a_rumah', 'pengetahuan')]
     }
   };
 

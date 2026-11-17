@@ -72,12 +72,17 @@ def buat_app(berkas, n_ctx, threads):
         app = create_app(server_settings=ServerSettings(host="127.0.0.1"), model_settings=[ModelSettings(**ms)])
     else:
         app = FastAPI()
-    # hanya index.html yang disajikan (bukan isi folder lain seperti .venv atau model)
+    # hanya index.html dan studio.html yang disajikan (bukan isi folder lain seperti .venv atau model)
     halaman = os.path.join(AKAR, "index.html")
+    studio = os.path.join(AKAR, "studio.html")
 
     @app.get("/", include_in_schema=False)
     def game():
         return FileResponse(halaman, media_type="text/html")
+
+    @app.get("/studio.html", include_in_schema=False)
+    def studio_rumah():
+        return FileResponse(studio, media_type="text/html")
     return app
 
 
@@ -91,6 +96,7 @@ def main() -> None:
     a.add_argument("--threads", type=int, default=0, help="jumlah thread CPU (0 = otomatis)")
     a.add_argument("--tanpa-model", action="store_true", help="hanya menyajikan game dengan otak parser")
     a.add_argument("--buka", action="store_true", help="buka browser otomatis")
+    a.add_argument("--studio", action="store_true", help="buka Studio Rumah Agen, bukan game Ruang Agen")
     arg = a.parse_args()
 
     try:
@@ -109,11 +115,12 @@ def main() -> None:
         print(f"      Model: {os.path.basename(berkas)}", flush=True)
 
     port = port_kosong(arg.port)
-    alamat = f"http://127.0.0.1:{port}/"
+    alamat = f"http://127.0.0.1:{port}/" + ("studio.html" if arg.studio else "")
     print("[4/4] Menjalankan server", flush=True)
     app = buat_app(berkas, arg.n_ctx, arg.threads)
     print("\n" + "=" * 58)
-    print(f"  Ruang Agen siap: {alamat}")
+    print(f"  Ruang Agen siap: http://127.0.0.1:{port}/")
+    print(f"  Studio Rumah Agen: http://127.0.0.1:{port}/studio.html")
     print(f"  Otak: {'model lokal ' + os.path.basename(berkas) if berkas else 'parser aturan (tanpa model)'}")
     print("  Biarkan jendela ini terbuka selama bermain. Ctrl+C untuk berhenti.")
     print("=" * 58 + "\n", flush=True)
