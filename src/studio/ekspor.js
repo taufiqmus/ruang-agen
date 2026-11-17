@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: kerangka Python untuk agen (tool, guard, loop tool calling ke Ollama) yang setara dengan
+/* Easy Agent Visualizer: kerangka Python untuk agen (tool, guard, loop tool calling ke Ollama) yang setara dengan
    papan otak. Rumah dan ESP di studio murni simulasi; alat di kerangka ini adalah tempat mahasiswa menyambungkan
    sumber datanya sendiri. Titik awal belajar, belum diuji otomatis. */
 (function (root) {
@@ -9,7 +9,7 @@
     const J = root.Graf.JENIS;
     const agen = H.blok.filter(b => b.jenis === 'agen');
     const L = [];
-    L.push('"""Kerangka agen dari Studio Rumah Agen (papan otak: ' + H.nama.replace(/"/g, '') + ').', 'Titik awal belajar: pola yang sama dengan papan blok, ditulis dalam Python.', 'Butuh: pip install requests. Model lewat Ollama (http://localhost:11434). Belum diuji otomatis."""');
+    L.push('"""Kerangka agen dari Easy Agent Visualizer (papan otak: ' + H.nama.replace(/"/g, '') + ').', 'Titik awal belajar: pola yang sama dengan papan blok, ditulis dalam Python.', 'Butuh: pip install requests. Model lewat Ollama (http://localhost:11434). Belum diuji otomatis."""');
     L.push('import json, re, requests', '', 'OLLAMA = "http://localhost:11434/api/chat"', 'MODEL = "qwen2.5:7b"', '');
     L.push('# ---------- guard masukan (sama seperti blok Guard Masukan) ----------', 'POLA_INJEKSI = re.compile(r"(abaikan|lupakan|ignore|jailbreak|mode (admin|developer)|tanpa (batas|aturan))", re.I)', 'def guard_masukan(teks):', '    return not POLA_INJEKSI.search(teks)', '');
     const area = W.area.map(x => x.id);

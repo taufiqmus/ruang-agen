@@ -1,5 +1,5 @@
 const ALAT = require('../alat');   // pindah ke akar repo, cari Chrome dan three.js
-/* Uji browser Studio Rumah Agen dengan gerakan mouse sungguhan: seret-lepas palet ke dunia 3D dan ke papan,
+/* Uji browser Easy Agent Visualizer dengan gerakan mouse sungguhan: seret-lepas palet ke dunia 3D dan ke papan,
    menarik kabel antar port, menggeser perangkat, misi, persetujuan, kekacauan, uji agen, ekspor kode,
    Telegram lewat server tiruan, Ollama tiruan (tool calling), tampilan HP, dan penyimpanan. */
 const http = require('http'), fs = require('fs');

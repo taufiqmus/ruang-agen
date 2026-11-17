@@ -21,7 +21,7 @@ Lalu ketik di tab **Chat**, misalnya:
 
 ## Dua cara belajar
 
-| | Ruang Agen (`index.html`) | Studio Rumah Agen (`studio.html`) |
+| | Ruang Agen (`index.html`) | Easy Agent Visualizer (`studio.html`) |
 |---|---|---|
 | Isi | Game: agen sudah jadi, kamu mengajarinya dan mencoba menipunya | Studio: kamu merakit rumah pintar dan otak agennya sendiri dari nol |
 | Dunia | Enam ruang kampus siap pakai | Rumah, kebun, dan kandang ayam rakitanmu, lengkap dengan ESP32, sensor, relay, kabel, dan Wi-Fi |
@@ -42,6 +42,6 @@ Panduan studio ada di **[STUDIO.md](STUDIO.md)**.
 ## Dokumen
 
 - **[PANDUAN.md](PANDUAN.md)**: cara memasang, cara bermain, semua tab, membuat ruang dan semesta sendiri, pemecahan masalah, dan saran untuk dosen.
-- **[STUDIO.md](STUDIO.md)**: Studio Rumah Agen, dari ESP pertama sampai bot Telegram.
+- **[STUDIO.md](STUDIO.md)**: Easy Agent Visualizer, dari ESP pertama sampai bot Telegram.
 - [UJI.md](UJI.md): laporan pengujian.
 - [PENGEMBANG.md](PENGEMBANG.md): untuk yang ingin mengubah kode game.

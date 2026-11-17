@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: papan otak (SVG).
+/* Easy Agent Visualizer: papan otak (SVG).
    Seret blok, tarik kabel dari titik keluar (kanan) ke titik masuk (kiri), geser papan, zoom dengan roda mouse.
    Setiap kabel divalidasi Graf.cekKabel: tipe port harus sama, jadi rakitan yang salah tidak bisa dipasang. */
 (function (root) {

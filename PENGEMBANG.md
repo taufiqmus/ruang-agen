@@ -35,7 +35,7 @@ Dibuat otomatis dan tidak masuk git: `.venv/` (Python milik MULAI.bat), `model/`
 
 Edit berkas di `src/`, lalu jalankan `python build.py`. Ruang dan semesta bawaan ada di `src/dunia.js` dan `src/semesta.js`.
 
-## Studio Rumah Agen (v2)
+## Easy Agent Visualizer (v2)
 
 Entri terpisah `studio.html`, dirakit `build.py` dari `src/studio/studio.src.html` ditambah modul v1 yang dipakai ulang (manual, dunia, semesta, brain, router, brain-llm) dan modul studio:
 

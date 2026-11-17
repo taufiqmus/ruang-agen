@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: klien bot Telegram langsung dari browser.
+/* Easy Agent Visualizer: klien bot Telegram langsung dari browser.
    - Hanya "simple request" (GET dengan query, POST x-www-form-urlencoded) supaya tidak ada preflight CORS:
      api.telegram.org menjawab preflight OPTIONS dengan 501.
    - Long polling getUpdates dengan offset (pesan yang sudah dibaca diakui).

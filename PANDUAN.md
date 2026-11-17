@@ -1,6 +1,6 @@
 # Panduan Ruang Agen
 
-Bagian 1 sampai 4 untuk semua pemain, bagian 5 untuk yang ingin membuat ruang dan semesta sendiri, bagian 6 tentang Studio Rumah Agen, bagian 7 untuk dosen.
+Bagian 1 sampai 4 untuk semua pemain, bagian 5 untuk yang ingin membuat ruang dan semesta sendiri, bagian 6 tentang Easy Agent Visualizer, bagian 7 untuk dosen.
 
 ## 1. Memasang
 
@@ -30,7 +30,7 @@ Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
    | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
 
 3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
-4. Pilih aplikasi yang dibuka: **Studio Rumah Agen** atau **Ruang Agen**.
+4. Pilih aplikasi yang dibuka: **Easy Agent Visualizer** atau **Ruang Agen**.
 
 Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
 
@@ -371,9 +371,9 @@ Aturan penulisan ruang:
 - Bentuk 3D di luar daftar dan letak perangkat (diatur otomatis).
 - Kunci OpenRouter dan pilihan otak tidak ikut tersimpan di berkas semesta, supaya berkas yang dibagikan tidak membawa rahasia.
 
-## 6. Studio Rumah Agen
+## 6. Easy Agent Visualizer
 
-Selain game ini, ada **Studio Rumah Agen** (`studio.html`): mahasiswa merakit rumah pintar sendiri dalam 3D (ESP32, sensor, relay, kabel, Wi-Fi) dan otak agennya dari blok seret-lepas, lalu menyambungkannya ke bot Telegram sungguhan. Buka dengan klik dua kali `studio.html`, atau `MULAI.bat --studio` untuk memakai AI di laptop. Panduan lengkap ada di [STUDIO.md](STUDIO.md).
+Selain game ini, ada **Easy Agent Visualizer** (`studio.html`): mahasiswa merakit rumah pintar sendiri dalam 3D (ESP32, sensor, relay, kabel, Wi-Fi) dan otak agennya dari blok seret-lepas, lalu menyambungkannya ke bot Telegram sungguhan. Buka dengan klik dua kali `studio.html`, atau `MULAI.bat --studio` untuk memakai AI di laptop. Panduan lengkap ada di [STUDIO.md](STUDIO.md).
 
 ## 7. Untuk dosen
 

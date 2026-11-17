@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: PAPAN OTAK sebagai graf blok.
+/* Easy Agent Visualizer: PAPAN OTAK sebagai graf blok.
    Setiap blok punya port bertipe. Sambungan hanya boleh antar port bertipe sama:
      pesan       : aliran pesan (pemicu -> proses -> keluaran)
      alat        : blok Alat -> port "alat" pada Agen

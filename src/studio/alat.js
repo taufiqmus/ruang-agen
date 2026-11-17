@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: TOOL untuk agen, parser bahasa sehari-hari, guard aksi, dan pelaksana blok Agen.
+/* Easy Agent Visualizer: TOOL untuk agen, parser bahasa sehari-hari, guard aksi, dan pelaksana blok Agen.
    Tool ditulis seperti manifest MCP: nama, deskripsi, skema parameter, dan fungsi pelaksana di kode.
    Prinsip v1 tetap: AI hanya mengusulkan pemanggilan tool; validasi, batas, dan persetujuan selalu di kode. */
 (function (root) {

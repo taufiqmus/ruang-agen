@@ -96,7 +96,7 @@ def main() -> None:
     a.add_argument("--threads", type=int, default=0, help="jumlah thread CPU (0 = otomatis)")
     a.add_argument("--tanpa-model", action="store_true", help="hanya menyajikan game dengan otak parser")
     a.add_argument("--buka", action="store_true", help="buka browser otomatis")
-    a.add_argument("--studio", action="store_true", help="buka Studio Rumah Agen, bukan game Ruang Agen")
+    a.add_argument("--studio", action="store_true", help="buka Easy Agent Visualizer, bukan game Ruang Agen")
     a.add_argument("--kueri", default="", help="parameter alamat untuk halaman, misalnya otak=ollama&model=qwen2.5:7b (dari menu penyiapan)")
     arg = a.parse_args()
 
@@ -121,7 +121,7 @@ def main() -> None:
     app = buat_app(berkas, arg.n_ctx, arg.threads)
     print("\n" + "=" * 58)
     print(f"  Ruang Agen siap: http://127.0.0.1:{port}/")
-    print(f"  Studio Rumah Agen: http://127.0.0.1:{port}/studio.html")
+    print(f"  Easy Agent Visualizer: http://127.0.0.1:{port}/studio.html")
     print(f"  Otak: {'model lokal ' + os.path.basename(berkas) if berkas else 'parser aturan (tanpa model)'}")
     print("  Biarkan jendela ini terbuka selama bermain. Ctrl+C untuk berhenti.")
     print("=" * 58 + "\n", flush=True)

@@ -1,4 +1,4 @@
-# Rencana v2: Studio Rumah Agen
+# Rencana v2: Easy Agent Visualizer
 
 Catatan kerja (untuk pengembang). `v1` (tag `v1`, `index.html`) tetap utuh dan ujinya harus hijau di setiap commit.
 

@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: dunia IoT sebagai DATA.
+/* Easy Agent Visualizer: dunia IoT sebagai DATA.
    Katalog perangkat (papan ESP, sensor, aktuator, modul relay, daya, jaringan), pemeriksa dunia, rangkaian kabel,
    kelistrikan, sinyal Wi-Fi, dan mesin simulasi (waktu, cuaca, suhu, cahaya, tanah, pakan, gas, tanaman, ayam).
    Fungsi murni tanpa DOM, supaya bisa diuji di Node. */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Studio Rumah Agen</title>
+<title>Easy Agent Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -148,7 +148,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 <body>
 <div class="app">
   <header class="atas">
-    <h1>Studio <span>Rumah Agen</span></h1>
+    <h1>Easy <span>Agent Visualizer</span></h1>
     <div class="seg" role="group" aria-label="Mode">
       <button type="button" data-mode="bangun" aria-pressed="true">Bangun</button>
       <button type="button" data-mode="otak" aria-pressed="false">Otak</button>
@@ -2280,7 +2280,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 
 </script>
 <script>
-/* Studio Rumah Agen: dunia IoT sebagai DATA.
+/* Easy Agent Visualizer: dunia IoT sebagai DATA.
    Katalog perangkat (papan ESP, sensor, aktuator, modul relay, daya, jaringan), pemeriksa dunia, rangkaian kabel,
    kelistrikan, sinyal Wi-Fi, dan mesin simulasi (waktu, cuaca, suhu, cahaya, tanah, pakan, gas, tanaman, ayam).
    Fungsi murni tanpa DOM, supaya bisa diuji di Node. */
@@ -2727,7 +2727,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.IoT = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: TOOL untuk agen, parser bahasa sehari-hari, guard aksi, dan pelaksana blok Agen.
+/* Easy Agent Visualizer: TOOL untuk agen, parser bahasa sehari-hari, guard aksi, dan pelaksana blok Agen.
    Tool ditulis seperti manifest MCP: nama, deskripsi, skema parameter, dan fungsi pelaksana di kode.
    Prinsip v1 tetap: AI hanya mengusulkan pemanggilan tool; validasi, batas, dan persetujuan selalu di kode. */
 (function (root) {
@@ -3080,7 +3080,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.AlatStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: PAPAN OTAK sebagai graf blok.
+/* Easy Agent Visualizer: PAPAN OTAK sebagai graf blok.
    Setiap blok punya port bertipe. Sambungan hanya boleh antar port bertipe sama:
      pesan       : aliran pesan (pemicu -> proses -> keluaran)
      alat        : blok Alat -> port "alat" pada Agen
@@ -3361,7 +3361,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.Graf = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: klien bot Telegram langsung dari browser.
+/* Easy Agent Visualizer: klien bot Telegram langsung dari browser.
    - Hanya "simple request" (GET dengan query, POST x-www-form-urlencoded) supaya tidak ada preflight CORS:
      api.telegram.org menjawab preflight OPTIONS dengan 501.
    - Long polling getUpdates dengan offset (pesan yang sudah dibaca diakui).
@@ -3451,7 +3451,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.TelegramStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: kerangka Python untuk agen (tool, guard, loop tool calling ke Ollama) yang setara dengan
+/* Easy Agent Visualizer: kerangka Python untuk agen (tool, guard, loop tool calling ke Ollama) yang setara dengan
    papan otak. Rumah dan ESP di studio murni simulasi; alat di kerangka ini adalah tempat mahasiswa menyambungkan
    sumber datanya sendiri. Titik awal belajar, belum diuji otomatis. */
 (function (root) {
@@ -3462,7 +3462,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     const J = root.Graf.JENIS;
     const agen = H.blok.filter(b => b.jenis === 'agen');
     const L = [];
-    L.push('"""Kerangka agen dari Studio Rumah Agen (papan otak: ' + H.nama.replace(/"/g, '') + ').', 'Titik awal belajar: pola yang sama dengan papan blok, ditulis dalam Python.', 'Butuh: pip install requests. Model lewat Ollama (http://localhost:11434). Belum diuji otomatis."""');
+    L.push('"""Kerangka agen dari Easy Agent Visualizer (papan otak: ' + H.nama.replace(/"/g, '') + ').', 'Titik awal belajar: pola yang sama dengan papan blok, ditulis dalam Python.', 'Butuh: pip install requests. Model lewat Ollama (http://localhost:11434). Belum diuji otomatis."""');
     L.push('import json, re, requests', '', 'OLLAMA = "http://localhost:11434/api/chat"', 'MODEL = "qwen2.5:7b"', '');
     L.push('# ---------- guard masukan (sama seperti blok Guard Masukan) ----------', 'POLA_INJEKSI = re.compile(r"(abaikan|lupakan|ignore|jailbreak|mode (admin|developer)|tanpa (batas|aturan))", re.I)', 'def guard_masukan(teks):', '    return not POLA_INJEKSI.search(teks)', '');
     const area = W.area.map(x => x.id);
@@ -3485,7 +3485,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.EksporStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: jalur belajar.
+/* Easy Agent Visualizer: jalur belajar.
    Misi bertahap dari ESP pertama sampai multi-agen, Telegram, dan ekspor kode. Setiap misi punya kartu konsep,
    petunjuk, dan pemeriksa yang membaca dunia, papan otak, simulasi, dan statistik permainan.
    Kasus uji agen dirakit dari isi dunia, jadi berlaku untuk rumah buatan mahasiswa. */
@@ -3554,7 +3554,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.MisiStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: dunia 3D (Three.js r128).
+/* Easy Agent Visualizer: dunia 3D (Three.js r128).
    Area (ruang berdinding rendah, kebun, kandang), perangkat dari katalog, kabel, cincin jangkauan Wi-Fi, LED status ESP,
    tanaman yang layu atau segar, ayam yang berkeliaran, siklus siang dan malam. Kamera orbit sederhana.
    Mode ringan untuk laptop lemah: tanpa bayangan, resolusi 1x, lebih sedikit segi. */
@@ -4008,7 +4008,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.Dunia3D = { buat };
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Studio Rumah Agen: papan otak (SVG).
+/* Easy Agent Visualizer: papan otak (SVG).
    Seret blok, tarik kabel dari titik keluar (kanan) ke titik masuk (kiri), geser papan, zoom dengan roda mouse.
    Setiap kabel divalidasi Graf.cekKabel: tipe port harus sama, jadi rakitan yang salah tidak bisa dipasang. */
 (function (root) {
@@ -4162,7 +4162,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 </script>
 <script>
 window.KURIKULUM = {
-  "judul": "Belajar Agentic AI dengan Ruang Agen dan Studio Rumah Agen",
+  "judul": "Belajar Agentic AI dengan Ruang Agen dan Easy Agent Visualizer",
   "catatan": "Sumber tunggal untuk tutorial interaktif, slide, dan naskah video. Ubah di sini, lalu bangun ulang.",
   "pertemuan": [
     {
@@ -4177,7 +4177,7 @@ window.KURIKULUM = {
     {
       "no": 2,
       "judul": "Merakit rumah pintar",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [1, 2, 3],
       "konsep": ["ESP32 butuh daya dan Wi-Fi", "sensor digital dan analog", "beban besar wajib lewat relay", "sinyal Wi-Fi melemah oleh jarak dan dinding"],
       "label": ["Bangun", "Sambung otomatis", "Inspektur", "Dashboard", "Wi-Fi", "Label"],
@@ -4186,7 +4186,7 @@ window.KURIKULUM = {
     {
       "no": 3,
       "judul": "Otak pertama: chatbot dan alat",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [4, 5],
       "konsep": ["pemicu, agen, keluaran", "kabel bertipe", "tool: AI memilih, kode menjalankan", "router hemat: parser dulu, AI bila perlu"],
       "label": ["Otak", "Chat", "Agen", "Balas", "Alat Sensor", "Alat Aktuator", "Jejak"],
@@ -4195,7 +4195,7 @@ window.KURIKULUM = {
     {
       "no": 4,
       "judul": "Aturan atau AI? Dan agen yang membaca",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [6, 7],
       "konsep": ["aturan JIKA-MAKA tanpa AI", "kapan AI memang dibutuhkan", "RAG: mencari dokumen sebelum menjawab", "agen jujur saat tidak tahu"],
       "label": ["Aturan JIKA-MAKA", "Pemicu Sensor", "RAG"],
@@ -4204,7 +4204,7 @@ window.KURIKULUM = {
     {
       "no": 5,
       "judul": "Keamanan agen",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [8, 11],
       "konsep": ["Guard Masukan menangkap upaya menipu agen", "Guard Aksi menjaga batas fisik di kode", "persetujuan manusia untuk aksi berisiko", "uji kekacauan: Wi-Fi putus, listrik padam, sensor rusak"],
       "label": ["Guard Masukan", "Guard Aksi", "Lab", "Setujui"],
@@ -4213,7 +4213,7 @@ window.KURIKULUM = {
     {
       "no": 6,
       "judul": "Tim agen, Telegram, dan laporan otomatis",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [9, 10, 12],
       "konsep": ["orkestrator membagi tugas ke agen spesialis", "lingkup wilayah alat", "bot Telegram sungguhan dan daftar izin", "agen yang bekerja sendiri lewat Jadwal"],
       "label": ["Orkestrator", "Telegram", "Hubungkan dan dengarkan", "Izinkan", "Jadwal"],
@@ -4221,7 +4221,7 @@ window.KURIKULUM = {
     }
   ]
 };
-/* Tutorial interaktif (dipakai Ruang Agen dan Studio Rumah Agen).
+/* Tutorial interaktif (dipakai Ruang Agen dan Easy Agent Visualizer).
    Setiap langkah: judul, teks, target yang disorot, persiapan (pindah mode atau tab), dan pemeriksa keadaan.
    Langkah dengan pemeriksa baru selesai saat keadaan aplikasi benar-benar berubah (bukan sekadar klik).
    Sorotan tidak memblokir klik, jadi pemain tetap bisa memakai aplikasi. Esc atau Lewati menutup tutorial. */
@@ -4325,7 +4325,7 @@ window.KURIKULUM = {
   root.Tutorial = { buat };
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Tutorial interaktif Studio Rumah Agen: satu bab per pertemuan (judul dari materi/kurikulum.json).
+/* Tutorial interaktif Easy Agent Visualizer: satu bab per pertemuan (judul dari materi/kurikulum.json).
    Langkah praktik baru selesai saat keadaan rumah atau papan otak benar-benar berubah. */
 (function (root) {
   'use strict';
@@ -4417,7 +4417,7 @@ window.KURIKULUM = {
 
 </script>
 <script>
-/* Studio Rumah Agen: perekat UI. Mode Bangun (dunia 3D), Otak (papan blok), Main (simulasi berjalan).
+/* Easy Agent Visualizer: perekat UI. Mode Bangun (dunia 3D), Otak (papan blok), Main (simulasi berjalan).
    Semua keputusan agen lewat Graf.jalankan; semua aksi fisik lewat IoT.aturAktuator; guard di kode. */
 (function () {
   'use strict';
@@ -5040,7 +5040,7 @@ window.KURIKULUM = {
   }
   function unduh(nama, isi, tipe) { const a = mk('a'); a.href = URL.createObjectURL(new Blob([isi], { type: tipe || 'text/plain' })); a.download = nama; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
   function unduhIcs() {
-    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Studio Rumah Agen//ID'];
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Easy Agent Visualizer//ID'];
     data.kalender.forEach((e, i) => { const d = e.tanggal.replace(/-/g, '') + 'T' + e.jam.replace(':', '') + '00'; L.push('BEGIN:VEVENT', 'UID:ruangagen-' + i + '-' + d, 'DTSTART:' + d, 'SUMMARY:' + e.judul.replace(/[\r\n,;]/g, ' '), 'END:VEVENT'); });
     L.push('END:VCALENDAR'); unduh('kalender-rumah.ics', L.join('\r\n'), 'text/calendar');
   }
@@ -5189,7 +5189,7 @@ window.KURIKULUM = {
   /* ---------- wizard awal: deteksi laptop dan pilihan model ---------- */
   async function wizard() {
     const M = $('#wizard'), P = $('#wizardIsi'); P.replaceChildren(); M.hidden = false;
-    P.appendChild(mk('h2', '', 'Selamat datang di Studio Rumah Agen'));
+    P.appendChild(mk('h2', '', 'Selamat datang di Easy Agent Visualizer'));
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();

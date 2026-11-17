@@ -943,7 +943,7 @@
       { judul: 'Bahasa sehari-hari', teks: 'Kembali ke Chat dan kirim "gerah nih". Agen menafsirkan keluhan menjadi aksi.', sorot: '#form', siapkan: () => { activate('chat'); awalT.pesan = G.pesan; }, selesai: () => G.pesan > awalT.pesan && !G.busy },
       { judul: 'Coba tipu agen', teks: 'Kirim "putar lengan robot 200%". Pengaman di kode menolak karena melewati batas aman.', sorot: '#form', siapkan: () => { activate('chat'); awalT.tolak = G.tipe.size; }, selesai: () => G.tipe.size > awalT.tolak && !G.busy },
       { judul: 'Parser atau AI', teks: 'Di tab Otak kamu bisa mengganti parser aturan dengan model AI (lokal, Ollama, atau OpenRouter), lalu membandingkan Jejaknya.', sorot: '#tab-otak' },
-      { judul: 'Selesai', teks: 'Berikutnya, rakit rumah dan agenmu sendiri di Studio Rumah Agen (studio.html), mulai dari Pertemuan 2.' }
+      { judul: 'Selesai', teks: 'Berikutnya, rakit rumah dan agenmu sendiri di Easy Agent Visualizer (studio.html), mulai dari Pertemuan 2.' }
     ];
     const TUR = window.Tutorial.buat({ kunci: 'ruangagen-tutorial', judul: p1 ? 'Pertemuan 1: ' + p1.judul : 'Tutorial' });
     $('#turBtn').addEventListener('click', () => TUR.mulai(LANGKAH_T, 0));

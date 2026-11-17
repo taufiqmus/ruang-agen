@@ -1,4 +1,4 @@
-# Studio Rumah Agen
+# Easy Agent Visualizer
 
 Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor, relay, kabel, Wi-Fi), lalu rakit otak agennya dengan menyeret blok: pemicu, guard, router, orkestrator, agen, RAG, memori, dan alat. Agen yang sama bisa kamu ajak bicara di chat atau lewat bot Telegram sungguhan dari HP.
 
@@ -7,7 +7,7 @@ Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor
 | Cara | Langkah | Bisa memakai |
 |---|---|---|
 | Paling cepat | Klik dua kali `studio.html` | Parser, OpenRouter, Telegram |
-| Dengan AI di laptop | Klik dua kali `MULAI.bat`, lalu di menu penyiapan pilih otak AI, model, dan **Studio Rumah Agen**. Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama dan model lokal |
+| Dengan AI di laptop | Klik dua kali `MULAI.bat`, lalu di menu penyiapan pilih otak AI, model, dan **Easy Agent Visualizer**. Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama dan model lokal |
 
 Ollama hanya mau dipanggil dari alamat `http://127.0.0.1` atau `http://localhost`, jadi untuk Ollama buka studio lewat `MULAI.bat`.
 
@@ -23,7 +23,7 @@ Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
    | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
 
 3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
-4. Pilih aplikasi yang dibuka: **Studio Rumah Agen** atau **Ruang Agen**.
+4. Pilih aplikasi yang dibuka: **Easy Agent Visualizer** atau **Ruang Agen**.
 
 Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
 

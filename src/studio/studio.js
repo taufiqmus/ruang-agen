@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: perekat UI. Mode Bangun (dunia 3D), Otak (papan blok), Main (simulasi berjalan).
+/* Easy Agent Visualizer: perekat UI. Mode Bangun (dunia 3D), Otak (papan blok), Main (simulasi berjalan).
    Semua keputusan agen lewat Graf.jalankan; semua aksi fisik lewat IoT.aturAktuator; guard di kode. */
 (function () {
   'use strict';
@@ -621,7 +621,7 @@
   }
   function unduh(nama, isi, tipe) { const a = mk('a'); a.href = URL.createObjectURL(new Blob([isi], { type: tipe || 'text/plain' })); a.download = nama; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
   function unduhIcs() {
-    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Studio Rumah Agen//ID'];
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Easy Agent Visualizer//ID'];
     data.kalender.forEach((e, i) => { const d = e.tanggal.replace(/-/g, '') + 'T' + e.jam.replace(':', '') + '00'; L.push('BEGIN:VEVENT', 'UID:ruangagen-' + i + '-' + d, 'DTSTART:' + d, 'SUMMARY:' + e.judul.replace(/[\r\n,;]/g, ' '), 'END:VEVENT'); });
     L.push('END:VCALENDAR'); unduh('kalender-rumah.ics', L.join('\r\n'), 'text/calendar');
   }
@@ -770,7 +770,7 @@
   /* ---------- wizard awal: deteksi laptop dan pilihan model ---------- */
   async function wizard() {
     const M = $('#wizard'), P = $('#wizardIsi'); P.replaceChildren(); M.hidden = false;
-    P.appendChild(mk('h2', '', 'Selamat datang di Studio Rumah Agen'));
+    P.appendChild(mk('h2', '', 'Selamat datang di Easy Agent Visualizer'));
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();

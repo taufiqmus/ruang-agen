@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: jalur belajar.
+/* Easy Agent Visualizer: jalur belajar.
    Misi bertahap dari ESP pertama sampai multi-agen, Telegram, dan ekspor kode. Setiap misi punya kartu konsep,
    petunjuk, dan pemeriksa yang membaca dunia, papan otak, simulasi, dan statistik permainan.
    Kasus uji agen dirakit dari isi dunia, jadi berlaku untuk rumah buatan mahasiswa. */

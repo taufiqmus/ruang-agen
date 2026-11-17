@@ -153,7 +153,7 @@ Sebelumnya `qwen2.5:3b` (22 pesan): JSON valid 20 dari 20, perilaku benar 19 dar
 
 Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan. Ring light Studio yang tampak hilang ternyata hanya tertutup kartu misi dan terlihat jelas saat kartu diringkas.
 
-## 5. Studio Rumah Agen (v2)
+## 5. Easy Agent Visualizer (v2)
 
 Diuji 17 November 2026. Semua uji v1 tetap lulus di setiap commit.
 

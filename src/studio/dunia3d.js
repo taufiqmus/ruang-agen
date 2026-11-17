@@ -1,4 +1,4 @@
-/* Studio Rumah Agen: dunia 3D (Three.js r128).
+/* Easy Agent Visualizer: dunia 3D (Three.js r128).
    Area (ruang berdinding rendah, kebun, kandang), perangkat dari katalog, kabel, cincin jangkauan Wi-Fi, LED status ESP,
    tanaman yang layu atau segar, ayam yang berkeliaran, siklus siang dan malam. Kamera orbit sederhana.
    Mode ringan untuk laptop lemah: tanpa bayangan, resolusi 1x, lebih sedikit segi. */

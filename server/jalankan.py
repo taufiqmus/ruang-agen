@@ -4,7 +4,7 @@ Pertama kali (klik dua kali MULAI.bat) muncul MENU PENYIAPAN:
 - mendeteksi laptop (CPU, RAM, kartu grafis NVIDIA, Ollama),
 - menyarankan otak AI yang cocok, lalu mahasiswa memilih sendiri: tanpa AI, model lokal Python (0,5B atau 1,5B),
   atau Ollama dengan model yang dipilih (diunduh otomatis),
-- memilih aplikasi yang dibuka: Studio Rumah Agen atau game Ruang Agen.
+- memilih aplikasi yang dibuka: Easy Agent Visualizer atau game Ruang Agen.
 Pilihan disimpan di .ruangagen-pilihan.json. Berikutnya langsung jalan. Ubah lagi dengan: MULAI.bat --pilih
 
 Langkah otomatis setelah itu:
@@ -165,7 +165,7 @@ def menu() -> dict:
                         print(f"   {m} gagal diunduh. Periksa internet, bisa diulang dengan: ollama pull {m}")
             hasil["model"] = next((m for m in pilih if m not in ("embeddinggemma", "llama-guard3:1b")), "qwen2.5:1.5b")
     print("\nAplikasi yang dibuka:")
-    print("  1. Studio Rumah Agen (rakit rumah pintar dan otak agen sendiri)")
+    print("  1. Easy Agent Visualizer (rakit rumah pintar dan otak agen sendiri)")
     print("  2. Ruang Agen (game agen di kampus)")
     hasil["aplikasi"] = "studio" if tanya("Pilihanmu", ["1", "2"], "1") == "1" else "game"
     with open(BERKAS_PILIHAN, "w", encoding="utf-8") as f:

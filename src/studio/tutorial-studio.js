@@ -1,4 +1,4 @@
-/* Tutorial interaktif Studio Rumah Agen: satu bab per pertemuan (judul dari materi/kurikulum.json).
+/* Tutorial interaktif Easy Agent Visualizer: satu bab per pertemuan (judul dari materi/kurikulum.json).
    Langkah praktik baru selesai saat keadaan rumah atau papan otak benar-benar berubah. */
 (function (root) {
   'use strict';

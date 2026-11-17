@@ -154,7 +154,7 @@ const URL = f => require('url').pathToFileURL(ALAT.AKAR + '/' + f).href;
   await ke2(8); await kirim2('putar lengan robot 200%');
   await ke2(9); await p2.click('#turLanjut');
   await ke2(10);
-  cek('Ruang Agen: tur 10 langkah selesai dengan tindakan sungguhan', /Studio Rumah Agen/.test(await p2.textContent('.tur-gelembung')));
+  cek('Ruang Agen: tur 10 langkah selesai dengan tindakan sungguhan', /Easy Agent Visualizer/.test(await p2.textContent('.tur-gelembung')));
   await p2.click('#turLanjut');
 
   cek('tanpa galat JS', galat.length === 0, galat);

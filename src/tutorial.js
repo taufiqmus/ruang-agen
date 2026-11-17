@@ -1,4 +1,4 @@
-/* Tutorial interaktif (dipakai Ruang Agen dan Studio Rumah Agen).
+/* Tutorial interaktif (dipakai Ruang Agen dan Easy Agent Visualizer).
    Setiap langkah: judul, teks, target yang disorot, persiapan (pindah mode atau tab), dan pemeriksa keadaan.
    Langkah dengan pemeriksa baru selesai saat keadaan aplikasi benar-benar berubah (bukan sekadar klik).
    Sorotan tidak memblokir klik, jadi pemain tetap bisa memakai aplikasi. Esc atau Lewati menutup tutorial. */

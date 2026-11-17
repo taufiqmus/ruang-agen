@@ -1,5 +1,5 @@
 {
-  "judul": "Belajar Agentic AI dengan Ruang Agen dan Studio Rumah Agen",
+  "judul": "Belajar Agentic AI dengan Ruang Agen dan Easy Agent Visualizer",
   "catatan": "Sumber tunggal untuk tutorial interaktif, slide, dan naskah video. Ubah di sini, lalu bangun ulang.",
   "pertemuan": [
     {
@@ -14,7 +14,7 @@
     {
       "no": 2,
       "judul": "Merakit rumah pintar",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [1, 2, 3],
       "konsep": ["ESP32 butuh daya dan Wi-Fi", "sensor digital dan analog", "beban besar wajib lewat relay", "sinyal Wi-Fi melemah oleh jarak dan dinding"],
       "label": ["Bangun", "Sambung otomatis", "Inspektur", "Dashboard", "Wi-Fi", "Label"],
@@ -23,7 +23,7 @@
     {
       "no": 3,
       "judul": "Otak pertama: chatbot dan alat",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [4, 5],
       "konsep": ["pemicu, agen, keluaran", "kabel bertipe", "tool: AI memilih, kode menjalankan", "router hemat: parser dulu, AI bila perlu"],
       "label": ["Otak", "Chat", "Agen", "Balas", "Alat Sensor", "Alat Aktuator", "Jejak"],
@@ -32,7 +32,7 @@
     {
       "no": 4,
       "judul": "Aturan atau AI? Dan agen yang membaca",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [6, 7],
       "konsep": ["aturan JIKA-MAKA tanpa AI", "kapan AI memang dibutuhkan", "RAG: mencari dokumen sebelum menjawab", "agen jujur saat tidak tahu"],
       "label": ["Aturan JIKA-MAKA", "Pemicu Sensor", "RAG"],
@@ -41,7 +41,7 @@
     {
       "no": 5,
       "judul": "Keamanan agen",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [8, 11],
       "konsep": ["Guard Masukan menangkap upaya menipu agen", "Guard Aksi menjaga batas fisik di kode", "persetujuan manusia untuk aksi berisiko", "uji kekacauan: Wi-Fi putus, listrik padam, sensor rusak"],
       "label": ["Guard Masukan", "Guard Aksi", "Lab", "Setujui"],
@@ -50,7 +50,7 @@
     {
       "no": 6,
       "judul": "Tim agen, Telegram, dan laporan otomatis",
-      "aplikasi": "Studio Rumah Agen",
+      "aplikasi": "Easy Agent Visualizer",
       "misi": [9, 10, 12],
       "konsep": ["orkestrator membagi tugas ke agen spesialis", "lingkup wilayah alat", "bot Telegram sungguhan dan daftar izin", "agen yang bekerja sendiri lewat Jadwal"],
       "label": ["Orkestrator", "Telegram", "Hubungkan dan dengarkan", "Izinkan", "Jadwal"],
