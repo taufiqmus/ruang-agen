@@ -10,11 +10,15 @@ Dokumen lain:
 
 ## Mulai cepat
 
-1. Buka `index.html` di Chrome atau Edge. Game langsung jalan dengan **parser aturan** (gratis, tanpa internet kecuali memuat three.js dari CDN).
-2. Ketik perintah di tab **Chat**, misalnya `nyalakan lampu dan kipas`, `gerah nih`, `bikin nyaman`, atau `berapa suhu nyaman?`.
-3. Buka tab **Jejak** untuk melihat jalur pesan melewati pipeline agen. Selesaikan misi di tab **Misi**. Pindah ruang atau semesta di tab **Dunia**, dan ubah isi kepala agen di tab **Agen**.
+| Cara | Langkah | Otak |
+|---|---|---|
+| Tanpa pasang apa pun | Klik dua kali `index.html` | Parser aturan |
+| **Dengan AI lokal (disarankan)** | Klik dua kali **`MULAI.bat`** (Mac atau Linux: `./mulai.sh`). Pertama kali menyiapkan Python, paket, dan model sendiri, lalu membuka browser | Model lokal otomatis, tanpa pengaturan |
+| Untuk kelas | Unggah `index.html` ke GitHub Pages | Parser atau OpenRouter |
 
-Untuk kelas, unggah `index.html` ke GitHub Pages (Settings, Pages). Pratinjau artifact di claude.ai memblokir koneksi keluar, jadi mode LLM hanya bekerja di halaman yang Anda host sendiri.
+Lalu ketik perintah di tab **Chat**, misalnya `nyalakan lampu dan kipas`, `gerah nih`, `bikin nyaman`, atau `berapa suhu nyaman?`. Buka tab **Jejak** untuk melihat jalur pesan melewati pipeline agen. Selesaikan misi di tab **Misi**. Pindah ruang atau semesta di tab **Dunia**, dan ubah isi kepala agen di tab **Agen**.
+
+Langkah lengkap ada di [PANDUAN.md](PANDUAN.md).
 
 ## Semesta dan dunia
 
@@ -79,7 +83,8 @@ Tiap pesan menyalakan tahap yang dilalui dan memerahkan yang menolak. Ini cara m
 | `manual.js` | Rak manual: retrieval TF-IDF tanpa API, angka dari teks manual, catatan memori, penjelasan skor |
 | `prompt.js` | Prompt LLM (lengkap dan ringkas) dirakit dari ruang aktif |
 | `brain-llm.js` | Memanggil LLM (server lokal Python, OpenRouter, atau Ollama), validasi skema, retry, router hemat, fallback |
-| `server_lokal.py`, `requirements-lokal.txt` | Server model kecil lokal berbasis Python (llama-cpp-python, CPU) |
+| `MULAI.bat`, `mulai.sh`, `jalankan.py` | Satu klik: mencari Python yang cocok (menawarkan pemasangan bila belum ada), menyiapkan `.venv`, memasang paket siap pakai, lalu menjalankan server |
+| `server_lokal.py`, `requirements-lokal.txt` | Server game dan model kecil di satu alamat (llama-cpp-python, CPU). Mengunduh model sekali ke `model/` |
 | `build.py` | Merakit `index.html` dan memeriksa tidak ada em dash |
 | `test_*.js` | Uji otomatis (lihat bagian Build dan uji) |
 | `live_check.js` | Uji nyata pesan contoh ke LLM sungguhan |
@@ -145,16 +150,15 @@ Pilihan **Otomatis** (bawaan) memakai ringan di perangkat dengan 4 inti atau kur
 
 ## Model lokal kecil (Python) dan router hemat
 
-Untuk laptop berspesifikasi rendah. `server_lokal.py` menjalankan model Qwen2.5 Instruct kecil (kuantisasi Q4_K_M) di CPU memakai llama-cpp-python, tanpa GPU dan tanpa Docker. Server kompatibel OpenAI di `http://127.0.0.1:8000/v1`.
+Untuk laptop berspesifikasi rendah. Model Qwen2.5 Instruct kecil (kuantisasi Q4_K_M) berjalan di CPU memakai llama-cpp-python, tanpa GPU dan tanpa Docker.
 
-```bash
-python -m venv venv
-venv\Scripts\activate        # Linux atau Mac: source venv/bin/activate
-pip install -r requirements-lokal.txt
-python server_lokal.py          # unduh model 1.5B sekali (sekitar 1 GB), lalu jalan
-```
+Mahasiswa cukup klik dua kali **`MULAI.bat`** (Mac atau Linux: `./mulai.sh`). Skrip itu:
+1. mencari Python 3.10 sampai 3.12 (Python lama diabaikan; bila tidak ada, menawarkan pemasangan Python 3.12 lewat winget),
+2. membuat `.venv` di folder game dan hanya memasang paket siap pakai (`--only-binary`, tidak butuh compiler),
+3. mengunduh model sekali ke `model/`,
+4. menjalankan game dan model di **satu alamat** `http://127.0.0.1:8000` (API kompatibel OpenAI di `/v1`) lalu membuka browser.
 
-Lalu di game: tab **Otak**, pilih "Model lokal kecil, Python", **Simpan**, **Tes koneksi**. Opsi lain: `--ukuran 0.5b` (paling ringan), `--threads N`, `--berkas jalur.gguf`, `--folder` (lokasi model, default `./model`).
+Karena satu alamat, tidak ada masalah CORS, dan game mendeteksi model lalu langsung memakainya selama pengguna belum memilih otak lain secara manual. Pilihan: `--ukuran 0.5b`, `--threads N`, `--berkas jalur.gguf`, `--folder`, `--port`, `--tanpa-model`. Hasil uji: dari folder kosong sampai siap sekitar 70 detik (paket dan model 0,5B), jalan berikutnya siap dalam 6 detik.
 
 Strategi untuk model kecil:
 1. **Prompt ringkas**, dirakit dari ruang aktif: aturan pendek dan contoh yang dibuat dari perangkat ruang itu.
@@ -205,6 +209,7 @@ node test_llm.js           # otak LLM dengan fetch tiruan, model lokal, Ollama, 
 PW=<jalur playwright-core> THREE=<jalur three.min.js> CHROME=<jalur chrome> node test_browser.js
 PW=... THREE=... CHROME=... node test_browser_semesta.js   # Studio Agen, router, kejadian, semesta buatan, ekspor dan impor
 PW=... THREE=... CHROME=... [LAMBAT=6] node test_resource_rendah.js   # simulasi perangkat lemah
+PW=... CHROME=... node test_mulai_live.js   # setelah MULAI.bat berjalan: browser baru langsung memakai model lokal
 
 # uji nyata (kunci lewat variabel lingkungan, jangan simpan di berkas):
 OPENROUTER_API_KEY=sk-or-... node live_check.js                  # 15 pesan dasar

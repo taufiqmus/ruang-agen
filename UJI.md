@@ -22,6 +22,14 @@ Cakupan: halaman termuat tanpa galat JS, enam tab, spesialis tiap ruang. Lab: mi
 
 `test_browser_semesta.js`: 58 cek, semua lulus. Cakupan: semesta Kampus dimuat dengan 6 ruang; rute KAMPUS, CURHAT, dan DILARANG di browser; **pipeline hidup** (MEMORI, RAG, GUARD merah saat aksi ditolak, MASUKAN merah saat injeksi, ORKESTRATOR dan SPESIALIS, KELUARAN); misi semesta (Tur Kampus, Jagoan Router) selesai lintas ruang dengan XP dan badge; kejadian "masuk", "pesanKe", dan padam; **Studio Agen**: ubah nama, persona, kata setuju dan menolak, sapaan, gaya, strategi orkestrator, nama orkestrator, rute buatan dari form, sinonim, pola masukan, guard keluaran lalu Terapkan, hasilnya langsung dipakai agen, bertahan setelah muat ulang; **mode rentan** (peringatan tampil, guard aksi mati meloloskan lengan 200%, dinyalakan lagi menolak); semesta baru dari templat, JSON semesta disunting (kejadian, misi, pengetahuan baru), JSON salah memberi galat ramah tanpa mengganti semesta aktif, ekspor lalu impor berkas, hapus semesta, migrasi data lama (ruang buatan, XP, bintang, dan mode otak proxy); tiga ruang baru (dapur, kebun, perpustakaan) di grafis realistis dan interlock dapur.
 
+### Satu klik untuk mahasiswa (`MULAI.bat`)
+
+Diuji nyata di laptop ini dari folder tanpa `.venv` dan tanpa model (17 November 2026), dengan Python 3.8 di PATH (sengaja diabaikan skrip) dan Python 3.11 lewat `py`:
+- Skrip memilih `py -3.11`, membuat `.venv`, memasang paket siap pakai (147 MB), mengunduh model 0,5B dari nol (469 MB), lalu server siap dalam **70 detik**.
+- `test_mulai_live.js` lulus: browser baru tanpa pengaturan apa pun mendeteksi model di alamat yang sama dan langsung memakainya. Pesan dikenal dikerjakan parser (router hemat), pesan baru dijawab model lokal sungguhan, tanpa masalah CORS, tanpa galat JS.
+- Jalan kedua saat port 8000 masih terpakai: siap dalam **6 detik** di port 8001, tanpa memasang atau mengunduh ulang.
+- Belum diuji: laptop tanpa Python sama sekali (jalur pemasangan lewat winget), Windows tanpa winget, Mac dan Linux (`mulai.sh`).
+
 ## 3. Simulasi sumber daya komputasi rendah
 
 `test_resource_rendah.js`: semua lulus. Chrome dengan CPU diperlambat 6x lewat CDP, `hardwareConcurrency` dilaporkan 2, `deviceMemory` 2 GB.

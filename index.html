@@ -3102,6 +3102,7 @@ function bangunPromptRingkas(pesan, state, potongan, ruang) {
     cfg.batasSesi = clamp(parseInt($('#otBatas').value, 10) || 30, 1, 200);
     cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:1.5b';
     cfg.lokalUrl = $('#otLokalUrl').value || 'http://localhost:8000/v1'; cfg.lokalModel = $('#otLokalModel').value || 'qwen2.5-1.5b'; cfg.hemat = $('#otHemat').checked;
+    cfg.otomatis = false;   // pilihan pengguna sendiri tidak ditimpa deteksi otomatis
     simpanCfg(); tampilGrup(); renderOtak();
   }
   $('#otMode').addEventListener('change', () => { cfg.mode = $('#otMode').value; tampilGrup(); });
@@ -3114,6 +3115,19 @@ function bangunPromptRingkas(pesan, state, potongan, ruang) {
     catch (e) { st.textContent = 'Gagal: ' + (e && e.message ? e.message : e); }
   });
   isiForm(); renderOtak();
+  /* Dibuka lewat MULAI.bat: game dan model berada di alamat yang sama. Bila pengguna belum pernah memilih otak sendiri,
+     otak langsung beralih ke model lokal, jadi mahasiswa tidak perlu mengatur apa pun. */
+  async function deteksiModelLokal() {
+    if (!/^https?:$/.test(location.protocol) || !['127.0.0.1', 'localhost'].includes(location.hostname)) return;
+    let ok = false;
+    try { const ctl = new AbortController(); setTimeout(() => ctl.abort(), 3000); ok = (await fetch(location.origin + '/v1/models', { signal: ctl.signal })).ok; } catch (e) { /* tidak ada model */ }
+    if (!ok) return;
+    const url = location.origin + '/v1';
+    if (!baca(KFG, null) || cfg.otomatis) {
+      Object.assign(cfg, { mode: 'lokal', lokalUrl: url, hemat: true, otomatis: true }); simpanCfg(); isiForm(); renderOtak();
+      chat('sis', 'Model lokal terdeteksi di laptop ini. Otak otomatis memakai model lokal dengan router hemat. Bisa diubah di tab Otak.');
+    } else if (cfg.mode !== 'lokal') chat('sis', `Model lokal terdeteksi di ${url}. Untuk memakainya, pilih "Model lokal kecil, Python" di tab Otak.`);
+  }
 
   /* ---------- tab Manual: editor rak, memori, dan uji pencarian ---------- */
   const opsiRag = () => ({ sinonim: SM().rag.sinonim, stop: SM().rag.stop });
@@ -3397,6 +3411,7 @@ function bangunPromptRingkas(pesan, state, potongan, ruang) {
   if (!masukSemesta(G.semesta, G.ruang)) { if (!masukSemesta('kampus', 'lab')) throw new Error('Semesta bawaan gagal dimuat'); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => adegan.gambarUlang());
   requestAnimationFrame(t => { last = t; loop(t); });
+  deteksiModelLokal();
   window.__ruangAgen = { G, kirim, mulaiMisi, terimaSerangan, masukRuang, masukSemesta, adegan, get SPES() { const o = {}; adegan.namaSpesialis().forEach(n => { o[n] = true; }); return o; }, get MISI() { return MISI; } };
 })();
 

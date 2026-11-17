@@ -4,40 +4,40 @@ Panduan instalasi dan penggunaan. Bagian 1 sampai 3 untuk mahasiswa, bagian 4 un
 
 ## 1. Instalasi
 
-### Cara termudah: tanpa pasang apa pun
+Pilih salah satu. Semuanya gratis.
 
-Buka `index.html` dengan Chrome atau Edge (klik dua kali). Butuh internet hanya untuk memuat pustaka 3D dari CDN. Game langsung jalan dengan **parser aturan** (tanpa AI model, tanpa biaya).
+### A. Paling cepat: tanpa pasang apa pun (otak parser)
 
-### Untuk kelas: GitHub Pages
+Klik dua kali `index.html` (Chrome atau Edge). Langsung main, tanpa AI model. Semua misi bisa diselesaikan.
 
-1. Unggah `index.html` ke repositori GitHub.
-2. Settings, Pages, pilih branch utama, Save.
-3. Bagikan alamatnya (`https://<akun>.github.io/<repo>/`). Tidak ada server atau akun lain yang perlu disiapkan.
+### B. Dengan AI di laptop sendiri: klik dua kali `MULAI.bat`
 
-### Menjalankan dari komputer sendiri (untuk mikrofon atau model lokal)
+Untuk Windows. Mac atau Linux: buka terminal di folder game, jalankan `./mulai.sh`.
 
-Mikrofon butuh `https` atau `localhost`. Dari folder game:
+1. Klik dua kali **`MULAI.bat`** di folder game.
+2. Tunggu. Pertama kali butuh internet dan beberapa menit: skrip menyiapkan Python sendiri di folder `.venv`, memasang paket (sekitar 150 MB), dan mengunduh model kecil (sekitar 1 GB). Kemajuan tampil sebagai langkah `[1/4]` sampai `[4/4]`.
+3. Browser terbuka sendiri di `http://127.0.0.1:8000`. Otak **otomatis** memakai model lokal dengan router hemat. Tidak ada yang perlu diatur.
+4. Biarkan jendela hitam tetap terbuka selama bermain. Tutup jendelanya untuk berhenti.
 
-```
-python -m http.server 8000
-```
+Berikutnya cukup klik dua kali `MULAI.bat` lagi: siap dalam beberapa detik, tanpa unduhan.
 
-Lalu buka `http://localhost:8000`.
+Kalau laptop belum punya Python 3.10 sampai 3.12, `MULAI.bat` menawarkan memasang Python 3.12 otomatis (ketik `Y`), lalu minta Anda menjalankan `MULAI.bat` sekali lagi. Python lama (misalnya 3.8) diabaikan, jadi tidak perlu dihapus.
 
-### Opsional: model AI kecil di laptop sendiri (Python, tanpa GPU)
+Pilihan tambahan (klik kanan di folder, "Open in Terminal", lalu ketik):
 
-Untuk laptop biasa. Butuh Python 3.10 sampai 3.12 (64-bit), RAM kosong sekitar 2 GB, dan ruang disk sekitar 1,5 GB. Internet hanya untuk mengunduh sekali.
+| Perintah | Kegunaan |
+|---|---|
+| `MULAI.bat --ukuran 0.5b` | Model paling ringan (sekitar 0,5 GB), untuk laptop sangat terbatas. Jawaban lebih lemah |
+| `MULAI.bat --threads 2` | Batasi pemakaian CPU supaya laptop tidak panas |
+| `MULAI.bat --tanpa-model` | Hanya menyajikan game (otak parser), misalnya untuk mikrofon |
+| `MULAI.bat --port 9000` | Pakai port lain. Bila 8000 terpakai, port berikutnya dipilih otomatis |
 
-```
-python -m venv venv
-venv\Scripts\activate           (Linux atau Mac: source venv/bin/activate)
-pip install -r requirements-lokal.txt
-python server_lokal.py
-```
+Dosen bisa menyalin folder `model/` lewat flashdisk ke tiap laptop supaya mahasiswa tidak perlu mengunduh 1 GB.
 
-Pilihan `server_lokal.py`: `--ukuran 0.5b` (paling ringan, hampir tidak membantu), `--threads 2` (batasi pemakaian CPU), `--berkas jalur.gguf` (pakai model sendiri), `--folder` (lokasi model, bawaan `./model`).
+### C. Untuk kelas: GitHub Pages
 
-Biarkan jendela terminal terbuka selama bermain. Di game: tab **Otak**, pilih "Model lokal kecil, Python", **Simpan**, **Tes koneksi**. Pesan "Berhasil" berarti siap.
+1. Unggah `index.html` ke repositori GitHub, Settings, Pages, pilih branch utama.
+2. Bagikan alamatnya. Mahasiswa main dengan parser atau OpenRouter. Untuk model lokal, mahasiswa tetap memakai cara B di laptop masing-masing.
 
 ### Opsional: AI besar lewat internet (OpenRouter, gratis)
 
@@ -45,7 +45,13 @@ Daftar di openrouter.ai, buka https://openrouter.ai/settings/keys, **Create Key*
 
 ### Opsional: Ollama
 
-Alternatif model lokal bila sudah memasang Ollama: `ollama pull qwen2.5:1.5b`, set `OLLAMA_ORIGINS` ke alamat halaman game (atau `*` untuk uji lokal), jalankan ulang Ollama, lalu pilih "Ollama lokal" di tab Otak.
+Alternatif cara B bila sudah memasang Ollama. Langkahnya lebih banyak:
+1. Pasang dari https://ollama.com/download.
+2. Set `OLLAMA_ORIGINS` supaya browser boleh memanggil Ollama. Jika game dibuka lewat `MULAI.bat --tanpa-model` (alamat localhost), tidak perlu diset. Jika `index.html` dibuka langsung, perlu `setx OLLAMA_ORIGINS "*"`. Untuk GitHub Pages, isi alamat situsnya. Lalu tutup dan buka lagi Ollama.
+3. `ollama pull qwen2.5:1.5b`.
+4. Tab Otak, pilih "Ollama lokal", isi model `qwen2.5:1.5b`, **Simpan**, **Tes koneksi**.
+
+`OLLAMA_ORIGINS="*"` membuat situs apa pun yang Anda buka bisa memanggil Ollama di laptop ini. Pakai alamat spesifik bila memungkinkan.
 
 ## 2. Penggunaan
 
@@ -173,9 +179,9 @@ Agen tidak bersuara. Tombol **Bicara** mengubah ucapan menjadi pesan, lalu dipro
 | Tes koneksi: "kunci ditolak" | Kunci OpenRouter salah atau sudah dihapus. Buat baru |
 | "kuota model gratis habis atau sedang penuh (429)" | Batas 50 per hari atau model penuh. Agen memakai parser. Coba lagi nanti |
 | Jejak OTAK: "LLM gagal" | Normal. Alasannya tertulis dan agen tetap bekerja lewat parser |
-| Model lokal: "Server model lokal tidak terjangkau" | `python server_lokal.py` belum berjalan atau jendelanya tertutup. Cek alamat di tab Otak (`http://localhost:8000/v1`) |
-| `pip` gagal dengan `TomlError ... pyproject.toml` | venv dibuat dengan Python lama (3.8, pip 19). Hapus folder `venv`, buat ulang dengan Python 3.10 sampai 3.12 (cek `python --version`), lalu `python -m pip install --upgrade pip` sebelum `pip install -r requirements-lokal.txt` |
-| `pip install` gagal untuk `llama-cpp-python` | Butuh Python 3.10 sampai 3.12 (64-bit). Pakai `requirements-lokal.txt` (memuat sumber paket siap pakai CPU) |
+| Model lokal: "Server model lokal tidak terjangkau" | Jendela `MULAI.bat` sudah ditutup. Klik dua kali `MULAI.bat` lagi, lalu buka alamat yang tertulis di jendelanya |
+| `MULAI.bat` berhenti dengan GAGAL saat memasang paket | Periksa internet lalu jalankan lagi. Bila tetap gagal, pasang Python 3.12 64-bit dari python.org dan jalankan lagi |
+| `pip` gagal dengan `TomlError ... pyproject.toml` (cara manual) | Folder `venv` dibuat dengan Python lama (3.8). Pakai `MULAI.bat` saja: skrip itu memilih Python yang cocok dan membuat `.venv` sendiri. Folder `venv` lama boleh dihapus |
 | Model lokal terasa lambat | Normal di laptop lama (sekitar 4 sampai 5 detik per panggilan). Pastikan Router hemat hidup, coba `--ukuran 0.5b` atau `--threads`, atau pakai parser |
 | Ollama: "tidak terjangkau" | Ollama belum berjalan, atau `OLLAMA_ORIGINS` belum mengizinkan alamat halaman (HTTP 403) |
 | Tombol Bicara tidak muncul | Browser tidak mendukung Web Speech API. Pakai Chrome atau Edge |
