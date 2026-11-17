@@ -9,7 +9,7 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 ## Keputusan
 
 - Tampilan hibrida: dunia 3D untuk fisik, panel 2,5D (SVG) di atas dunia untuk papan otak.
-- ESP disimulasikan, plus ekspor sketsa Arduino dan kerangka Python (belum dikompilasi bila `arduino-cli` tidak ada).
+- ESP dan perangkat murni simulasi (keputusan pengguna). Tidak ada sketsa Arduino, daftar belanja, atau jembatan ke perangkat sungguhan. Ekspor hanya kerangka Python agen.
 - Telegram langsung dari browser: hanya simple request (GET dengan query, POST urlencoded), long-poll `getUpdates` dengan `offset`, deteksi 409, daftar chat yang diizinkan, token hanya di localStorage dan disamarkan di jejak.
 - Model v1 tidak dibengkokkan: v2 punya katalog, simulasi, guard aksi, dan parser sendiri berbasis data dunia. Dipakai ulang dari v1: guard masukan (`Otak.adaInjeksi`), RAG (`Manual.cari`), router semantik, `panggilModel`, `parseLonggar`, `cekGuardModel`.
 - Guard aksi selalu di kode. Graf tanpa blok guard aksi = mode rentan dengan peringatan, tidak pernah diam-diam.
@@ -23,7 +23,7 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 | `src/studio/graf.js` | Jenis blok dan port bertipe, pemeriksa graf, mesin eksekusi, jejak |
 | `src/studio/alat.js` | Tool (sensor, aktuator, kalender, kalkulator, cuaca, logger, waktu, Telegram, penjadwal), parser v2, guard aksi |
 | `src/studio/telegram.js` | Klien Telegram |
-| `src/studio/ekspor.js` | Sketsa Arduino, kerangka Python, daftar belanja |
+| `src/studio/ekspor.js` | Kerangka Python agen |
 | `src/studio/misi.js` | Level dan misi |
 | `src/studio/dunia3d.js` | Adegan 3D dan editor |
 | `src/studio/kanvas.js` | Papan blok SVG |
@@ -38,9 +38,9 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 - [x] T4 Editor 3D (palet, seret-lepas, kabel, Wi-Fi, hewan dan tanaman)
 - [x] T5 Papan blok seret-lepas + inspektur + dashboard + log
 - [x] T6 Telegram nyata (+ server tiruan untuk uji)
-- [x] T7 Lapisan belajar: misi, kekacauan, lab serangan, ekspor kode, daftar belanja, kartu konsep
+- [x] T7 Lapisan belajar: misi, kekacauan, lab serangan, kerangka Python, kartu konsep
 - [x] T8 Uji lengkap (unit, Playwright seret-lepas, Ollama nyata, sumber daya rendah, regresi v1) + dokumen
 
 ## Status
 
-Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh token pengguna), kompilasi sketsa Arduino (`arduino-cli` tidak tersedia), Open-Meteo nyata.
+Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh token pengguna), Open-Meteo nyata.

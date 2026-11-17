@@ -45,7 +45,7 @@ Entri terpisah `studio.html`, dirakit `build.py` dari `src/studio/studio.src.htm
 | `src/studio/alat.js` | Manifest tool (gaya MCP), pelaksana tool, guard aksi, parser bahasa sehari-hari, prompt agen, pelaksana blok Agen (loop tool calling, router hemat, guard klaim tanpa aksi) |
 | `src/studio/graf.js` | Jenis blok dan port bertipe, `periksaGraf`, `cekKabel`, deteksi siklus, saran, mesin eksekusi (batas langkah dan anggaran AI), rak bawaan, graf preset |
 | `src/studio/telegram.js` | Klien Bot API langsung dari browser (simple request, long polling, 409, daftar izin, penyamaran token) |
-| `src/studio/ekspor.js` | Sketsa Arduino per ESP, kerangka Python, daftar belanja |
+| `src/studio/ekspor.js` | Kerangka Python dari papan otak (ESP dan perangkat murni simulasi) |
 | `src/studio/misi.js` | 12 misi dan kasus uji agen yang dirakit dari dunia |
 | `src/studio/dunia3d.js` | Adegan Three.js, kamera orbit, raycast, kabel, cincin Wi-Fi, LED ESP, hewan dan tanaman |
 | `src/studio/kanvas.js` | Papan SVG: seret blok, tarik kabel bertipe, geser dan zoom |

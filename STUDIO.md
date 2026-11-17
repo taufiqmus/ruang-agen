@@ -115,10 +115,10 @@ Setiap blok punya kartu konsep di Inspektur. **Saran** di pojok kanan atas papan
 | Inspektur | Isi perangkat, area, blok, atau kabel yang dipilih |
 | Dashboard | Kondisi tiap area, status ESP (daya, sinyal), grafik sensor 24 jam, log, kalender (bisa diunduh sebagai `.ics`), pengingat |
 | Jejak | Langkah demi langkah: blok yang dilewati, alat yang dipanggil AI, guard yang menolak. Blok dan kabel di papan menyala saat dilewati. Bisa diekspor sebagai JSON |
-| Misi | 12 misi berurutan dari ESP pertama sampai ekspor kode, masing-masing dengan kartu konsep dan petunjuk |
+| Misi | 12 misi berurutan dari ESP pertama sampai laporan pagi otomatis, masing-masing dengan kartu konsep dan petunjuk |
 | Telegram | Bot sungguhan (bagian 6) |
 | Lab | Uji kekacauan (Wi-Fi putus, listrik padam, sensor rusak, cuaca) dan lab serangan (injeksi, menyamar teknisi, data pribadi, melampaui batas, konten berbahaya), lewat chat atau lewat Telegram palsu |
-| Kode | Uji agen (pesan uji dirakit dari rumahmu, dijalankan di salinan simulasi), sketsa Arduino per ESP, kerangka Python agen, daftar belanja dengan harga |
+| Kode | Uji agen (pesan uji dirakit dari rumahmu, dijalankan di salinan simulasi), kerangka Python agen |
 | Model | Otak utama. Setiap blok Agen juga bisa memakai model khusus |
 
 **Proyek** (tombol di atas): ganti rumah dengan preset, ekspor proyek (rumah dan papan otak) ke berkas JSON, atau impor proyek teman. Token Telegram dan kunci API tidak pernah ikut diekspor.
@@ -140,14 +140,9 @@ Catatan:
   - Pesan dari orang asing tidak dipercaya, jadi pasang **Guard Masukan** di jalur Telegram.
   - Gunakan tombol **Lupakan token** setelah selesai.
 
-## 7. Dari simulasi ke nyata
+## 7. Dari blok ke kode
 
-Tab **Kode** menghasilkan:
-- **Sketsa Arduino** per ESP: pin sesuai rangkaianmu, Wi-Fi, server HTTP kecil dengan `/baca` (semua sensor dalam JSON) dan `/aksi?perangkat=...&nyala=1`. Pustaka yang dibutuhkan disebut di komentar (DHT, HX711, ESP32Servo). Nama dan sandi Wi-Fi diisi sendiri di laptopmu, jangan diunggah ke repositori publik.
-- **Kerangka Python agen**: guard masukan, alat, dan loop pemanggilan alat ke Ollama yang setara dengan papan otakmu.
-- **Daftar belanja**: jumlah komponen dan perkiraan harga.
-
-Kode ini titik awal belajar. Sketsa belum dikompilasi otomatis, jadi periksa di Arduino IDE sebelum diunggah ke ESP.
+ESP, sensor, dan perangkat di studio murni simulasi. Yang bisa dibawa keluar adalah otak agennya: tab **Kode** menulis ulang papan otakmu sebagai **kerangka Python** (guard masukan, alat, dan loop pemanggilan alat ke Ollama), supaya kamu bisa membandingkan blok dengan kodenya. Kerangka ini titik awal belajar dan belum diuji otomatis.
 
 ## 8. Pemecahan masalah
 

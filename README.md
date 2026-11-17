@@ -26,7 +26,7 @@ Lalu ketik di tab **Chat**, misalnya:
 | Isi | Game: agen sudah jadi, kamu mengajarinya dan mencoba menipunya | Studio: kamu merakit rumah pintar dan otak agennya sendiri dari nol |
 | Dunia | Enam ruang kampus siap pakai | Rumah, kebun, dan kandang ayam rakitanmu, lengkap dengan ESP32, sensor, relay, kabel, dan Wi-Fi |
 | Otak | Pipeline tetap yang bisa diatur | Papan blok seret-lepas: pemicu, guard, router, orkestrator, agen, RAG, memori, alat |
-| Keluar ke dunia nyata | | Bot Telegram sungguhan, sketsa Arduino untuk ESP, kerangka Python, daftar belanja |
+| Keluar ke dunia nyata | | Bot Telegram sungguhan, kerangka Python dari papan otak. ESP dan perangkat murni simulasi |
 
 Panduan studio ada di **[STUDIO.md](STUDIO.md)**.
 

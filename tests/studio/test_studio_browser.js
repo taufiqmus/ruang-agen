@@ -163,15 +163,22 @@ const srvTg = http.createServer((q, r) => {
   await page.waitForFunction(() => !document.querySelector('#kirim').disabled); await page.waitForTimeout(300);
   cek('serangan "melampaui batas" ditahan Guard Aksi', /di luar batas aman/.test(await page.textContent('#chatlog li:last-child')) || /Level 9/.test(await page.textContent('#jejak')), await page.textContent('#chatlog li:last-child'));
 
-  /* 6. kode: uji agen, sketsa ESP, daftar belanja */
+  /* 6. kode: uji agen dan kerangka Python */
   await page.click('[data-tab="kode"]'); await page.click('#ujiAgen');
   await page.waitForSelector('#ujiSkor', { timeout: 30000 });
   const skor = await page.textContent('#ujiSkor');
   cek('uji agen berjalan di salinan simulasi dan memberi skor', /Benar \d+ dari \d+/.test(skor), skor);
-  cek('sketsa Arduino tampil untuk ESP terpilih', /#include <WiFi\.h>/.test(await page.textContent('#kode pre')));
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#unduhIno')]);
-  cek('unduh sketsa .ino', /\.ino$/.test(dl.suggestedFilename()) && /void setup/.test(fs.readFileSync(await dl.path(), 'utf8')));
-  cek('daftar belanja dengan total rupiah', /Total/.test(await page.textContent('#kode table')) && /Rp\d/.test(await page.textContent('#kode table')));
+  cek('tab Kode: kerangka Python agen, tanpa sketsa ESP dan daftar belanja', /def guard_masukan/.test(await page.textContent('#kode pre')) && !(await page.$('#kode table')) && !/Arduino/.test(await page.textContent('#kode')));
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#unduhPy')]);
+  cek('unduh kerangka Python', dl.suggestedFilename() === 'agen_rumah.py' && /def guard_masukan/.test(fs.readFileSync(await dl.path(), 'utf8')));
+  // misi 12: blok Jadwal membangunkan agen dan laporannya masuk Log
+  await page.evaluate(() => { const s = window.__studio, H = s.H; H.blok.push({ id: 'jadwal1', jenis: 'jadwal', x: 20, y: 600, cfg: { jam: '06:00', pesan: 'laporan kondisi kandang' } }, { id: 'log1', jenis: 'log', x: 700, y: 600, cfg: {} });
+    const ag = H.blok.find(b => b.jenis === 'agen'); H.kabel.push({ dari: 'jadwal1', port: 'keluar', ke: ag.id, portKe: 'masuk' }, { dari: ag.id, port: 'keluar', ke: 'log1', portKe: 'masuk' }); s.KV.muat(H); s.S.menit = Math.floor(s.S.menit / 1440) * 1440 + 5 * 60 + 58; });
+  await page.click('[data-cepat="60"]');
+  await page.waitForFunction(() => window.__studio.stat.laporanJadwal > 0, null, { timeout: 30000 });
+  await page.click('[data-cepat="1"]');
+  await page.click('[data-tab="misi"]'); await page.waitForTimeout(2200);
+  cek('misi 12: laporan pagi otomatis dari blok Jadwal', /Selesai: 12\. Laporan pagi otomatis/.test(await page.textContent('#misi')) && /laporan kondisi kandang|Pemicu jadwal/.test(await page.textContent('#chatlog')));
 
   /* 7. Telegram sungguhan lewat server tiruan */
   await page.click('[data-tab="telegram"]');

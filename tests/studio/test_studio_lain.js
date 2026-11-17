@@ -1,5 +1,5 @@
 require('../alat');   // pindah ke akar repo
-/* Uji klien Telegram (fetch tiruan), ekspor kode dan daftar belanja, misi, dan kasus uji agen. */
+/* Uji klien Telegram (fetch tiruan), kerangka Python agen, misi, dan kasus uji agen. */
 for (const f of ['manual', 'dunia', 'semesta', 'brain', 'router', 'brain-llm']) require('../../src/' + f + '.js');
 const I = require('../../src/studio/iot.js'); require('../../src/studio/alat.js'); const GR = require('../../src/studio/graf.js');
 const TG = require('../../src/studio/telegram.js'), EK = require('../../src/studio/ekspor.js'), MS = require('../../src/studio/misi.js');
@@ -50,21 +50,13 @@ const TOKEN = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ';
 
   /* ---------- ekspor ---------- */
   const W = I.periksaDunia(salin(I.PRESET.rumah_kebun_kandang)).dunia;
-  const ino = EK.arduino(W, 'esp_kandang');
-  cek('sketsa Arduino: pustaka dan pin sesuai rangkaian', /#include <WiFi\.h>/.test(ino) && /#include <DHT\.h>/.test(ino) && /#include <HX711\.h>/.test(ino) && /#include <ESP32Servo\.h>/.test(ino) && /#define PIN_DHT_KANDANG 4/.test(ino) && /#define PIN_RELAY_KANDANG 25/.test(ino));
-  cek('sketsa: aktuator lewat relay dijelaskan, server /baca dan /aksi', /Pemanas kandang lewat Relay kandang kanal 1/.test(ino) && /server\.on\("\/baca"/.test(ino) && /server\.on\("\/aksi"/.test(ino));
-  cek('sketsa tidak memuat sandi Wi-Fi sungguhan', /NAMA_WIFI/.test(ino) && /SANDI_WIFI/.test(ino));
-  const W8 = I.periksaDunia({ area: [], perangkat: [{ id: 'esp', jenis: 'esp8266', daya: 'ad' }, { id: 'ad', jenis: 'adaptor' }, { id: 'ldr', jenis: 'ldr', sambung: { esp: 'esp', pin: 'A0' } }] }).dunia;
-  cek('sketsa ESP8266 memakai pustaka dan pin yang benar', /ESP8266WiFi\.h/.test(EK.arduino(W8, 'esp')) && /#define PIN_LDR A0/.test(EK.arduino(W8, 'esp')));
   const py = EK.python(GR.periksaGraf(salin(GR.GRAF_PRESET.multi_agen)).graf, W);
-  cek('kerangka Python: guard, tool, satu fungsi per agen, loop berbatas', /def guard_masukan/.test(py) && /def agen_kebun/.test(py) && /def agen_kandang/.test(py) && /for _ in range\(4\)/.test(py) && /"esp_kandang"/.test(py));
-  const bl = EK.belanja(W);
-  cek('daftar belanja: jumlah dan total benar', bl.baris.find(b => b.nama === 'ESP32 DevKit').jumlah === 3 && bl.total === bl.baris.reduce((t, b) => t + b.subtotal, 0) && bl.total > 1000000, bl.total);
-  cek('format rupiah', /^Rp1\.234\.567$/.test(EK.rupiah(1234567)));
+  cek('kerangka Python: guard, tool, satu fungsi per agen, loop berbatas', /def guard_masukan/.test(py) && /def agen_kebun/.test(py) && /def agen_kandang/.test(py) && /for _ in range\(4\)/.test(py) && /AREA = \["kamar"/.test(py));
+  cek('ekspor hanya kerangka Python (ESP murni simulasi)', Object.keys(EK).join() === 'python' && !/192\.168|WiFi|arduino/i.test(py));
 
   /* ---------- misi ---------- */
   const H0 = GR.periksaGraf(salin(GR.GRAF_PRESET.kosong)).graf, S = I.buatSim(W);
-  const statNol = { dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, ekspor: 0 };
+  const statNol = { dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, laporanJadwal: 0 };
   let n = MS.nilai({ W, S, H: H0, stat: statNol });
   cek('misi: 12 misi, tiga misi fisik selesai pada preset rumah lengkap', n.length === 12 && n.slice(0, 3).every(m => m.selesai) && n.slice(3).every(m => !m.selesai), n.map(m => m.selesai));
   const Wk = I.periksaDunia(salin(I.PRESET.kosong)).dunia;

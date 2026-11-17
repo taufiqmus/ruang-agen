@@ -19,7 +19,7 @@
   let S = I.buatSim(W, { mulai: +(param.get('jam') || 7) * 60 });
   let st = I.status(W, S);
   const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: (/^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:8000') + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
-  const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, ekspor: 0 }, baca(K.stat, {}));
+  const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, laporanJadwal: 0 }, baca(K.stat, {}));
   const misiSelesai = new Set(baca(K.misi, []));
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
   const riwayat = {};
@@ -91,9 +91,9 @@
 
   /* ---------- palet ---------- */
   const IKON = { papan: '#1d4ed8', sensor: '#0d9488', aktuator: '#ea580c', modul: '#0284c7', daya: '#16a34a', jaringan: '#7c3aed' };
-  function itemPalet(teks, warna, kode, data, harga) {
+  function itemPalet(teks, warna, kode, data) {
     const it = mk('div', 'item'); it.draggable = true; it.dataset.drag = data; it.setAttribute('role', 'button'); it.tabIndex = 0;
-    const i = mk('i', '', kode); i.style.background = warna; it.append(i, mk('span', '', teks)); if (harga) it.appendChild(mk('small', '', harga));
+    const i = mk('i', '', kode); i.style.background = warna; it.append(i, mk('span', '', teks));
     it.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', data); e.dataTransfer.effectAllowed = 'copy'; });
     it.addEventListener('click', () => { menaruh = menaruh === data ? null : data; $$('.item').forEach(x => x.classList.toggle('menaruh', x.dataset.drag === menaruh)); if (menaruh) toast('Klik di ' + (mode === 'otak' ? 'papan' : 'lahan') + ' untuk menaruh. Klik item lagi untuk batal.', true); });
     return it;
@@ -114,7 +114,7 @@
     const NAMA_K = { papan: 'Papan ESP', sensor: 'Sensor', aktuator: 'Aktuator', modul: 'Modul', daya: 'Daya', jaringan: 'Jaringan' };
     for (const kat of Object.keys(NAMA_K)) {
       p.appendChild(mk('h3', '', NAMA_K[kat]));
-      for (const j of Object.keys(I.KATALOG).filter(j => I.KATALOG[j].kategori === kat)) p.appendChild(itemPalet(I.KATALOG[j].nama, IKON[kat], kat.slice(0, 2).toUpperCase(), 'alat:' + j, Math.round(I.KATALOG[j].harga / 1000) + 'k'));
+      for (const j of Object.keys(I.KATALOG).filter(j => I.KATALOG[j].kategori === kat)) p.appendChild(itemPalet(I.KATALOG[j].nama, IKON[kat], kat.slice(0, 2).toUpperCase(), 'alat:' + j));
     }
   }
   /* Sebelum menimpa rumah atau papan (preset, wizard), simpan cadangan dan tawarkan tombol Kembalikan. */
@@ -214,7 +214,7 @@
     const p = W.perangkat.find(x => x.id === id); if (!p) { pilihan = null; return renderInspektur(); }
     const Kt = I.KATALOG[p.jenis], s = st.rk[p.id] || { masalah: [] };
     P.appendChild(mk('h3', '', p.nama));
-    P.appendChild(mk('p', 'note', `${Kt.nama}, ${EK.rupiah(Kt.harga)}. ${Kt.deskripsi}`));
+    P.appendChild(mk('p', 'note', `${Kt.nama}. ${Kt.deskripsi}`));
     const nama = field(P, 'Nama', mk('input')); nama.type = 'text'; nama.value = p.nama; nama.maxLength = 24; nama.onchange = () => { p.nama = nama.value; simpanDunia(); };
     const ubah = () => { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st); renderInspektur(); renderPetunjuk(); };
     const papan = W.perangkat.filter(q => I.KATALOG[q.jenis].kategori === 'papan'), relay = W.perangkat.filter(q => I.KATALOG[q.jenis].kanal);
@@ -343,6 +343,7 @@
       ambilCuaca: async c => { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code`).then(x => x.json()); const w = r.current.weather_code; return { kondisi: w >= 61 ? 'hujan' : w >= 3 ? 'berawan' : 'cerah', suhu_luar: r.current.temperature_2m }; },
       tanggal: () => new Date().toISOString().slice(0, 10),
       keluaran: async (jenis, teks, msg) => {
+        if (msg.sumber === 'jadwal') stat.laporanJadwal++;
         if (jenis === 'balas') {
           if (msg.sumber === 'telegram' && klien) { const r = await klien.kirim(msg.chatId, teks); chat('tg', teks, 'Agen ke Telegram ' + (msg.nama || '')); if (r.ok) stat.telegramDibalas++; else jejak('guard', 'Telegram gagal: ' + r.alasan); }
           else chat('agen', teks, msg.agen || 'Agen');
@@ -489,7 +490,7 @@
     }
   }
 
-  /* ---------- kode, uji agen, daftar belanja ---------- */
+  /* ---------- kode: uji agen dan kerangka Python ---------- */
   function renderKode() {
     const P = $('#kode'); P.replaceChildren();
     P.appendChild(mk('h3', '', 'Uji agen'));
@@ -507,25 +508,10 @@
       }
       const r = mk('p', '', `Benar ${benar} dari ${kasus.length}.`); r.id = 'ujiSkor'; hasil.prepend(r); bu.disabled = false;
     };
-    P.appendChild(mk('h3', '', 'Sketsa ESP (Arduino)'));
-    const esp = W.perangkat.filter(p => I.KATALOG[p.jenis].kategori === 'papan');
-    if (!esp.length) P.appendChild(mk('p', 'note', 'Belum ada ESP.'));
-    else {
-      const s = field(P, 'Pilih ESP', pilihanEl(esp.map(e => [e.id, e.nama]), esp[0].id));
-      const pre = mk('pre', 'kode'); P.appendChild(pre);
-      const isi = () => { pre.textContent = EK.arduino(W, s.value); };
-      s.onchange = isi; isi();
-      const row = mk('div', 'baris'); const b1 = mk('button', 'btn sm', 'Unduh .ino'), b2 = mk('button', 'btn sm', 'Unduh kerangka Python agen'); b1.type = b2.type = 'button'; b1.id = 'unduhIno';
-      b1.onclick = () => { unduh(s.value + '.ino', EK.arduino(W, s.value)); stat.ekspor++; simpanStat(); cekMisi(); };
-      b2.onclick = () => { unduh('agen_rumah.py', EK.python(H, W)); stat.ekspor++; simpanStat(); cekMisi(); };
-      row.append(b1, b2); P.appendChild(row);
-      P.appendChild(mk('p', 'note', 'Kode ini titik awal belajar dan belum dikompilasi otomatis. Periksa pin, pasang pustaka di Arduino IDE, dan isi nama serta sandi Wi-Fi di laptopmu sendiri.'));
-    }
-    P.appendChild(mk('h3', '', 'Daftar belanja'));
-    const bl = EK.belanja(W), t = mk('table', 'tabel'); t.innerHTML = '<tr><th>Komponen</th><th>Jml</th><th>Subtotal</th></tr>';
-    bl.baris.forEach(b => { const tr = mk('tr'); [b.nama, b.jumlah, EK.rupiah(b.subtotal)].forEach(x => tr.appendChild(mk('td', '', String(x)))); t.appendChild(tr); });
-    const tr = mk('tr'); [mk('th', '', 'Total'), mk('th'), mk('th', '', EK.rupiah(bl.total))].forEach(x => tr.appendChild(x)); t.appendChild(tr); P.appendChild(t);
-    P.appendChild(mk('p', 'note', 'Harga perkiraan pasar daring, bisa berbeda di tokomu.'));
+    P.appendChild(mk('h3', '', 'Kerangka Python agen'));
+    P.appendChild(mk('p', 'note', 'Papan otakmu ditulis ulang sebagai kode Python: guard masukan, alat, dan loop pemanggilan alat ke Ollama. Bandingkan bloknya dengan kodenya.'));
+    const pre = mk('pre', 'kode'); pre.textContent = EK.python(H, W); P.appendChild(pre);
+    const bp = mk('button', 'btn sm', 'Unduh agen_rumah.py'); bp.type = 'button'; bp.id = 'unduhPy'; bp.onclick = () => unduh('agen_rumah.py', EK.python(H, W)); P.appendChild(bp);
   }
 
   /* ---------- Telegram ---------- */

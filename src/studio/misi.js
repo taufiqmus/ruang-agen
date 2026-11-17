@@ -32,8 +32,8 @@
       cek: ({ stat }) => stat.telegramDibalas > 0 },
     { id: 'tahan', judul: '11. Tahan banting', konsep: 'Sistem nyata bisa gagal: Wi-Fi putus, listrik padam, sensor rusak. Agen yang baik tetap jujur dan aman.', petunjuk: 'Tab Kekacauan: putuskan Wi-Fi atau rusak sensor, lalu tanya kondisi rumah.',
       cek: ({ stat }) => stat.dijawabSaatKacau > 0 },
-    { id: 'nyata', judul: '12. Dari simulasi ke nyata', konsep: 'Rakitanmu bisa jadi proyek sungguhan: sketsa Arduino untuk ESP, kerangka Python untuk agen, dan daftar belanja.', petunjuk: 'Tab Kode: lihat atau unduh sketsa ESP dan kerangka Python.',
-      cek: ({ stat }) => stat.ekspor > 0 }
+    { id: 'laporan', judul: '12. Laporan pagi otomatis', konsep: 'Agen tidak selalu menunggu pesan. Blok Jadwal membangunkannya pada jam tertentu, seperti cron di server, lalu laporannya dikirim ke Telegram atau Log tanpa ada yang bertanya.', petunjuk: 'Pasang blok Jadwal (misalnya jam 06:00), sambungkan ke Agen yang punya Alat Sensor, lalu ke Kirim ke Telegram atau Log. Percepat simulasi sampai jamnya lewat.',
+      cek: ({ stat }) => stat.laporanJadwal > 0 }
   ];
 
   function nilai(ctx) {
