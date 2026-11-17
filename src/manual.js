@@ -31,6 +31,7 @@
   /* TF-IDF: skor = jumlah tf*idf istilah query pada potongan, dinormalkan panjang potongan. */
   function cari(pesan, manual, k, min, opsi) {
     const koleksi = opsi && opsi.koleksi;
+    const vek = opsi && opsi.vektor, minKos = (opsi && opsi.minKos) || 0.6, urut = opsi && opsi.urutan;
     const docs = (manual || []).filter(m => !koleksi || m.koleksi === koleksi).map(m => ({ m, t: token(m.judul + ' ' + m.judul + ' ' + m.teks, opsi) }));
     if (!docs.length) return [];
     const df = {};
@@ -45,9 +46,24 @@
         skor += tf * Math.log(1 + docs.length / df[w]);
       }
       const nilai = Math.round(skor / Math.sqrt(d.t.length) * 100) / 100;
-      if (skor > 0 && nilai >= (min || 0)) hasil.push({ id: d.m.id, judul: d.m.judul, teks: d.m.teks, koleksi: d.m.koleksi || '', skor: nilai });
+      const kos = vek && Number.isFinite(vek[d.m.id]) ? vek[d.m.id] : 0;
+      const lolosTf = skor > 0 && nilai >= (min || 0), lolosV = vek && kos >= minKos;
+      if (lolosTf || lolosV) hasil.push({ id: d.m.id, judul: d.m.judul, teks: d.m.teks, koleksi: d.m.koleksi || '', skor: nilai, ...(vek ? { kos: Math.round(kos * 100) / 100 } : {}) });
     }
     hasil.sort((a, b) => b.skor - a.skor);
+    if (vek) {
+      /* RAG hibrida: skor TF-IDF (tak terbatas) dan kosinus (0 sampai 1) tidak dijumlah, tetapi digabung lewat
+         reciprocal rank fusion: 1/(60 + peringkat) dari masing-masing daftar. */
+      const rTf = new Map(hasil.filter(h => h.skor > 0).map((h, i) => [h.id, i + 1]));
+      const rV = new Map([...hasil].filter(h => h.kos >= minKos).sort((a, b) => b.kos - a.kos).map((h, i) => [h.id, i + 1]));
+      const rrf = h => (rTf.has(h.id) ? 1 / (60 + rTf.get(h.id)) : 0) + (rV.has(h.id) ? 1 / (60 + rV.get(h.id)) : 0);
+      hasil.sort((a, b) => rrf(b) - rrf(a));
+    }
+    if (urut && urut.length) {
+      // urutan dari reranker: id yang dipilih didahulukan sesuai urutannya, sisanya tetap
+      const pos = id => { const i = urut.indexOf(id); return i < 0 ? urut.length + 1 : i; };
+      hasil.sort((a, b) => pos(a.id) - pos(b.id));
+    }
     return hasil.slice(0, k || 2);
   }
 

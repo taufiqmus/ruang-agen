@@ -20,7 +20,7 @@ async function jalankan(nama, url, browser) {
   const page = await ctx.newPage();
   const galat = []; page.on('pageerror', e => galat.push(String(e)));
   const reqOR = []; page.on('response', r => { if (r.url().startsWith(LOK ? 'http://localhost:8000/' : OLL ? 'http://localhost:11434/' : 'https://openrouter.ai/')) reqOR.push(r.status()); });
-  await page.goto(url);
+  await page.goto(url + (url.includes('?') ? '&' : '?') + 'kejadian=mati');   // kejadian acak bisa menyela balasan
   await page.waitForFunction(() => window.__ruangAgen, null, { timeout: 30000 });
   await page.evaluate(() => { window.__ruangAgen.G.speed = 3; });
   const kirim = async (t) => { const n = await page.evaluate(() => window.__ruangAgen.G.pesan); await page.click('#tab-chat'); await page.fill('#inp', t); await page.click('#send'); await page.waitForFunction(x => !window.__ruangAgen.G.busy && window.__ruangAgen.G.pesan >= x, n + 1, { timeout: 120000 }); };

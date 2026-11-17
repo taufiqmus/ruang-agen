@@ -83,11 +83,16 @@ button { cursor: pointer; }
 .pane.on { display: flex; }
 
 .log { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 10px; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 88%; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 12px; }
+.msg { flex-shrink: 0; max-width: 88%; overflow-wrap: anywhere; white-space: pre-line; padding: 7px 10px; border: 2px solid var(--ink); border-radius: 12px; }
 .msg .who { display: block; font: 600 10px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .msg.kamu { align-self: flex-end; background: #e5ebff; border-bottom-right-radius: 3px; }
 .msg.agen { align-self: flex-start; background: #fff; border-bottom-left-radius: 3px; }
 .msg.agen.tolak { background: #ffd9d4; }
+.msg.ngetik { padding: 9px 14px; }
+.msg.ngetik i { display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%; background: var(--ink); opacity: .25; animation: titik 1.2s infinite ease-in-out; }
+.msg.ngetik i:nth-child(3) { animation-delay: .2s; } .msg.ngetik i:nth-child(4) { animation-delay: .4s; }
+@keyframes titik { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.ingat { margin: 0; padding: 0 0 0 18px; font-size: 13px; }
 .msg.sis { align-self: center; max-width: 100%; border-style: dashed; background: var(--paper); font-size: 13px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 8px; }
 .chips button { border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); padding: 2px 10px; font-size: 13px; }
@@ -139,21 +144,21 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 .pipe span.tolak { background: var(--coral); color: #fff; }
 .pipe span.llm { background: var(--yellow); color: var(--ink); }
 .pipe i { align-self: center; color: var(--muted); font-style: normal; font-size: 11px; }
-.agen { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-.agen label { font: 700 13px var(--f-display); margin-top: 4px; }
-.agen input[type=text], .agen input[type=number], .agen select, .agen textarea { border: 2px solid var(--ink); border-radius: 8px; padding: 6px 9px; background: #fff; min-width: 0; font: 400 13px var(--f-body); }
-.agen textarea { min-height: 54px; resize: vertical; }
-.agen h3 { margin: 12px 0 0; font: 800 14px var(--f-display); border-top: 2px dashed var(--ink); padding-top: 8px; }
-.agen .note { margin: 2px 0; font-size: 12.5px; color: var(--muted); }
-.agen .baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.agen .baris > input[type=text], .agen .baris > select { flex: 1; }
-.agen .cek { display: flex; align-items: center; gap: 6px; font: 600 13px var(--f-body); margin: 0; }
-.agen .daftar { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.agen .daftar li { border: 2px solid var(--ink); border-radius: 8px; padding: 5px 8px; background: #fff; display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12.5px; }
-.agen .daftar button { border: 2px solid var(--ink); border-radius: 6px; background: #fff; font-size: 12px; padding: 0 7px; }
-.agen .galat { margin: 0; padding: 6px 8px 6px 24px; border: 2px solid var(--ink); border-radius: 8px; background: #ffe4df; font-size: 12.5px; }
-.agen .galat:empty { display: none; }
-.agen .rentan { background: #fff0d4; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; }
+.studio { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.studio label { font: 700 13px var(--f-display); margin-top: 4px; }
+.studio input[type=text], .studio input[type=number], .studio select, .studio textarea { border: 2px solid var(--ink); border-radius: 8px; padding: 6px 9px; background: #fff; min-width: 0; font: 400 13px var(--f-body); }
+.studio textarea { min-height: 54px; resize: vertical; }
+.studio h3 { margin: 12px 0 0; font: 800 14px var(--f-display); border-top: 2px dashed var(--ink); padding-top: 8px; }
+.studio .note { margin: 2px 0; font-size: 12.5px; color: var(--muted); }
+.studio .baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.studio .baris > input[type=text], .studio .baris > select { flex: 1; }
+.studio .cek { display: flex; align-items: center; gap: 6px; font: 600 13px var(--f-body); margin: 0; }
+.studio .daftar { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.studio .daftar li { border: 2px solid var(--ink); border-radius: 8px; padding: 5px 8px; background: #fff; display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12.5px; }
+.studio .daftar button { border: 2px solid var(--ink); border-radius: 6px; background: #fff; font-size: 12px; padding: 0 7px; }
+.studio .galat { margin: 0; padding: 6px 8px 6px 24px; border: 2px solid var(--ink); border-radius: 8px; background: #ffe4df; font-size: 12.5px; }
+.studio .galat:empty { display: none; }
+.studio .rentan { background: #fff0d4; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; }
 .cerita { font-size: 12.5px; color: var(--muted); margin: 0; }
 .manual input[type=text], .manual select { border: 2px solid var(--ink); border-radius: 8px; padding: 6px 9px; background: #fff; min-width: 0; }
 .manual .baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -184,6 +189,11 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 .otak .grp.on { display: flex; }
 .otak .note { margin: 2px 0; font-size: 12.5px; color: var(--muted); }
 .otak .btnrow { display: flex; gap: 8px; margin-top: 6px; }
+.otak input[type=checkbox] { width: auto; }
+.otak label.cek { display: flex; align-items: center; gap: 6px; }
+.otak h3 { margin: 12px 0 0; font: 800 14px var(--f-display); border-top: 2px dashed var(--ink); padding-top: 8px; }
+.setuju { display: flex; gap: 8px; margin-top: 6px; }
+.trace-alat { display: flex; justify-content: flex-end; padding: 0 10px 8px; }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 46%); }
@@ -194,8 +204,10 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
   .xp { padding: 3px 8px; font-size: 12px; }
   .toast { bottom: 54px; }
   .hud { width: min(300px, calc(100% - 24px)); }
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .chips button { flex-shrink: 0; white-space: nowrap; }
 }
-@media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } .msg.ngetik i { animation: none; opacity: .6; } }
 </style>
 </head>
 <body>
@@ -259,6 +271,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
       <div class="pipe" id="pipe" aria-label="Jalur pesan melewati pipeline agen"></div>
       <ol class="trace" id="trace"><li class="empty">Kirim pesan di tab Chat, lalu lihat bagaimana agen menerima, memilah, memutuskan, dan bertindak.</li></ol>
       <details class="json"><summary>Kontrak JSON dari otak</summary><pre id="json">{}</pre></details>
+      <div class="trace-alat"><button class="btn sm" type="button" id="jejakEkspor">Ekspor jejak (JSON)</button></div>
     </section>
 
     <section class="pane" id="pane-misi" role="tabpanel" aria-labelledby="tab-misi">
@@ -275,11 +288,20 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <label class="tog"><input type="checkbox" id="ragOn" checked> Agen boleh membaca manual (RAG)</label>
         <div class="baris"><label for="ragK" style="margin:0">Jumlah potongan yang diambil (top-k)</label>
           <select id="ragK"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
+        <div class="baris"><label for="ragMode" style="margin:0">Cara mencari</label>
+          <select id="ragMode"><option value="tfidf">TF-IDF (kata yang sama)</option><option value="hibrida">Hibrida: TF-IDF dan embedding (butuh Ollama)</option></select></div>
+        <label class="tog"><input type="checkbox" id="ragRerank"> Reranker AI: AI mengurutkan ulang hasil pencarian (butuh otak AI)</label>
+        <label class="tog"><input type="checkbox" id="ragKutip"> Tampilkan sumber di jawaban dari rak</label>
         <div id="manualList"></div>
         <div class="nilai" id="manualNilai"></div>
         <h3>Titip catatan (memori agen)</h3>
         <p class="note">Catatan masuk ke rak yang sama dan ikut dicari. Lewat chat juga bisa: "ingat ya, ...". Catatan berisi "suhu nyaman 27 sampai 29 C" mengalahkan bab suhu.</p>
         <div class="baris"><input type="text" id="catatanBaru" maxlength="160" placeholder="misalnya: pelanggan meja 3 alergi susu" aria-label="Catatan baru"><button class="btn sm" type="button" id="catatanTambah">Simpan</button></div>
+        <p class="note">Lewat chat: "ralat: pelanggan meja 3 alergi kacang" mengganti catatan yang paling mirip, "hapus catatan alergi" membuangnya.</p>
+        <h3>Ingatan sesi</h3>
+        <p class="note">Fakta dari chat seperti "namamu John" atau "namaku Budi". Tidak masuk rak, hilang saat halaman ditutup.</p>
+        <ul class="ingat" id="ingatList"></ul>
+        <div class="baris"><button class="btn sm" type="button" id="ingatReset">Lupakan sesi ini</button></div>
         <h3>Uji pencarian</h3>
         <p class="note">Ketik pertanyaan untuk melihat skor TF-IDF tiap bab dan kata yang cocok. Begini cara agen memilih potongan.</p>
         <input type="text" id="cariUji" maxlength="120" placeholder="misalnya: gerah banget" aria-label="Uji pencarian manual">
@@ -329,7 +351,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
     </section>
 
     <section class="pane" id="pane-agen" role="tabpanel" aria-labelledby="tab-agen">
-      <div class="agen">
+      <div class="studio">
         <p class="note">Studio Agen: ubah seluruh isi kepala agen. Perubahan berlaku untuk semesta ini dan langsung dipakai parser, prompt AI, dan adegan 3D. Pesan dilewatkan pipeline berurutan: guard masukan, memori, router, RAG, otak, guard aksi, orkestrator, spesialis, guard keluaran.</p>
         <ul class="galat" id="agGalat"></ul>
 
@@ -339,6 +361,8 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <label for="agSapaan">Sapaan saat disapa "halo" (kosong = bawaan)</label><input type="text" id="agSapaan" maxlength="120">
         <div class="baris"><div style="flex:1"><label for="agSiap">Kata setuju</label><input type="text" id="agSiap" maxlength="20" style="width:100%"></div><div style="flex:1"><label for="agTolak">Kata menolak</label><input type="text" id="agTolak" maxlength="24" style="width:100%"></div></div>
         <label for="agGaya">Gaya bahasa</label><select id="agGaya"><option value="santai">santai</option><option value="formal">formal</option><option value="gaul">gaul</option></select>
+        <label class="cek"><input type="checkbox" id="agNgobrol"> Boleh ngobrol santai di luar tugas</label>
+        <p class="note">Butuh otak AI (tab Otak). Agen menjawab obrolan umum, tetapi tetap tidak menyentuh perangkat tanpa diminta. Parser aturan tidak bisa ngobrol bebas.</p>
 
         <h3>Orkestrator</h3>
         <div class="baris"><input type="text" id="orNama" maxlength="16" placeholder="nama orkestrator" aria-label="Nama orkestrator"><select id="orStrategi" aria-label="Strategi"><option value="otomatis">otomatis (baca kata lalu dan setelah)</option><option value="paralel">selalu paralel</option><option value="berurutan">selalu berurutan</option></select></div>
@@ -350,6 +374,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <div class="baris"><input type="text" id="rtNama" maxlength="12" placeholder="nama rute"><select id="rtAksi" aria-label="Aksi rute"><option value="manual">jawab dari koleksi</option><option value="balas">balas teks tetap</option><option value="tolak">tolak</option></select></div>
         <input type="text" id="rtKata" maxlength="120" placeholder="kata pemicu dipisah koma: gaji, thr, lembur">
         <input type="text" id="rtIsi" maxlength="240" placeholder="nama koleksi (untuk jawab dari koleksi) atau teks balasan">
+        <input type="text" id="rtContoh" maxlength="400" placeholder="opsional: contoh kalimat untuk router semantik, dipisah titik koma">
         <div class="baris"><button class="btn sm" type="button" id="rtTambah">Tambah rute</button></div>
 
         <h3>RAG</h3>
@@ -365,6 +390,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <label class="cek"><input type="checkbox" id="gdMemori"> Memori boleh ditulis ("ingat ya ...")</label>
         <label class="cek"><input type="checkbox" id="gdOutput"> Guard keluaran (samarkan kata terlarang di jawaban)</label>
         <input type="text" id="gdKata" maxlength="160" placeholder="kata terlarang dipisah koma">
+        <label class="cek"><input type="checkbox" id="gdSetuju"> Minta persetujuanku sebelum aksi berisiko (menyalakan mesin, perangkat yang terikat interlock)</label>
         <p class="rentan" id="gdPeringatan" hidden>Mode rentan: sebagian guard dimatikan. Ini hanya untuk belajar, supaya kamu melihat apa yang terjadi tanpa pengaman. Nyalakan lagi sebelum dipakai serius.</p>
 
         <h3>Kejadian acak</h3>
@@ -399,14 +425,22 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
           <p class="note">Jalankan server dengan <code>python server_lokal.py</code> di laptop ini (langkahnya ada di PANDUAN.md). Tanpa kuota dan tanpa internet setelah model terunduh.</p>
         </div>
         <div class="grp" data-mode="lokalan">
-          <label><input type="checkbox" id="otHemat"> Router hemat: parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru</label>
+          <label class="cek"><input type="checkbox" id="otHemat"> Router hemat: parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru</label>
           <p class="note">Disarankan untuk model kecil dan laptop lambat: lebih cepat dan lebih andal. Matikan untuk melihat model kecil bekerja sendirian.</p>
+        </div>
+        <div class="grp" data-mode="semuaLLM">
+          <label for="otKonteks">Ingatan percakapan (context window)</label>
+          <select id="otKonteks"><option value="0">Mati: tiap pesan berdiri sendiri</option><option value="2">2 pasang pesan terakhir</option><option value="4">4 pasang pesan terakhir</option><option value="6">6 pasang pesan terakhir</option><option value="10">10 pasang pesan terakhir</option></select>
+          <p class="note">Pesan terakhir ikut dikirim ke AI, jadi "matikan yang tadi" bisa dipahami. Makin banyak, prompt makin panjang dan model kecil makin lambat. Fakta sesi seperti "namaku Budi" selalu diingat, berapa pun pilihannya.</p>
         </div>
         <div class="grp" data-mode="ollama">
           <label for="otOllamaUrl">Alamat Ollama</label>
           <input id="otOllamaUrl" type="url" placeholder="http://localhost:11434">
+          <label for="otOllamaPilih">Pilih model yang sudah diunduh</label>
+          <div style="display:flex;gap:6px"><select id="otOllamaPilih"><option value="">(klik Muat daftar)</option></select><button class="btn" type="button" id="otOllamaMuat" style="white-space:nowrap">Muat daftar</button></div>
           <label for="otOllamaModel">Model Ollama</label>
           <input id="otOllamaModel" type="text" placeholder="qwen2.5:1.5b">
+          <p class="note">Unduh model lain lewat Command Prompt, misalnya <code>ollama pull llama3.2:1b</code>, lalu klik Muat daftar.</p>
           <p class="note">Ollama harus berjalan di laptop ini dan mengizinkan alamat halaman game lewat OLLAMA_ORIGINS. Tanpa kuota dan tanpa internet, tetapi hanya berfungsi di laptop yang menjalankannya.</p>
         </div>
         <div class="grp" data-mode="llm">
@@ -415,8 +449,25 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
           <label for="otBatas">Batas pesan LLM per sesi</label>
           <input id="otBatas" type="number" min="1" max="200">
         </div>
+        <h3>Pipeline lanjutan</h3>
+        <p class="note">Semua pilihan di bawah ini bisa dimatikan. Bandingkan hasilnya di tab Jejak.</p>
+        <label for="otRouter">Router</label>
+        <select id="otRouter"><option value="aturan">Aturan: regex dan parser (bawaan)</option><option value="semantik">Semantik ringan: kemiripan teks dengan contoh kalimat</option><option value="embedding">Semantik embedding: kemiripan makna (butuh Ollama)</option><option value="tool">AI memilih tool (butuh otak AI)</option></select>
+        <p class="note">Guard, rute buatan, memori, dan pertanyaan kemampuan selalu dikerjakan aturan lebih dulu. Router hemat hanya berlaku untuk router aturan.</p>
+        <label for="otEmbed">Model embedding Ollama (router embedding dan RAG hibrida)</label>
+        <input id="otEmbed" type="text" placeholder="embeddinggemma">
+        <label for="otGuard">Guard model</label>
+        <select id="otGuard"><option value="">Mati: hanya guard regex</option><option value="llama-guard3:1b">llama-guard3:1b (butuh Ollama)</option></select>
+        <p class="note">Guard model menangkap konten berbahaya (kekerasan, kejahatan, menyakiti diri). Ia hanya bisa menambah penolakan, tidak pernah meloloskan yang ditolak guard regex.</p>
+        <label class="cek"><input type="checkbox" id="otRingkasan"> Ringkas percakapan lama (butuh otak AI dan ingatan percakapan)</label>
+        <label class="cek"><input type="checkbox" id="otBertahan"> Ingatan sesi tetap ada saat halaman dimuat ulang (sampai tab ditutup)</label>
         <div class="btnrow"><button class="btn pri" type="submit">Simpan</button><button class="btn" type="button" id="otTes">Tes koneksi</button></div>
         <p id="otStatus" role="status" class="note"></p>
+        <h3>Uji otak ini</h3>
+        <p class="note">Mengirim 10 pesan uji ke otak dan pengaturan yang sedang aktif. Ruangan, XP, misi, dan ingatan tidak berubah.</p>
+        <div class="btnrow"><button class="btn" type="button" id="otUji">Jalankan uji kelas</button></div>
+        <p class="note" id="otUjiRingkas"></p>
+        <ul class="ingat" id="otUjiHasil"></ul>
       </form>
     </section>
   </aside>
@@ -439,6 +490,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 /*PROMPT*/
 </script>
 <script>
+/*ROUTER*/
 /*LLM*/
 </script>
 <script>

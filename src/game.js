@@ -22,7 +22,7 @@
   };
   const G = { llmPakai: 0, st: null, speed: 1, busy: false, xp: 0, selesai: {}, misi: 0, pesan: 0, pesanRuang: 0, tipe: new Set(), hint: 0, done: false, t0: performance.now(), cmd: 0,
     badge: new Set(), semesta: 'kampus', ruang: 'lab', sm: null, manual: [], rag: true, ragK: 0, diambilTerakhir: [], ambilSesi: new Set(), paralel: 0, tahapMaks: 0, bertahan: 0, serangSendiri: 0, antreSerangan: null,
-    grafis: 'auto', logAksi: [], intents: new Set(), rute: new Set(), kejadianSesi: new Set(), ekstra: { suhu: 0, cahaya: 0 }, js: { kunjung: new Set(), bab: new Set(), rute: new Set(), kejadian: new Set() }, sudah: new Set() };
+    grafis: 'auto', logAksi: [], intents: new Set(), rute: new Set(), kejadianSesi: new Set(), ekstra: { suhu: 0, cahaya: 0 }, js: { kunjung: new Set(), bab: new Set(), rute: new Set(), kejadian: new Set() }, sudah: new Set(), riwayat: [], ringkasan: '', diringkas: 0, meringkas: false, trace: [] };
   const simpanJs = {};   // kemajuan lintas ruang per semesta: { sid: {kunjung:[], bab:[], rute:[], kejadian:[]} }
   (function muat() {
     const s = baca('ruangagen', {});
@@ -60,13 +60,16 @@
 
   /* ---------- konfigurasi otak (disimpan lokal di browser) ---------- */
   const KFG = 'ruangagen-otak';
-  const cfg = Object.assign({ mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true }, baca(KFG, {}));
+  const cfg = Object.assign({ mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true, konteks: 0,
+    router: 'aturan', embedModel: 'embeddinggemma', guardModel: '', ragMode: 'tfidf', rerank: false, kutip: false, ringkasRiwayat: false, ingatBertahan: false }, baca(KFG, {}));
   if (!['parser', 'kunci', 'ollama', 'lokal'].includes(cfg.mode)) cfg.mode = 'parser'; // mode lama yang sudah dihapus
   const simpanCfg = () => tulis(KFG, cfg);
   const lokalan = () => cfg.mode === 'lokal' || cfg.mode === 'ollama';
   const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), lokalUrl: String(cfg.lokalUrl).trim(), lokalModel: String(cfg.lokalModel).trim(),
     // model kecil lokal: prompt ringkas, dan router hemat (parser mengerjakan pesan yang dikenalnya, LLM hanya untuk yang tidak dikenal)
-    ringkas: lokalan(), rute: lokalan() && cfg.hemat ? 'hemat' : '', timeoutMs: lokalan() ? 120000 : 12000 });
+    ringkas: lokalan(), rute: lokalan() && cfg.hemat ? 'hemat' : '', timeoutMs: lokalan() ? 120000 : 12000,
+    // pipeline lanjutan (semua mati secara bawaan)
+    router: cfg.router, embedModel: String(cfg.embedModel || 'embeddinggemma').trim(), guardModel: cfg.guardModel, ragMode: cfg.ragMode, rerank: !!cfg.rerank });
 
   /* ---------- misi ruang ---------- */
   /* Enam misi Lab ditulis sebagai kode karena syaratnya khusus. Ruang lain memakai misi deklaratif ("target" di dunia.js). */
@@ -140,11 +143,20 @@
   function say(txt, k) { bubble.textContent = txt; bubble.dataset.k = k || 'idle'; }
   function chat(who, txt, tolak) {
     const li = mk('li', 'msg ' + who + (tolak ? ' tolak' : ''));
-    if (who !== 'sis') li.appendChild(mk('span', 'who', who === 'kamu' ? 'Kamu' : SM().agen.nama));
+    if (who !== 'sis') li.appendChild(mk('span', 'who', who === 'kamu' ? (Otak.fakta().namaPengguna || 'Kamu') : Otak.namaAgen()));
     li.appendChild(document.createTextNode(txt));
     const log = $('#chatlog'); log.appendChild(li); log.scrollTop = log.scrollHeight;
   }
-  const TAG = { ambil: 'AMBIL', catat: 'CATAT', delegasi: 'DELEGASI', kejadian: 'KEJADIAN', otak: 'OTAK', terima: 'TERIMA', router: 'ROUTER', pikir: 'PIKIR', guard: 'GUARD', jalan: 'JALAN', aksi: 'AKSI', amati: 'AMATI', balas: 'BALAS' };
+  /* Balon "sedang berpikir" (titik tiga) selama LLM melakukan inferensi. */
+  function ngetik(nyala) {
+    const ada = $('#chatlog .ngetik');
+    if (!nyala) { if (ada) ada.remove(); return; }
+    if (ada) return;
+    const li = mk('li', 'msg agen ngetik'); li.setAttribute('aria-label', Otak.namaAgen() + ' sedang berpikir');
+    li.appendChild(mk('span', 'who', Otak.namaAgen())); for (let i = 0; i < 3; i++) li.appendChild(mk('i'));
+    const log = $('#chatlog'); log.appendChild(li); log.scrollTop = log.scrollHeight;
+  }
+  const TAG = { semantik: 'SEMANTIK', tool: 'TOOL', rerank: 'RERANK', rag: 'RAG', pengaman: 'GUARD AI', konteks: 'KONTEKS', fakta: 'FAKTA', ambil: 'AMBIL', catat: 'CATAT', delegasi: 'DELEGASI', kejadian: 'KEJADIAN', otak: 'OTAK', terima: 'TERIMA', router: 'ROUTER', pikir: 'PIKIR', guard: 'GUARD', jalan: 'JALAN', aksi: 'AKSI', amati: 'AMATI', balas: 'BALAS' };
   function jejak(k, txt) {
     const tr = $('#trace'); const kosong = tr.querySelector('.empty'); if (kosong) kosong.remove();
     const li = mk('li', 'k-' + k);
@@ -152,6 +164,8 @@
     li.appendChild(mk('span', 'tag', TAG[k] || k.toUpperCase()));
     li.appendChild(mk('span', 'x', txt));
     tr.appendChild(li); tr.scrollTop = tr.scrollHeight;
+    const t = G.trace[G.trace.length - 1];
+    if (t) t.spans.push({ tag: TAG[k] || k.toUpperCase(), ms: Math.round(performance.now() - G.t0), teks: String(txt) });
   }
   function pemisah(n) { const tr = $('#trace'); const kosong = tr.querySelector('.empty'); if (kosong) kosong.remove(); const li = mk('li'); li.appendChild(mk('span', 'sep', 'Perintah #' + n)); li.style.display = 'block'; tr.appendChild(li); }
   /* Jalur pesan: tiap tahap pipeline menyala bila dilalui, merah bila menolak. Memperlihatkan arsitektur agen secara hidup. */
@@ -162,7 +176,7 @@
   }
   function nyalaPipe(plan) {
     const asalLLM = plan.otak && plan.otak.asal === 'llm';
-    const st = { input: plan.sub === 'injeksi' ? 'tolak' : 'on', memori: plan.memori ? 'on' : '', router: plan.rute && plan.intent === 'bahaya' ? 'tolak' : 'on', rag: plan.diambil.length ? 'on' : '',
+    const st = { input: plan.sub === 'injeksi' ? 'tolak' : 'on', memori: plan.memori || (plan.otak && plan.otak.konteks) ? 'on' : '', router: plan.rute && plan.intent === 'bahaya' ? 'tolak' : 'on', rag: plan.diambil.length ? 'on' : '',
       otak: asalLLM ? 'llm' : 'on', guard: plan.ditolak.some(t => t.aturan !== 'injeksi' && !String(t.aturan).startsWith('rute_')) ? 'tolak' : plan.aksi.length ? 'on' : '', orkestrator: plan.didelegasikan_ke ? 'on' : '',
       spesialis: plan.didelegasikan_ke ? 'on' : '', keluaran: plan.catatanGuard && plan.catatanGuard.length ? 'on' : '' };
     gambarPipe(st);
@@ -225,6 +239,60 @@
     simpanManual(); renderManual(); renderStatus(); beriBadge('pengingat');
     return true;
   }
+  /* Ralat dan hapus hanya menyentuh catatan pengguna, tidak pernah bab manual bawaan. */
+  function ubahCatatan(m) {
+    const i = G.manual.findIndex(x => x.id === m.id && MAN.adalahCatatan(x));
+    if (i < 0 || !SM().guard.memori.aktif) return false;
+    if (m.jenis === 'hapus') G.manual.splice(i, 1);
+    else {
+      const teks = String(m.teks || '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      if (!teks || Otak.adaInjeksi(teks)) return false;
+      G.manual[i] = Object.assign({}, G.manual[i], { teks });
+    }
+    simpanManual(); renderManual(); renderStatus(); beriBadge('pengingat');
+    return true;
+  }
+  function mintaSetuju(ris) {
+    return new Promise(res => {
+      const li = mk('li', 'msg sis');
+      li.appendChild(document.createTextNode(`Persetujuan diperlukan: ${ris.map(Otak.deskripsi).join(', ')}. Lanjutkan?`));
+      const row = mk('div', 'setuju'), ya = mk('button', 'btn sm pri', 'Setujui'), tidak = mk('button', 'btn sm', 'Tolak');
+      ya.type = tidak.type = 'button'; ya.id = 'setujuYa'; tidak.id = 'setujuTidak';
+      const selesai = v => { ya.disabled = tidak.disabled = true; ya.removeAttribute('id'); tidak.removeAttribute('id'); li.appendChild(document.createTextNode(v ? ' Disetujui.' : ' Ditolak.')); res(v); };
+      ya.addEventListener('click', () => selesai(true)); tidak.addEventListener('click', () => selesai(false));
+      row.append(ya, tidak); li.appendChild(row);
+      const log = $('#chatlog'); log.appendChild(li); log.scrollTop = log.scrollHeight;
+      say('Menunggu persetujuanmu', 'guard');
+    });
+  }
+  /* Ringkasan bergulir: pesan yang keluar dari context window diringkas AI di latar belakang. */
+  async function ringkasLatar() {
+    if (!cfg.ringkasRiwayat || !(cfg.konteks > 0) || cfg.mode === 'parser' || G.meringkas) return;
+    const belum = G.riwayat.slice(G.diringkas, Math.max(G.diringkas, G.riwayat.length - cfg.konteks));
+    if (belum.length < 2) return;
+    G.meringkas = true;
+    try {
+      G.ringkasan = await OtakLLM.ringkasRiwayat(cfgAktif(), belum, G.ringkasan);
+      G.diringkas += belum.length; G.llmPakai++;
+      jejak('konteks', `Ringkasan percakapan lama diperbarui (${belum.length} pasang pesan): "${potong(G.ringkasan, 120)}"`);
+    } catch (e) { jejak('konteks', `Ringkasan gagal: ${e && e.message ? e.message : e}`); }
+    finally { G.meringkas = false; renderIngatan(); }
+  }
+  const KSESI = 'ruangagen-sesi';
+  function simpanSesi() {
+    try {
+      if (cfg.ingatBertahan) sessionStorage.setItem(KSESI, JSON.stringify({ fakta: Otak.fakta(), riwayat: G.riwayat, ringkasan: G.ringkasan, diringkas: G.diringkas }));
+      else sessionStorage.removeItem(KSESI);
+    } catch (e) { /* penyimpanan sesi tidak tersedia */ }
+  }
+  function renderIngatan() {
+    const f = Otak.fakta(), ul = $('#ingatList'); ul.replaceChildren();
+    if (f.namaAgen) ul.appendChild(mk('li', '', 'Nama agen: ' + f.namaAgen));
+    if (f.namaPengguna) ul.appendChild(mk('li', '', 'Nama kamu: ' + f.namaPengguna));
+    ul.appendChild(mk('li', '', `Riwayat chat tersimpan: ${G.riwayat.length} pasang` + (cfg.konteks ? ` (${Math.min(cfg.konteks, G.riwayat.length)} ikut dikirim ke AI)` : ' (context window mati)')));
+    if (G.ringkasan) ul.appendChild(mk('li', '', 'Ringkasan percakapan lama: ' + G.ringkasan));
+    simpanSesi();
+  }
   async function kirim(teks, opsiKirim) {
     opsiKirim = opsiKirim || {};
     teks = String(teks || '').trim().slice(0, 200);
@@ -233,12 +301,18 @@
     G.pesan++; G.pesanRuang++; G.cmd++; G.t0 = performance.now();
     chat('kamu', teks);
     pemisah(G.cmd); gambarPipe(null);
+    G.trace.push({ cmd: G.cmd, pesan: teks, waktu: new Date().toISOString(), spans: [] }); if (G.trace.length > 50) G.trace.shift();
     if (cfg.mode !== 'parser') say('Berpikir...', 'pikir');
     const kuotaHabis = cfg.mode === 'kunci' && G.llmPakai >= cfg.batasSesi;
     Otak.setEkstra(G.ekstra);
-    const plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag, k: G.ragK || undefined });
+    const riwayat = cfg.konteks > 0 ? G.riwayat.slice(-cfg.konteks) : [];
+    let plan;
+    const ringkasan = cfg.ringkasRiwayat && cfg.konteks > 0 ? G.ringkasan : '';
+    try { plan = await OtakLLM.pikirAsync(teks, G.st, cfgAktif(), { kuotaHabis, manual: G.manual, rag: G.rag, k: G.ragK || undefined, riwayat, ringkasan, saatLLM: () => ngetik(true) }); }
+    finally { ngetik(false); }
     G.llmPakai += plan.otak.panggilan || 0;
     renderOtak(plan.otak);
+    G.trace[G.trace.length - 1].otak = plan.otak;
     plan.ditolak.forEach(t => G.tipe.add(t.aturan));
     G.intents.add(plan.intent); G.rute.add(plan.rute || plan.intent); if (plan.rute) G.js.rute.add(plan.rute);
     G.diambilTerakhir = plan.diambil.map(d => d.id);
@@ -265,15 +339,35 @@
     }
 
     let tujuanAkhir = false;
-    if (plan.diambil.length || plan.memori) {
+    const mem = plan.memori, keRak = mem && ['catat', 'ganti', 'hapus'].includes(mem.jenis || 'catat');
+    if (mem && mem.jenis === 'fakta') { Otak.aturFakta(mem.kunci, mem.nilai); renderIngatan(); }
+    if (plan.diambil.length || keRak) {
       await keTujuan(adegan.PAD.R, 'Rak Manual');
       adegan.sorotRak(2.5 / G.speed);
-      say(plan.memori ? 'Menulis catatan...' : 'Mengambil potongan manual...', 'pikir'); await wait(0.7);
+      say(keRak ? 'Menulis catatan...' : 'Mengambil potongan manual...', 'pikir'); await wait(0.7);
       const ja = plan.jejak.find(j => j.k === 'ambil'), jc = plan.jejak.find(j => j.k === 'catat');
       if (ja) jejak('ambil', ja.t);
-      if (plan.memori) { if (tambahCatatan(plan.memori.teks)) jejak('catat', jc.t); else { plan.balasan = 'Catatan itu tidak bisa kusimpan (rak penuh, atau isinya tidak aman).'; jejak('guard', 'Guard: catatan ditolak.'); } }
+      if (keRak) {
+        const ok = mem.jenis === 'ganti' || mem.jenis === 'hapus' ? ubahCatatan(mem) : tambahCatatan(mem.teks);
+        if (ok) jejak('catat', jc.t); else { plan.balasan = 'Catatan itu tidak bisa kusimpan (rak penuh, atau isinya tidak aman).'; jejak('guard', 'Guard: catatan ditolak.'); }
+      }
       await wait(0.5);
       tujuanAkhir = true;
+    }
+    // human in the loop: aksi berisiko menunggu persetujuan pemain (bila diaktifkan di guardrails semesta)
+    if (plan.didelegasikan_ke && SM().guard.persetujuan.aktif) {
+      const ris = Otak.aksiBerisiko(plan.aksi);
+      if (ris.length) {
+        const ok = await mintaSetuju(ris);
+        jejak('guard', `Persetujuan manusia: ${ok ? 'disetujui' : 'ditolak'} untuk ${ris.map(Otak.deskripsi).join(', ')}.`);
+        if (!ok) {
+          const sisa = plan.aksi.filter(a => !ris.includes(a));
+          plan.aksi = sisa; plan.didelegasikan_ke = sisa.length ? Otak.bagiTugas(sisa, teks) : null;
+          ris.forEach(a => plan.ditolak.push({ device: a.device, aturan: 'persetujuan', pesan: `Tidak kamu setujui: ${Otak.deskripsi(a)}.` }));
+          plan.balasan = (sisa.length ? `${SM().agen.siap} ${sisa.map(Otak.deskripsi).join(', ')}. ` : '') + `Dibatalkan karena tidak kamu setujui: ${ris.map(Otak.deskripsi).join(', ')}.`;
+          nyalaPipe(plan);
+        }
+      }
     }
     if (plan.didelegasikan_ke) {
       await jalankanTugas(plan.didelegasikan_ke);
@@ -285,8 +379,15 @@
       tujuanAkhir = true;
     }
 
+    // sumber dikutip oleh kode dari potongan yang benar-benar diambil, bukan diminta dari AI
+    if (cfg.kutip && plan.diambil.length) plan.balasan += '\nSumber: ' + [...new Set(plan.diambil.map(d => d.judul))].join('; ') + '.';
     chat('agen', plan.balasan, plan.ditolak.length > 0);
     jejak('balas', plan.balasan);
+    if (plan.sub !== 'injeksi') {
+      G.riwayat.push({ u: teks, a: plan.balasan });
+      if (G.riwayat.length > 20) { G.riwayat.shift(); G.diringkas = Math.max(0, G.diringkas - 1); }
+      renderIngatan(); ringkasLatar();
+    }
     say(potong(plan.balasan, 110), plan.ditolak.length ? 'guard' : 'balas');
     if (MISI[G.misi].trickster && !opsiKirim.serangan) {
       if (plan.ditolak.length) G.serangSendiri++;
@@ -429,25 +530,51 @@
   function tampilGrup() {
     document.querySelectorAll('#otakForm .grp').forEach(d => {
       const m = d.dataset.mode;
-      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === 'lokalan' ? lokalan() : m === cfg.mode);
+      d.classList.toggle('on', m === 'llm' ? cfg.mode === 'kunci' : m === 'semuaLLM' ? cfg.mode !== 'parser' : m === 'lokalan' ? lokalan() : m === cfg.mode);
     });
   }
   function isiForm() {
     $('#otMode').value = cfg.mode;
     $('#otKunci').value = cfg.apiKey; $('#otModels').value = cfg.models; $('#otBatas').value = cfg.batasSesi;
     $('#otOllamaUrl').value = cfg.ollamaUrl; $('#otOllamaModel').value = cfg.ollamaModel;
-    $('#otLokalUrl').value = cfg.lokalUrl; $('#otLokalModel').value = cfg.lokalModel; $('#otHemat').checked = !!cfg.hemat; tampilGrup();
+    $('#otLokalUrl').value = cfg.lokalUrl; $('#otLokalModel').value = cfg.lokalModel; $('#otHemat').checked = !!cfg.hemat; $('#otKonteks').value = String(cfg.konteks || 0);
+    $('#otRouter').value = cfg.router || 'aturan'; $('#otEmbed').value = cfg.embedModel || ''; $('#otGuard').value = cfg.guardModel || ''; $('#otRingkasan').checked = !!cfg.ringkasRiwayat; $('#otBertahan').checked = !!cfg.ingatBertahan; tampilGrup();
   }
   function bacaForm() {
     cfg.mode = $('#otMode').value;
     cfg.apiKey = $('#otKunci').value; cfg.models = $('#otModels').value || cfg.models;
     cfg.batasSesi = clamp(parseInt($('#otBatas').value, 10) || 30, 1, 200);
     cfg.ollamaUrl = $('#otOllamaUrl').value || 'http://localhost:11434'; cfg.ollamaModel = $('#otOllamaModel').value || 'qwen2.5:1.5b';
-    cfg.lokalUrl = $('#otLokalUrl').value || 'http://localhost:8000/v1'; cfg.lokalModel = $('#otLokalModel').value || 'qwen2.5-1.5b'; cfg.hemat = $('#otHemat').checked;
+    cfg.lokalUrl = $('#otLokalUrl').value || 'http://localhost:8000/v1'; cfg.lokalModel = $('#otLokalModel').value || 'qwen2.5-1.5b'; cfg.hemat = $('#otHemat').checked; cfg.konteks = Math.max(0, Math.min(10, parseInt($('#otKonteks').value, 10) || 0));
+    cfg.router = ['aturan', 'semantik', 'embedding', 'tool'].includes($('#otRouter').value) ? $('#otRouter').value : 'aturan';
+    cfg.embedModel = $('#otEmbed').value.trim() || 'embeddinggemma'; cfg.guardModel = $('#otGuard').value; cfg.ringkasRiwayat = $('#otRingkasan').checked; cfg.ingatBertahan = $('#otBertahan').checked; renderIngatan();
     cfg.otomatis = false;   // pilihan pengguna sendiri tidak ditimpa deteksi otomatis
     simpanCfg(); tampilGrup(); renderOtak();
   }
-  $('#otMode').addEventListener('change', () => { cfg.mode = $('#otMode').value; tampilGrup(); });
+  /* Daftar model Ollama diambil dari /api/tags, jadi pemain cukup memilih model yang sudah diunduh. */
+  async function muatModelOllama() {
+    const sel = $('#otOllamaPilih'), st = $('#otStatus');
+    const base = String($('#otOllamaUrl').value || 'http://localhost:11434').trim().replace(/\/+$/, '');
+    st.textContent = 'Memuat daftar model Ollama...';
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch(base + '/api/tags', { signal: ctl.signal });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const daftar = ((await r.json()).models || []).map(m => ({ nama: m.name, gb: (m.size || 0) / 1e9 })).sort((a, b) => a.gb - b.gb);
+      sel.innerHTML = '';
+      if (!daftar.length) { sel.appendChild(mk('option', '', '(belum ada model, jalankan ollama pull)')); st.textContent = 'Ollama berjalan, tetapi belum ada model.'; return; }
+      for (const m of daftar) { const o = mk('option', '', `${m.nama} (${m.gb.toFixed(1)} GB)`); o.value = m.nama; sel.appendChild(o); }
+      const kini = $('#otOllamaModel').value || cfg.ollamaModel;
+      if (daftar.some(m => m.nama === kini)) sel.value = kini; else { sel.value = daftar[0].nama; $('#otOllamaModel').value = daftar[0].nama; }
+      st.textContent = `${daftar.length} model ditemukan. Pilih, lalu Simpan.`;
+    } catch (e) {
+      sel.innerHTML = ''; sel.appendChild(mk('option', '', '(Ollama tidak terjangkau)'));
+      st.textContent = 'Daftar model gagal dimuat. Pastikan Ollama berjalan dan game dibuka lewat MULAI.bat --tanpa-model (atau OLLAMA_ORIGINS sudah diatur).';
+    }
+  }
+  $('#otOllamaMuat').addEventListener('click', muatModelOllama);
+  $('#otOllamaPilih').addEventListener('change', () => { if ($('#otOllamaPilih').value) $('#otOllamaModel').value = $('#otOllamaPilih').value; });
+  $('#otMode').addEventListener('change', () => { cfg.mode = $('#otMode').value; tampilGrup(); if (cfg.mode === 'ollama') muatModelOllama(); });
   $('#otakForm').addEventListener('submit', e => { e.preventDefault(); bacaForm(); $('#otStatus').textContent = 'Tersimpan di browser ini.'; });
   $('#otTes').addEventListener('click', async () => {
     bacaForm(); const st = $('#otStatus');
@@ -456,7 +583,48 @@
     try { const r = await OtakLLM.uji(cfgAktif()); st.textContent = `Berhasil: ${r.model} menjawab dalam ${(r.ms / 1000).toFixed(1)} detik.` + (lokalan() ? '' : ' Satu permintaan terpakai dari kuota.'); }
     catch (e) { st.textContent = 'Gagal: ' + (e && e.message ? e.message : e); }
   });
-  isiForm(); renderOtak();
+  isiForm(); renderOtak(); if (cfg.mode === 'ollama') muatModelOllama();
+  $('#ingatReset').addEventListener('click', () => { G.riwayat = []; G.ringkasan = ''; G.diringkas = 0; Otak.resetFakta(); renderIngatan(); chat('sis', 'Ingatan sesi dan riwayat percakapan dihapus. Catatan di rak tetap ada.'); });
+  /* Ingatan sesi bertahan (opsional): dibaca dari sessionStorage, yang hilang saat tab ditutup. */
+  if (cfg.ingatBertahan) {
+    try {
+      const x = JSON.parse(sessionStorage.getItem(KSESI) || 'null');
+      if (x) {
+        if (x.fakta) Object.keys(x.fakta).forEach(k => { if (x.fakta[k]) Otak.aturFakta(k, x.fakta[k]); });
+        G.riwayat = (Array.isArray(x.riwayat) ? x.riwayat : []).filter(y => y && typeof y.u === 'string' && typeof y.a === 'string').slice(-20);
+        G.ringkasan = typeof x.ringkasan === 'string' && !Otak.adaInjeksi(x.ringkasan) ? x.ringkasan.slice(0, 400) : '';
+        G.diringkas = Math.min(G.riwayat.length, Math.max(0, x.diringkas | 0));
+      }
+    } catch (e) { /* abaikan */ }
+  }
+  renderIngatan();
+  $('#jejakEkspor').addEventListener('click', () => {
+    const hex = n => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const data = { format: 'ruang-agen-trace/1', catatan: 'Mirip span OpenTelemetry: satu trace per pesan, satu span per langkah di tab Jejak.', semesta: G.semesta, ruang: G.ruang,
+      traces: G.trace.map(t => ({ traceId: hex(32), name: 'pesan #' + t.cmd, startTime: t.waktu,
+        attributes: { 'agen.pesan': t.pesan, 'agen.otak': t.otak ? t.otak.asal : '', 'agen.model': t.otak && t.otak.model || '', 'agen.durasi_ms': t.otak ? t.otak.ms : 0, 'agen.panggilan_llm': t.otak ? t.otak.panggilan || 0 : 0 },
+        spans: t.spans.map(x => ({ spanId: hex(16), name: x.tag, startOffsetMs: x.ms, attributes: { 'agen.teks': x.teks } })) })) };
+    unduh('jejak-ruang-agen.json', JSON.stringify(data, null, 2));
+  });
+  /* Uji kelas: pesan uji dirakit dari ruang aktif, dijalankan lewat otak yang sama tanpa menyentuh keadaan permainan. */
+  $('#otUji').addEventListener('click', async () => {
+    if (G.busy) return;
+    bacaForm(); setBusy(true); $('#otUji').disabled = true;
+    const kasus = Otak.kasusUji(), ul = $('#otUjiHasil'); ul.replaceChildren();
+    $('#otUjiRingkas').textContent = 'Menguji...' + (cfg.mode === 'kunci' ? ` (memakai ${kasus.length} permintaan dari kuota harian OpenRouter)` : '');
+    let benar = 0, total = 0;
+    try {
+      for (const c of kasus) {
+        const t = performance.now();
+        let p = null, ok = false;
+        try { p = await OtakLLM.pikirAsync(c.pesan, Otak.stateAwal(), cfgAktif(), { manual: G.manual, rag: G.rag, k: G.ragK || undefined, riwayat: [] }); ok = !!c.cek(p); } catch (e) { /* dihitung salah */ }
+        const ms = performance.now() - t; total += ms; if (ok) benar++;
+        if (p) G.llmPakai += p.otak.panggilan || 0;
+        ul.appendChild(mk('li', '', `${ok ? 'benar' : 'SALAH'} | ${c.kat}: "${c.pesan}" -> ${p ? p.otak.asal + (p.otak.fallback ? ' (cadangan)' : '') : 'galat'}, ${(ms / 1000).toFixed(1)} dtk`));
+      }
+      $('#otUjiRingkas').textContent = `Benar ${benar} dari ${kasus.length}, rata-rata ${(total / kasus.length / 1000).toFixed(1)} detik per pesan. Router: ${cfg.router}, otak: ${cfg.mode}.`;
+    } finally { $('#otUji').disabled = false; setBusy(false); }
+  });
   /* Dibuka lewat MULAI.bat: game dan model berada di alamat yang sama. Bila pengguna belum pernah memilih otak sendiri,
      otak langsung beralih ke model lokal, jadi mahasiswa tidak perlu mengatur apa pun. */
   async function deteksiModelLokal() {
@@ -500,6 +668,10 @@
     $('#ragOn').checked = G.rag; $('#ragK').value = String(G.ragK || 0); renderNilai(); renderCari();
   }
   $('#ragOn').addEventListener('change', e => { G.rag = e.target.checked; renderStatus(); });
+  $('#ragMode').value = cfg.ragMode === 'hibrida' ? 'hibrida' : 'tfidf'; $('#ragRerank').checked = !!cfg.rerank; $('#ragKutip').checked = !!cfg.kutip;
+  $('#ragMode').addEventListener('change', e => { cfg.ragMode = e.target.value === 'hibrida' ? 'hibrida' : 'tfidf'; simpanCfg(); });
+  $('#ragRerank').addEventListener('change', e => { cfg.rerank = e.target.checked; simpanCfg(); });
+  $('#ragKutip').addEventListener('change', e => { cfg.kutip = e.target.checked; simpanCfg(); });
   $('#ragK').addEventListener('change', e => { G.ragK = clamp(+e.target.value, 0, 3); simpan(); renderCari(); });
   $('#cariUji').addEventListener('input', renderCari);
   $('#catatanTambah').addEventListener('click', () => { const i = $('#catatanBaru'); if (tambahCatatan(i.value)) i.value = ''; else i.placeholder = 'tidak bisa disimpan (kosong, rak penuh, atau tidak aman)'; });
@@ -667,11 +839,11 @@
   let rtSementara = [];
   function renderAgen() {
     const U = SM(); if (!U) return;
-    $('#agNama').value = U.agen.nama; $('#agWarna').value = U.agen.warna; $('#agPersona').value = U.agen.persona; $('#agSapaan').value = U.agen.sapaan; $('#agSiap').value = U.agen.siap; $('#agTolak').value = U.agen.tolak; $('#agGaya').value = U.agen.gaya;
+    $('#agNama').value = U.agen.nama; $('#agWarna').value = U.agen.warna; $('#agPersona').value = U.agen.persona; $('#agSapaan').value = U.agen.sapaan; $('#agSiap').value = U.agen.siap; $('#agTolak').value = U.agen.tolak; $('#agGaya').value = U.agen.gaya; $('#agNgobrol').checked = !!U.agen.ngobrol;
     $('#orNama').value = U.orkestrator.nama; $('#orStrategi').value = U.orkestrator.strategi;
     rtSementara = salin(U.router.rute); renderRute();
     $('#rgK').value = U.rag.k; $('#rgAmbang').value = U.rag.ambang; $('#rgSinonim').value = Object.keys(U.rag.sinonim).map(k => k + '=' + U.rag.sinonim[k]).join('\n'); $('#rgStop').value = U.rag.stop.join(', ');
-    $('#gdInput').checked = U.guard.input.aktif; $('#gdPola').value = U.guard.input.pola.join(', '); $('#gdAksi').checked = U.guard.aksi.aktif; $('#gdInterlock').checked = U.guard.interlock.aktif; $('#gdMemori').checked = U.guard.memori.aktif; $('#gdOutput').checked = U.guard.output.aktif; $('#gdKata').value = U.guard.output.kata.join(', ');
+    $('#gdInput').checked = U.guard.input.aktif; $('#gdPola').value = U.guard.input.pola.join(', '); $('#gdAksi').checked = U.guard.aksi.aktif; $('#gdInterlock').checked = U.guard.interlock.aktif; $('#gdMemori').checked = U.guard.memori.aktif; $('#gdOutput').checked = U.guard.output.aktif; $('#gdKata').value = U.guard.output.kata.join(', '); $('#gdSetuju').checked = !!(U.guard.persetujuan && U.guard.persetujuan.aktif);
     peringatan();
     const kj = $('#kjList'); kj.replaceChildren();
     if (!U.kejadian.length) kj.appendChild(mk('li', '', 'Belum ada kejadian.'));
@@ -690,21 +862,22 @@
   }
   $('#rtTambah').addEventListener('click', () => {
     const nama = $('#rtNama').value.trim(), kata = daftarKata($('#rtKata').value), aksi = $('#rtAksi').value, isi = $('#rtIsi').value.trim();
+    const contoh = $('#rtContoh').value.split(';').map(x => x.trim()).filter(Boolean).slice(0, 8);
     if (!nama || !kata.length) { $('#agStatus').textContent = 'Rute butuh nama dan minimal satu kata pemicu.'; return; }
     let id = nama.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'rute'; if (!/^[a-z]/.test(id)) id = 'r' + id; while (rtSementara.some(r => r.id === id) || ['kontrol', 'info', 'bahaya', 'obrol'].includes(id)) id = id.slice(0, 13) + Math.floor(Math.random() * 9);
     const warna = ['#2f5bff', '#8a4bff', '#1fb67f', '#ff8a3d', '#e0408a'][rtSementara.length % 5];
-    rtSementara.push(aksi === 'manual' ? { id, nama, kata, aksi, koleksi: isi.toLowerCase().replace(/[^a-z0-9_]/g, ''), warna } : { id, nama, kata, aksi, balasan: isi, intent: 'obrol', warna });
-    ['#rtNama', '#rtKata', '#rtIsi'].forEach(s => { $(s).value = ''; }); $('#agStatus').textContent = ''; renderRute();
+    rtSementara.push(aksi === 'manual' ? { id, nama, kata, aksi, koleksi: isi.toLowerCase().replace(/[^a-z0-9_]/g, ''), warna, contoh } : { id, nama, kata, aksi, balasan: isi, intent: 'obrol', warna, contoh });
+    ['#rtNama', '#rtKata', '#rtIsi', '#rtContoh'].forEach(s => { $(s).value = ''; }); $('#agStatus').textContent = ''; renderRute();
   });
   $('#agReset').addEventListener('click', () => { renderAgen(); tampilGalatS([]); });
   $('#agTerap').addEventListener('click', () => {
     const d = defAktif();
-    d.agen = { nama: $('#agNama').value, warna: $('#agWarna').value, persona: $('#agPersona').value, sapaan: $('#agSapaan').value, siap: $('#agSiap').value, tolak: $('#agTolak').value, gaya: $('#agGaya').value };
+    d.agen = { nama: $('#agNama').value, warna: $('#agWarna').value, persona: $('#agPersona').value, sapaan: $('#agSapaan').value, siap: $('#agSiap').value, tolak: $('#agTolak').value, gaya: $('#agGaya').value, ngobrol: $('#agNgobrol').checked };
     d.orkestrator = Object.assign({}, d.orkestrator, { nama: $('#orNama').value, strategi: $('#orStrategi').value });
     d.router = { rute: rtSementara };
     const sin = {}; $('#rgSinonim').value.split('\n').forEach(b => { const [a, c] = b.split('='); if (a && c) sin[a.trim().toLowerCase()] = c.trim().toLowerCase(); });
     d.rag = { k: +$('#rgK').value || 2, ambang: +$('#rgAmbang').value, sinonim: sin, stop: daftarKata($('#rgStop').value) };
-    d.guard = { input: { aktif: $('#gdInput').checked, pola: daftarKata($('#gdPola').value) }, aksi: { aktif: $('#gdAksi').checked }, interlock: { aktif: $('#gdInterlock').checked }, memori: { aktif: $('#gdMemori').checked }, output: { aktif: $('#gdOutput').checked, kata: daftarKata($('#gdKata').value) } };
+    d.guard = { input: { aktif: $('#gdInput').checked, pola: daftarKata($('#gdPola').value) }, aksi: { aktif: $('#gdAksi').checked }, interlock: { aktif: $('#gdInterlock').checked }, memori: { aktif: $('#gdMemori').checked }, output: { aktif: $('#gdOutput').checked, kata: daftarKata($('#gdKata').value) }, persetujuan: { aktif: $('#gdSetuju').checked } };
     d.ruang = d.ruang.map(r => salin(r));
     if (simpanSemesta(d, 'Perubahan agen diterapkan.')) { $('#agStatus').textContent = 'Diterapkan. Coba kirim pesan di Chat dan lihat jalur pesan di tab Jejak.'; beriBadge('perancang'); }
   });

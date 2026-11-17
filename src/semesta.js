@@ -186,9 +186,9 @@
     id: 'semestaku', nama: 'Semesta Baruku', cerita: 'Tulis ceritamu di sini: siapa agenmu, di mana, dan apa yang harus dijaga.',
     agen: { nama: 'Bimo', persona: 'asisten ramah yang suka bercanda', sapaan: 'Halo, aku Bimo! Mau diatur apa hari ini?', siap: 'Gaskeun!', tolak: 'Waduh, nggak bisa:', gaya: 'gaul', warna: '#ff8a3d' },
     orkestrator: { nama: 'Koordinator', strategi: 'otomatis', spesialis: {} },
-    router: { rute: [{ id: 'infokos', nama: 'INFO KOS', kata: ['aturan kos', 'bayar kos', 'tamu'], aksi: 'manual', koleksi: 'kos', warna: '#1fb67f' }] },
+    router: { rute: [{ id: 'infokos', nama: 'INFO KOS', kata: ['aturan kos', 'bayar kos', 'tamu'], aksi: 'manual', koleksi: 'kos', warna: '#1fb67f', contoh: ['kapan harus bayar kos', 'boleh bawa teman menginap'] }] },
     rag: { k: 2, ambang: 0.8, sinonim: {}, stop: [] },
-    guard: { input: { aktif: true, pola: ['rahasia'] }, aksi: { aktif: true }, interlock: { aktif: true }, output: { aktif: false, kata: [] }, memori: { aktif: true } },
+    guard: { input: { aktif: true, pola: ['rahasia'] }, aksi: { aktif: true }, interlock: { aktif: true }, output: { aktif: false, kata: [] }, memori: { aktif: true }, persetujuan: { aktif: false } },
     pengetahuan: [{ id: 'kos_aturan', judul: 'Aturan kos', teks: 'Tamu boleh berkunjung sampai pukul 21.00. Bayar kos paling lambat tanggal 5 tiap bulan.', koleksi: 'kos' }],
     ruang: [D.TEMPLAT],
     awal: 'kos',
@@ -211,7 +211,7 @@
     if (!U.nama) G.push('"nama" semesta wajib diisi.');
 
     const a = def.agen || {};
-    U.agen = { nama: teks(a.nama, 16) || 'Agen', persona: teks(a.persona, 80), sapaan: teks(a.sapaan, 120), siap: teks(a.siap, 20) || 'Siap!', tolak: teks(a.tolak, 24) || 'Aku tolak:', gaya: GAYA.includes(a.gaya) ? a.gaya : 'santai', warna: warna(a.warna, '#2f5bff') };
+    U.agen = { nama: teks(a.nama, 16) || 'Agen', persona: teks(a.persona, 80), sapaan: teks(a.sapaan, 120), siap: teks(a.siap, 20) || 'Siap!', tolak: teks(a.tolak, 24) || 'Aku tolak:', gaya: GAYA.includes(a.gaya) ? a.gaya : 'santai', warna: warna(a.warna, '#2f5bff'), ngobrol: a.ngobrol === true };
     if (a.gaya && !GAYA.includes(a.gaya)) G.push(`Agen: "gaya" harus salah satu dari ${GAYA.join(', ')}.`);
 
     const o = def.orkestrator || {};
@@ -231,7 +231,8 @@
       if (!AKSI_RUTE.includes(r.aksi)) { G.push(`${di}: "aksi" harus salah satu dari ${AKSI_RUTE.join(', ')}.`); return; }
       const kata = kataList(r.kata);
       if (!kata.length) { G.push(`${di}: "kata" butuh minimal 1 kata pemicu.`); return; }
-      const x = { id: r.id, nama: teks(r.nama, 12).toUpperCase() || r.id.toUpperCase(), kata, aksi: r.aksi, warna: warna(r.warna, '#2f5bff'), koleksi: teks(r.koleksi, 16).toLowerCase().replace(/[^a-z0-9_]/g, ''), balasan: teks(r.balasan, 240), intent: r.intent === 'info' ? 'info' : 'obrol' };
+      const x = { id: r.id, nama: teks(r.nama, 12).toUpperCase() || r.id.toUpperCase(), kata, aksi: r.aksi, warna: warna(r.warna, '#2f5bff'), koleksi: teks(r.koleksi, 16).toLowerCase().replace(/[^a-z0-9_]/g, ''), balasan: teks(r.balasan, 240), intent: r.intent === 'info' ? 'info' : 'obrol',
+        contoh: (Array.isArray(r.contoh) ? r.contoh : []).slice(0, 8).map(c => teks(c, 80).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()).filter(c => c.length >= 3) };
       if (x.aksi !== 'manual' && !x.balasan) G.push(`${di}: aksi "${x.aksi}" butuh "balasan".`);
       U.router.rute.push(x);
     });
@@ -248,7 +249,8 @@
       input: { aktif: ya(gd.input && gd.input.aktif), pola: kataList(gd.input && gd.input.pola, 20) },
       aksi: { aktif: ya(gd.aksi && gd.aksi.aktif) }, interlock: { aktif: ya(gd.interlock && gd.interlock.aktif) },
       output: { aktif: !!(gd.output && gd.output.aktif), kata: kataList(gd.output && gd.output.kata, 20) },
-      memori: { aktif: ya(gd.memori && gd.memori.aktif) }
+      memori: { aktif: ya(gd.memori && gd.memori.aktif) },
+      persetujuan: { aktif: !!(gd.persetujuan && gd.persetujuan.aktif) }   // human in the loop untuk aksi berisiko, mati secara bawaan
     };
 
     U.pengetahuan = (Array.isArray(def.pengetahuan) ? def.pengetahuan.slice(0, 40) : []).map((m, i) => ({ id: OK_ID.test(String(m && m.id)) ? String(m.id) : 'pk' + (i + 1), judul: teks(m && m.judul, 60) || 'Tanpa judul', teks: teks(m && m.teks, 300), koleksi: teks(m && m.koleksi, 16).toLowerCase().replace(/[^a-z0-9_]/g, '') })).filter(m => m.teks);

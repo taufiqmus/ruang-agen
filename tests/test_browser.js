@@ -11,7 +11,7 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
 
 (async () => {
   const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
-  const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 }, acceptDownloads: true });
   const dipanggil = { or: [], ollama: [], lokal: [] };
   let modeLLM = 'tertipu';
   await ctx.route('**/*', route => {
@@ -31,9 +31,10 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
       const isi = { intent: 'kontrol', pikiran: 'lokal', aksi: [{ device: 'kipas', op: 'on', speed: 1 }], fokus: 'semua', balasan: 'Kipas pelan kunyalakan.' };
       return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }, contentType: 'application/json', body: JSON.stringify({ model: 'qwen2.5-1.5b-instruct-q4_k_m.gguf', choices: [{ message: { content: JSON.stringify(isi) } }] }) });
     }
+    if (u === 'http://localhost:11434/api/tags') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: JSON.stringify({ models: [{ name: 'qwen2.5:1.5b', size: 986e6 }, { name: 'llama3.2:1b', size: 1.3e9 }] }) });
     if (u.startsWith('http://localhost:11434/')) {
       dipanggil.ollama.push(JSON.parse(route.request().postData()));
-      return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: JSON.stringify({ model: 'qwen2.5:3b', message: { content: JSON.stringify({ intent: 'kontrol', pikiran: 'ollama', aksi: [{ device: 'lampu', op: 'on' }], fokus: 'semua', balasan: 'Lampu kunyalakan.' }) } }) });
+      return new Promise(r => setTimeout(r, 400)).then(() => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: JSON.stringify({ model: 'qwen2.5:3b', message: { content: JSON.stringify({ intent: 'kontrol', pikiran: 'ollama', aksi: [{ device: 'lampu', op: 'on' }], fokus: 'semua', balasan: 'Lampu kunyalakan.' }) } }) }));
     }
     return route.abort();
   });
@@ -128,12 +129,25 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
   await page.click('#tab-otak'); await page.selectOption('#otMode', 'ollama');
   cek('grup Ollama tampil, grup kunci tersembunyi', await page.isVisible('#otOllamaUrl') && !(await page.isVisible('#otKunci')));
+  await page.waitForFunction(() => document.querySelectorAll('#otOllamaPilih option').length === 2);
+  await page.selectOption('#otOllamaPilih', 'llama3.2:1b');
+  cek('daftar model Ollama dimuat dan dipilih', await page.inputValue('#otOllamaModel') === 'llama3.2:1b');
+  await page.selectOption('#otOllamaPilih', 'qwen2.5:1.5b');
   await page.click('#otakForm button[type=submit]');
   await page.uncheck('#otHemat'); await page.click('#otakForm button[type=submit]');
+  const titik = page.waitForSelector('#chatlog .ngetik', { timeout: 5000 }).then(() => true, () => false);
   await kirim('nyalakan lampu');
+  cek('titik tiga tampil selama inferensi LLM lalu hilang', await titik && !(await page.$('#chatlog .ngetik')));
   cek('Ollama dipanggil dengan skema terstruktur', dipanggil.ollama.length === 1 && dipanggil.ollama[0].format && dipanggil.ollama[0].stream === false && (await state()).lampu.on);
   cek('badge Ollama', /Ollama/.test(await page.textContent('#otakBadge')));
   cek('Ollama memakai prompt ringkas', /Kamu otak agen ruangan/.test(dipanggil.ollama[0].messages[0].content));
+  cek('context window bawaan mati: tanpa riwayat di prompt', !/Percakapan sebelumnya/.test(dipanggil.ollama[0].messages[0].content));
+  await page.click('#tab-otak'); await page.selectOption('#otKonteks', '4'); await page.click('#otakForm button[type=submit]');
+  await kirim('hawanya bikin ngantuk');
+  const pr = dipanggil.ollama[1].messages[0].content;
+  cek('context window 4: pesan sebelumnya ikut di prompt', /Pengguna: nyalakan lampu/.test(pr) && /Agen: Lampu kunyalakan/.test(pr), pr.slice(-300));
+  cek('tag KONTEKS di jejak', (await tag('KONTEKS')) >= 1);
+  await page.click('#tab-otak'); await page.selectOption('#otKonteks', '0'); await page.click('#otakForm button[type=submit]');
 
   /* Model lokal kecil (Python) dengan router hemat */
   await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
@@ -243,6 +257,81 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   const sp3 = await page.evaluate(() => { const r = document.querySelector('[data-sp="3"]').getBoundingClientRect(); return { kanan: r.right, kiri: r.left, lebar: window.innerWidth }; });
   cek('mobile 390px: tombol 3x ada di dalam layar', sp3.kiri >= 0 && sp3.kanan <= sp3.lebar, sp3);
   await page.screenshot({ path: process.env.SHOT || require('path').join(require('os').tmpdir(), 'ruang-agen-mobile.png') });
+
+  /* Ingatan sesi, ralat catatan, dan opsi ngobrol */
+  await page.setViewportSize({ width: 1366, height: 800 });
+  await kirim('namamu John');
+  cek('fakta sesi: label agen di chat berganti nama', /John/.test(await page.textContent('#chatlog li:last-child .who')) && (await tag('FAKTA')) >= 1);
+  await kirim('namaku Budi');
+  await kirim('siapa namaku?');
+  cek('fakta sesi: nama pengguna diingat', /Budi/.test(await page.textContent('#chatlog li:last-child')));
+  cek('daftar ingatan sesi di tab Manual', /John/.test(await page.textContent('#ingatList')) && /Budi/.test(await page.textContent('#ingatList')));
+  await kirim('ingat ya, meja 7 pesan teh tawar');
+  await kirim('ralat: meja 7 pesan teh manis');
+  const cat = await page.evaluate(() => window.__ruangAgen.G.manual.filter(m => /meja 7/.test(m.teks)).map(m => m.teks));
+  cek('ralat mengganti catatan di rak, bukan menambah', cat.length === 1 && cat[0] === 'meja 7 pesan teh manis', cat);
+  await kirim('hapus catatan meja 7');
+  cek('hapus catatan lewat chat', await page.evaluate(() => !window.__ruangAgen.G.manual.some(m => /meja 7/.test(m.teks))));
+  await page.click('#tab-manual'); await page.click('#ingatReset');
+  cek('Lupakan sesi ini mengosongkan fakta', !/John/.test(await page.textContent('#ingatList')));
+  await page.click('#tab-agen'); await page.check('#agNgobrol');
+  await page.click('#agTerap');
+  cek('opsi ngobrol tersimpan di semesta', await page.evaluate(() => Otak.semesta().agen.ngobrol));
+
+  /* Pipeline lanjutan (mode parser, tanpa jaringan) */
+  await page.evaluate(() => window.__ruangAgen.mulaiMisi(0));
+  await page.click('#tab-otak'); await page.selectOption('#otRouter', 'semantik'); await page.click('#otakForm button[type=submit]');
+  await kirim('kamu bisa disuruh apa saja');
+  cek('router semantik dari tab Otak: parafrase kemampuan dijawab, tag SEMANTIK', /yang bisa kulakukan/i.test(await page.textContent('#chatlog li:last-child')) && (await tag('SEMANTIK')) >= 1);
+  await page.click('#tab-otak'); await page.selectOption('#otRouter', 'aturan'); await page.click('#otakForm button[type=submit]');
+
+  await page.click('#tab-manual'); await page.check('#ragKutip');
+  await kirim('berapa suhu nyaman?');
+  cek('sumber dikutip kode di jawaban dari rak', /Sumber: .*Suhu nyaman/.test(await page.textContent('#chatlog li:last-child')), await page.textContent('#chatlog li:last-child'));
+  await page.click('#tab-manual'); await page.uncheck('#ragKutip');
+
+  await page.click('#tab-agen'); await page.check('#gdSetuju'); await page.click('#agTerap');
+  const n0 = await page.evaluate(() => window.__ruangAgen.G.pesan);
+  await page.click('#tab-chat'); await page.fill('#inp', 'nyalakan lampu dan lengan robot 30%'); await page.click('#send');
+  await page.waitForSelector('#setujuTidak', { timeout: 20000 }); await page.click('#setujuTidak'); await tunggu(n0 + 1);
+  let s3 = await state();
+  cek('persetujuan ditolak: lengan tetap mati, lampu tetap dikerjakan', !s3.lengan.on && s3.lampu.on && /tidak kamu setujui/.test(await page.textContent('#chatlog li:last-child')));
+  await page.fill('#inp', 'nyalakan lengan robot 30%'); await page.click('#send');
+  await page.waitForSelector('#setujuYa', { timeout: 20000 }); await page.click('#setujuYa'); await tunggu(n0 + 2);
+  s3 = await state();
+  cek('persetujuan diberikan: lengan menyala', s3.lengan.on === true);
+  await page.click('#tab-agen'); await page.uncheck('#gdSetuju'); await page.click('#agTerap');
+
+  await page.click('#tab-jejak');
+  const [unduhan] = await Promise.all([page.waitForEvent('download'), page.click('#jejakEkspor')]);
+  const jt = JSON.parse(require('fs').readFileSync(await unduhan.path(), 'utf8'));
+  cek('ekspor jejak: JSON mirip OpenTelemetry dengan trace dan span', jt.format === 'ruang-agen-trace/1' && jt.traces.length > 3 && jt.traces.every(t => t.traceId.length === 32 && Array.isArray(t.spans)) && jt.traces.some(t => t.spans.some(x => x.name === 'BALAS')), jt.traces.length);
+
+  const sebelumUji = await page.evaluate(() => JSON.stringify({ xp: window.__ruangAgen.G.xp, st: window.__ruangAgen.G.st, pesan: window.__ruangAgen.G.pesan }));
+  await page.click('#tab-otak'); await page.click('#otUji');
+  await page.waitForFunction(() => /Benar \d+ dari \d+/.test(document.querySelector('#otUjiRingkas').textContent), null, { timeout: 60000 });
+  cek('uji kelas berjalan dan melaporkan skor per kasus', /Benar \d+ dari 10/.test(await page.textContent('#otUjiRingkas')) && (await page.$$('#otUjiHasil li')).length === 10, await page.textContent('#otUjiRingkas'));
+  const sesudahUji = await page.evaluate(() => JSON.stringify({ xp: window.__ruangAgen.G.xp, st: window.__ruangAgen.G.st, pesan: window.__ruangAgen.G.pesan }));
+  cek('uji kelas tidak mengubah ruangan, XP, dan jumlah pesan', sesudahUji === sebelumUji, [sebelumUji, sesudahUji]);
+
+  await page.check('#otBertahan'); await page.click('#otakForm button[type=submit]');
+  await kirim('namaku Rina');
+  await page.reload(); await page.waitForFunction(() => window.__ruangAgen && window.__ruangAgen.G);
+  cek('ingatan sesi bertahan setelah muat ulang bila diaktifkan', /Rina/.test(await page.textContent('#ingatList')));
+  await page.click('#tab-otak'); await page.uncheck('#otBertahan'); await page.click('#otakForm button[type=submit]');
+
+  /* Ringkasan bergulir (D1) dengan Ollama tiruan */
+  await page.click('#tab-otak'); await page.selectOption('#otMode', 'ollama');
+  await page.waitForFunction(() => document.querySelectorAll('#otOllamaPilih option').length === 2);
+  await page.uncheck('#otHemat'); await page.selectOption('#otKonteks', '2'); await page.check('#otRingkasan'); await page.click('#otakForm button[type=submit]');
+  for (const q of ['hawanya bikin ngantuk', 'tolong bantu dong', 'kipasnya gimana', 'lampunya coba', 'oke makasih']) await kirim(q);
+  await page.waitForFunction(() => window.__ruangAgen.G.ringkasan && !window.__ruangAgen.G.meringkas, null, { timeout: 20000 });
+  const nOll = dipanggil.ollama.length;
+  await kirim('satu lagi ya');
+  const prRing = dipanggil.ollama.slice(nOll).map(b => b.messages[0].content).join('\n');
+  cek('ringkasan bergulir: pesan lama diringkas di latar dan masuk prompt berikutnya', /Ringkasan percakapan lama:/.test(prRing) && /Ringkasan percakapan lama/.test(await page.textContent('#ingatList')) && (await tag('KONTEKS')) >= 1, prRing.slice(-300));
+  cek('ringkasan bergulir: indeks pesan yang sudah diringkas wajar', await page.evaluate(() => { const g = window.__ruangAgen.G; return g.diringkas >= 2 && g.diringkas <= g.riwayat.length - 2; }));
+  await page.click('#tab-otak'); await page.uncheck('#otRingkasan'); await page.selectOption('#otKonteks', '0'); await page.selectOption('#otMode', 'parser'); await page.click('#otakForm button[type=submit]');
 
   cek('tanpa galat JS selama seluruh alur', galatHalaman.length === 0, galatHalaman);
   await browser.close();

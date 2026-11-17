@@ -1,6 +1,6 @@
 # Laporan pengujian Ruang Agen
 
-Tanggal uji: 16 sampai 17 November 2026 (diperbarui setelah semesta). Lingkungan: Windows 11, Node 24.18.1, Chrome (Playwright 1.49 dengan Chrome terpasang, software rendering untuk WebGL), Python 3.12 dengan llama-cpp-python 0.3.36 (CPU), CPU i5-12400F (6 inti). Ollama pernah diuji lalu dihapus dari mesin uji.
+Tanggal uji: 16 sampai 17 November 2026 (diperbarui setelah semesta). Lingkungan: Windows 11, Node 24.18.1, Chrome (Playwright 1.49 dengan Chrome terpasang, software rendering untuk WebGL), Python 3.12 dengan llama-cpp-python 0.3.36 (CPU), CPU i5-12400F (6 inti), GPU RTX 3060 12 GB. Ollama 0.40.16 terpasang di `D:\ollama` (model di `D:\ollama\models`).
 
 ## 1. Uji otomatis tanpa jaringan
 
@@ -13,12 +13,14 @@ Dijalankan sebelum dan sesudah setiap perubahan. Semua lulus.
 | `test_dunia.js` | 63 | Semua ruang bawaan dan templat lolos pemeriksa. Kafe (kata gaul, alias, resep dari rak, batas daya, volume), Studio (alias "go live", interlock ON AIR, urutan aman, batas gimbal), prompt lengkap dan ringkas dirakit dari ruang aktif, memori ("ingat"), catatan mengalahkan bab suhu, injeksi lewat memori ditolak, `jelaskan` dan top-k, 12 jenis galat definisi ruang, ruang buatan dipakai otak (kata gaul dan interlock baru), fisika menuju nilai stabil dan stabil untuk langkah waktu besar, misi deklaratif |
 | `test_semesta.js` | 76 | Semesta: enam ruang sah (ruang baru: robot pustakawan dan interlock pintu, interlock timbal balik kompor dan oven, pompa dan pintu), Kampus Nusantara (6 ruang, 24 bab bersama, 4 rute, 3 kejadian, 5 misi), lebih dari 70 bab pengetahuan. **Router buatan**: rute manual dengan koleksi, balas aturan tetap, tolak (selalu menang walau ada perintah), perintah jelas tidak dibajak, RAG mati dijelaskan, `adaRute` memutus di kode, 4 jenis galat rute. **Agen**: kata setuju, kata menolak, sapaan, nama, persona masuk kedua prompt, prompt bawaan tidak berubah. **Orkestrator**: berurutan, paralel, interlock tetap memisahkan tahap, nama. **RAG**: k, ambang, sinonim, koleksi, kata henti. **Guardrails**: pola masukan sendiri, masukan mati, batas aksi mati (jejak memperingatkan), interlock mati, keluaran menyamarkan kata, memori mati, semua hidup secara bawaan. Kejadian: efek ke fisika dan ke rencana "nyaman". Misi: target urutan, intent, rute, kejadian, maksPesan, misi lintas ruang. 14 jenis galat semesta, batas ukuran, pembersihan teks |
 | `test_llm.js` | 49 | OpenRouter, model lokal Python, dan Ollama dengan fetch tiruan: fallback (429, jaringan, timeout, JSON rusak), skema, guard menolak usulan LLM, RAG masuk prompt, manual berisi injeksi dibuang, prompt ringkas, grammar skema, router hemat |
+| `test_ingatan.js` | 51 | Fakta sesi (nama agen dan pengguna), ralat dan hapus catatan, pertanyaan ingatan dan kemampuan, context window (riwayat masuk prompt, riwayat berpola injeksi dibuang, router hemat meneruskan "yang tadi"), callback titik tiga, mode ngobrol (prompt, router hemat, aksi yang diselipkan tidak jalan) |
+| `test_pipeline.js` | 56 | **Prompt bawaan identik byte per byte** dengan snapshot saat semua pilihan mati. Router semantik (rute tolak tidak ikut, kelompok keputusan, pendapat kedua), router embedding (awalan tugas, cache, gagal jatuh ke router ringan), mode tool (format Ollama dan OpenAI, loop `cari_manual`, argumen divalidasi guard, argumen diratakan, model tanpa dukungan tool, tool karangan), guard model (unsafe, safe, tidak terjangkau, tidak dipanggil bila regex sudah menolak), RAG hibrida (RRF, bab tanpa kata sama, gagal jatuh ke TF-IDF), reranker (id asing dibuang), ringkasan (injeksi dibuang), uji kelas di enam ruang, aksi berisiko, field semesta baru |
 
 ## 2. Uji alur browser (jaringan ditiru)
 
-`test_browser.js`: 62 cek, semua lulus (dengan `?kejadian=mati` agar kejadian acak tidak mengganggu). Playwright dengan Chrome, three.js dari salinan lokal, OpenRouter, server lokal, dan Ollama ditiru lewat route. Dijalankan dengan `?grafis=ringan`.
+`test_browser.js`: 82 cek, semua lulus (dengan `?kejadian=mati` agar kejadian acak tidak mengganggu). Playwright dengan Chrome, three.js dari salinan lokal, OpenRouter, server lokal, dan Ollama ditiru lewat route. Dijalankan dengan `?grafis=ringan`.
 
-Cakupan: halaman termuat tanpa galat JS, enam tab, spesialis tiap ruang. Lab: misi 4 (ubah manual lewat UI), misi 5, misi 6, LLM tiruan yang tertipu ditolak guard. **Dunia**: pindah ke Kafe (spesialis, misi, dan contoh berganti), misi deklaratif Kafe 1, 3, 4 (guard menolak 90% lalu 60% jalan, resep dari rak, memori), badge, catatan lewat chat bertag CATAT dan bisa ditanyakan lagi, uji pencarian menampilkan skor, catatan berpola injeksi ditolak, ajari kata gaul langsung dipakai, ruang bawaan bisa dikembalikan, definisi salah dan JSON rusak memberi pesan ramah tanpa mengganti ruang aktif, ruang baru dari templat, ruang buatan disunting lewat JSON (perangkat, interlock, misi baru) lalu dimainkan sampai selesai, ruang buatan bertahan setelah halaman dimuat ulang, Studio misi 2 dan 4 (keadaan awal dari data, dua tahap), grafis realistis dan ringan bisa dipilih tanpa galat, layar 390 px tanpa scroll horizontal.
+Cakupan: halaman termuat tanpa galat JS, enam tab, spesialis tiap ruang. Lab: misi 4 (ubah manual lewat UI), misi 5, misi 6, LLM tiruan yang tertipu ditolak guard. **Dunia**: pindah ke Kafe (spesialis, misi, dan contoh berganti), misi deklaratif Kafe 1, 3, 4 (guard menolak 90% lalu 60% jalan, resep dari rak, memori), badge, catatan lewat chat bertag CATAT dan bisa ditanyakan lagi, uji pencarian menampilkan skor, catatan berpola injeksi ditolak, ajari kata gaul langsung dipakai, ruang bawaan bisa dikembalikan, definisi salah dan JSON rusak memberi pesan ramah tanpa mengganti ruang aktif, ruang baru dari templat, ruang buatan disunting lewat JSON (perangkat, interlock, misi baru) lalu dimainkan sampai selesai, ruang buatan bertahan setelah halaman dimuat ulang, Studio misi 2 dan 4 (keadaan awal dari data, dua tahap), grafis realistis dan ringan bisa dipilih tanpa galat, layar 390 px tanpa scroll horizontal. Tambahan: daftar model Ollama, titik tiga saat inferensi, context window, fakta sesi, ralat dan hapus catatan, mode ngobrol, router semantik dari tab Otak, sumber dikutip, **persetujuan manusia** (ditolak lalu disetujui), ekspor jejak JSON, uji kelas tidak mengubah keadaan permainan, ingatan sesi bertahan setelah muat ulang.
 
 `test_browser_semesta.js`: 58 cek, semua lulus. Cakupan: semesta Kampus dimuat dengan 6 ruang; rute KAMPUS, CURHAT, dan DILARANG di browser; **pipeline hidup** (MEMORI, RAG, GUARD merah saat aksi ditolak, MASUKAN merah saat injeksi, ORKESTRATOR dan SPESIALIS, KELUARAN); misi semesta (Tur Kampus, Jagoan Router) selesai lintas ruang dengan XP dan badge; kejadian "masuk", "pesanKe", dan padam; **Studio Agen**: ubah nama, persona, kata setuju dan menolak, sapaan, gaya, strategi orkestrator, nama orkestrator, rute buatan dari form, sinonim, pola masukan, guard keluaran lalu Terapkan, hasilnya langsung dipakai agen, bertahan setelah muat ulang; **mode rentan** (peringatan tampil, guard aksi mati meloloskan lengan 200%, dinyalakan lagi menolak); semesta baru dari templat, JSON semesta disunting (kejadian, misi, pengetahuan baru), JSON salah memberi galat ramah tanpa mengganti semesta aktif, ekspor lalu impor berkas, hapus semesta, migrasi data lama (ruang buatan, XP, bintang, dan mode otak proxy); tiga ruang baru (dapur, kebun, perpustakaan) di grafis realistis dan interlock dapur.
 
@@ -128,7 +130,26 @@ Dari browser (`test_browser_live.js` dengan `OLLAMA=1`, router hemat hidup):
 
 Sebelumnya `qwen2.5:3b` (22 pesan): JSON valid 20 dari 20, perilaku benar 19 dari 22.
 
-### 4.5 Tampilan
+### 4.5 Pipeline lanjutan dengan Ollama (17 November 2026, RTX 3060)
+
+16 pesan per kombinasi di Lab: 10 kasus uji kelas ditambah 6 pesan sulit (ngantuk, "kecilin kipasnya dikit", "ruangan bau", pengetahuan umum, parafrase kemampuan, pertanyaan manual berbahasa santai). Prompt ringkas.
+
+| Model | Router aturan (hemat) | Semantik ringan | Embedding (`embeddinggemma`) | AI memilih tool |
+|---|---|---|---|---|
+| `qwen2.5:1.5b` | 11/16 | 13/16 | 14/16 | 13/16 (tidak bisa tool, beralih ke mode JSON) |
+| `qwen2.5:7b` | 12/16 | 14/16 | **16/16** | 12/16 |
+| `gemma4:e4b` | 11/16 | 14/16 | **16/16** | **16/16** |
+
+- **Router semantik** baru berguna setelah dijadikan pendapat kedua: hasil parser diterima hanya bila sejalan dengan rute pilihan router. Versi pertama (selalu mempercayai parser untuk rute perangkat, sensor, dan manual) hasilnya sama persis dengan router aturan.
+- **Klasifikasi rute** pada 29 kalimat baru: tingkat kelompok tepat 22/29 (ringan) dan 25/29 (embedding). Tanpa awalan `task: classification | query:`, embedding hanya 21/29.
+- **Mode tool**: `qwen2.5:1.5b` menulis teks `{lampu, on}` alih-alih memanggil tool, `qwen2.5:7b` kadang meratakan argumen (keduanya kini ditangani), `gemma3:1b` ditolak Ollama ("does not support tools") dan game beralih ke mode JSON. `gemma4:e4b` sempat gagal dimuat (galat CUDA) saat beberapa model lain menempati VRAM, lalu normal setelah model lain dihentikan.
+- **Uji kelas dari UI** (`gemma4:e4b`): router embedding 9/10, mode tool 10/10, tanpa galat JS.
+- **Guard model** `llama-guard3:1b`, sekitar 45 ms per pesan: 5 pesan aman lolos semua, konten berbahaya 4 dari 5 tertangkap (ujaran kebencian lolos), upaya menipu agen 1 dari 2 tertangkap dengan kategori yang keliru. Guard model bukan pengganti guard regex.
+- **RAG hibrida**, 13 pertanyaan parafrase langsung ke rak Lab: TF-IDF 11/13, hibrida 12/13 (kosinus minimal 0,45). Keuntungannya kecil karena sinonim TF-IDF di Lab sudah kuat.
+- **Reranker** (`qwen2.5:7b`, `gemma4:e4b`) mengurutkan kandidat dengan masuk akal. **Ringkasan** `qwen2.5:7b` menyimpan nama, preferensi, dan perangkat yang diubah.
+- Regresi: kontrol perangkat `qwen2.5:1.5b` dengan router hemat tetap 25/28, sama dengan sebelum semua pilihan baru.
+
+### 4.6 Tampilan
 
 Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: tekstur lantai, jendela, rak buku, lampu gantung, mesin espresso, kamera, tanda ON AIR, robot, dan papan sensor tampil benar. Dua perbaikan dari pemeriksaan visual: label spesialis diturunkan agar tidak menutupi kepala robot, dan lantai beton digelapkan. Ring light Studio yang tampak hilang ternyata hanya tertutup kartu misi dan terlihat jelas saat kartu diringkas.
 
@@ -147,9 +168,12 @@ Tangkapan layar tiga ruang (Lab, Kafe, Studio) di grafis realistis diperiksa: te
 | GitHub Pages memanggil server lokal atau Ollama | Hanya diuji dari `file://` dan `http://localhost` |
 | Ruang buatan dengan definisi sangat besar atau sangat aneh | Pemeriksa membatasi jumlah dan panjang, tetapi tidak ada uji fuzzing |
 | Firefox, Safari, perangkat sentuh nyata | Hanya Chrome dan emulasi lebar 390 px |
+| Pipeline lanjutan dengan OpenRouter dan server lokal Python | Mode tool, reranker, dan ringkasan hanya diuji nyata dengan Ollama. Format OpenAI hanya diuji dengan jawaban tiruan; server llama-cpp-python mungkin tidak mendukung tool calling |
+| Router semantik di ruang selain Lab | Uji nyata dan kalibrasi ambang hanya di Lab |
+| Guard model untuk bahasa Indonesia secara luas | Hanya 12 contoh. Llama Guard tidak dirancang khusus untuk bahasa Indonesia |
 
 ## 6. Cara mengulang
 
 Semua uji ada di folder `tests/`. Uji tanpa jaringan: `npm test`. Uji browser: `npm install` sekali, lalu `npm run test:browser`.
 
-Lihat bagian "Build dan uji" di [README.md](README.md). Uji nyata OpenRouter memakai kunci lewat variabel lingkungan. Jangan menyimpan kunci di berkas dan hapus kunci uji setelah selesai.
+Lihat bagian "Build dan uji" di [PENGEMBANG.md](PENGEMBANG.md). Uji nyata OpenRouter memakai kunci lewat variabel lingkungan. Jangan menyimpan kunci di berkas dan hapus kunci uji setelah selesai.
