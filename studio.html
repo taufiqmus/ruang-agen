@@ -138,6 +138,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   .sisi { border-left: 0; border-top: 2px solid var(--ink); min-height: 60vh; }
 }
 @media (prefers-reduced-motion: reduce) { .kabel.alir, .msg.ngetik i { animation: none; } }
+#panggung.menyambung #c3d { cursor: crosshair; }
+#panggung.menyambung::after { content: "Klik perangkat tujuan"; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: #161a2e; color: #fff; padding: 4px 12px; border-radius: 99px; font-size: 13px; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -2607,7 +2609,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       area: [{ id: 'kamar', tipe: 'kamar', x: 4, z: 4, w: 6, d: 5 }, { id: 'ruang_tamu', tipe: 'ruang_tamu', x: 10, z: 4, w: 7, d: 5 }],
       perangkat: [
         { id: 'router', jenis: 'router', x: 13, z: 6 },
-        { id: 'esp_kamar', jenis: 'esp32', x: 5, z: 5, daya: 'adaptor_kamar' }, { id: 'adaptor_kamar', jenis: 'adaptor', x: 5.5, z: 5 },
+        { id: 'esp_kamar', jenis: 'esp32', x: 5, z: 5, daya: 'adaptor_kamar' }, { id: 'adaptor_kamar', jenis: 'adaptor', x: 5.9, z: 5 },
         { id: 'dht_kamar', jenis: 'dht22', nama: 'DHT22 kamar', x: 6, z: 6, sambung: { esp: 'esp_kamar', pin: 'GPIO4' } },
         { id: 'relay_kamar', jenis: 'relay1', x: 5, z: 6, sambung: { esp: 'esp_kamar', pin: 'GPIO26' } },
         { id: 'kipas_kamar', jenis: 'kipas', nama: 'Kipas kamar', x: 8, z: 7, sambung: { relay: 'relay_kamar', kanal: 1 } }
@@ -2619,10 +2621,10 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
         { id: 'kebun', tipe: 'kebun', x: 3, z: 13, w: 12, d: 9 }, { id: 'kandang', tipe: 'kandang', x: 23, z: 12, w: 9, d: 7 }],
       perangkat: [
         { id: 'router', jenis: 'router', x: 12, z: 5 },
-        { id: 'esp_rumah', jenis: 'esp32', nama: 'ESP rumah', x: 10, z: 7, daya: 'adaptor_rumah' }, { id: 'adaptor_rumah', jenis: 'adaptor', x: 10.6, z: 7.2 },
+        { id: 'esp_rumah', jenis: 'esp32', nama: 'ESP rumah', x: 10, z: 6.5, daya: 'adaptor_rumah' }, { id: 'adaptor_rumah', jenis: 'adaptor', x: 10, z: 7.4 },
         { id: 'dht_kamar', jenis: 'dht22', nama: 'DHT22 kamar', x: 5, z: 5, sambung: { esp: 'esp_rumah', pin: 'GPIO4' } },
         { id: 'mq2_dapur', jenis: 'mq2', nama: 'Gas dapur', x: 18, z: 5, sambung: { esp: 'esp_rumah', pin: 'GPIO34' } },
-        { id: 'relay_rumah', jenis: 'relay4', nama: 'Relay rumah', x: 11, z: 7, sambung: { esp: 'esp_rumah', pin: 'GPIO26' } },
+        { id: 'relay_rumah', jenis: 'relay4', nama: 'Relay rumah', x: 11.1, z: 6.5, sambung: { esp: 'esp_rumah', pin: 'GPIO26' } },
         { id: 'kipas_kamar', jenis: 'kipas', nama: 'Kipas kamar', x: 7, z: 6, sambung: { relay: 'relay_rumah', kanal: 1 } },
         { id: 'lampu_tamu', jenis: 'lampu', nama: 'Lampu ruang tamu', x: 12, z: 4.5, sambung: { relay: 'relay_rumah', kanal: 2 } },
         { id: 'exhaust_dapur', jenis: 'exhaust', nama: 'Exhaust dapur', x: 19, z: 7, sambung: { relay: 'relay_rumah', kanal: 3 } },
@@ -2633,7 +2635,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
         { id: 'relay_kebun', jenis: 'relay1', x: 7, z: 14.5, sambung: { esp: 'esp_kebun', pin: 'GPIO27' } },
         { id: 'pompa_kebun', jenis: 'pompa', nama: 'Pompa kebun', x: 6, z: 16, sambung: { relay: 'relay_kebun', kanal: 1 } },
         { id: 'repeater', jenis: 'repeater', x: 20, z: 10 },
-        { id: 'esp_kandang', jenis: 'esp32', nama: 'ESP kandang', x: 25, z: 13, daya: 'adaptor_kandang' }, { id: 'adaptor_kandang', jenis: 'adaptor', x: 25.6, z: 13 },
+        { id: 'esp_kandang', jenis: 'esp32', nama: 'ESP kandang', x: 25, z: 13, daya: 'adaptor_kandang' }, { id: 'adaptor_kandang', jenis: 'adaptor', x: 25, z: 13.8 },
         { id: 'dht_kandang', jenis: 'dht22', nama: 'DHT22 kandang', x: 27, z: 15, sambung: { esp: 'esp_kandang', pin: 'GPIO4' } },
         { id: 'pakan_kandang', jenis: 'loadcell', nama: 'Timbangan pakan', x: 29, z: 17, sambung: { esp: 'esp_kandang', pin: 'GPIO16' } },
         { id: 'servo_kandang', jenis: 'servo_pakan', nama: 'Pemberi pakan', x: 30, z: 17, sambung: { esp: 'esp_kandang', pin: 'GPIO18' } },
@@ -2665,7 +2667,43 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     return true;
   }
 
-  const api = { VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
+  /* Memutus semua kabel milik satu perangkat. Kabel perangkat lain yang tersambung KE perangkat ini juga putus,
+     misalnya ESP dihapus kabelnya: sensor tetap tercatat menuju ESP itu (supaya terlihat salah), tetapi daya ESP lepas. */
+  function putuskan(W, id) {
+    const p = cari(W, id); if (!p) return { ok: false, alasan: 'perangkat tidak ada' };
+    const ada = !!(p.sambung || p.daya);
+    delete p.sambung; delete p.daya;
+    return ada ? { ok: true } : { ok: false, alasan: 'perangkat ini belum punya kabel' };
+  }
+  /* Menyambung perangkat ke tujuan yang dipilih di 3D: ESP (pin bebas yang cocok), relay (kanal bebas), atau sumber daya. */
+  function sambungKe(W, id, tujuanId) {
+    const p = cari(W, id), t = cari(W, tujuanId);
+    if (!p || !t) return { ok: false, alasan: 'perangkat tidak ada' };
+    if (p === t) return { ok: false, alasan: 'tidak bisa menyambung ke dirinya sendiri' };
+    const K = KATALOG[p.jenis], KT = KATALOG[t.jenis];
+    if (K.kategori === 'papan') {
+      if (KT.kategori !== 'daya') return { ok: false, alasan: `${K.nama} disambung ke sumber daya (adaptor, baterai, panel surya), bukan ke ${KT.nama}` };
+      p.daya = t.id; return { ok: true, teks: `${p.nama} mendapat daya dari ${t.nama}` };
+    }
+    if (K.kategori === 'aktuator' && K.butuhRelay) {
+      if (!KT.kanal) return { ok: false, alasan: `${K.nama} berarus ${K.arus} mA, jadi harus disambung ke modul relay, bukan ke ${KT.nama}` };
+      for (let k = 1; k <= KT.kanal; k++) if (!W.perangkat.some(q => q !== p && q.sambung && q.sambung.relay === t.id && q.sambung.kanal === k)) { p.sambung = { relay: t.id, kanal: k }; return { ok: true, teks: `${p.nama} tersambung ke ${t.nama} kanal ${k}` }; }
+      return { ok: false, alasan: `semua kanal ${t.nama} sudah terpakai` };
+    }
+    if (K.kategori === 'sensor' || K.kategori === 'aktuator' || K.kanal) {
+      if (KT.kategori !== 'papan') return { ok: false, alasan: `${K.nama} disambung ke ESP, bukan ke ${KT.nama}` };
+      const dipakai = new Set(W.perangkat.filter(q => q !== p && q.sambung && q.sambung.esp === t.id).map(q => q.sambung.pin));
+      const output = K.kategori === 'aktuator' || !!K.kanal;
+      // pin digital murni didahulukan untuk sensor digital, supaya pin analog tetap tersedia untuk sensor analog
+      const urut = daftarPin(t.jenis).sort((a, b) => (K.sinyal === 'analog' ? 0 : (pinAnalog(t.jenis, a) ? 1 : 0) - (pinAnalog(t.jenis, b) ? 1 : 0)));
+      const pin = urut.find(x => !dipakai.has(x) && (K.sinyal === 'analog' ? pinAnalog(t.jenis, x) : true) && !(output && pinInputSaja(t.jenis, x)));
+      if (!pin) return { ok: false, alasan: K.sinyal === 'analog' ? `tidak ada pin analog bebas di ${t.nama}` : `tidak ada pin bebas di ${t.nama}` };
+      p.sambung = { esp: t.id, pin }; return { ok: true, teks: `${p.nama} tersambung ke ${t.nama} pin ${pin}` };
+    }
+    return { ok: false, alasan: `${K.nama} tidak memakai kabel data` };
+  }
+
+  const api = { putuskan, sambungKe, VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.IoT = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3492,63 +3530,171 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 
     /* ---------- tekstur label ---------- */
     /* layar = true: ukuran tetap di layar (label perangkat tetap terbaca saat kamera menjauh) */
+    let lebarTeks = 1;
     function sprite(teks, warna, skala, layar) {
       const t = String(teks).slice(0, 22), c = document.createElement('canvas'); c.width = 320; c.height = 64; const g = c.getContext('2d');
-      g.font = '600 30px Onest, sans-serif'; const w = Math.min(316, g.measureText(t).width + 28);
+      g.font = '600 30px Onest, sans-serif'; const w = Math.min(316, g.measureText(t).width + 28); lebarTeks = w / 320;
       g.fillStyle = warna || 'rgba(20,24,40,0.82)'; g.beginPath(); if (g.roundRect) g.roundRect((320 - w) / 2, 4, w, 56, 14); else g.rect((320 - w) / 2, 4, w, 56); g.fill();
       g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, 160, 34);
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true, sizeAttenuation: !layar }));
       if (layar) s.scale.set(0.115 * (skala || 1), 0.023 * (skala || 1), 1); else s.scale.set(3.2 * (skala || 1), 0.64 * (skala || 1), 1);
-      s.renderOrder = 10; return s;
+      s.renderOrder = 10; s.userData.lebar = lebarTeks; return s;
+    }
+
+    /* nama area ditulis rata di lantai (tidak menutupi perangkat) */
+    function tulisanLantai(teks, lebarM) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d');
+      g.font = '800 64px "Bricolage Grotesque", Onest, sans-serif'; g.fillStyle = 'rgba(15,23,42,0.55)'; g.textBaseline = 'middle'; g.fillText(String(teks).slice(0, 18), 8, 50);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(lebarM, lebarM * 96 / 512), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; return m;
     }
 
     /* ---------- bentuk perangkat ---------- */
+    /* meja kecil tempat papan elektronik diletakkan (papan asli hanya 5 cm, di sini diperbesar supaya terlihat) */
+    function meja(g, w, d, h) {
+      const kayu = M(0xa47148), top = kotak(w, 0.05, d, kayu); top.position.y = h; g.add(top);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const k = kotak(0.04, h, 0.04, kayu); k.position.set(sx * (w / 2 - 0.04), h / 2, sz * (d / 2 - 0.04)); g.add(k); }
+      return h + 0.025;
+    }
+    function pinBaris(g, n, x0, y, z, jarak) { const mat = M(0x111827), emas = M(0xd4a017, { metalness: 0.8, roughness: 0.3 }); const h = kotak(n * jarak, 0.04, 0.035, mat); h.position.set(x0 + (n - 1) * jarak / 2, y, z); g.add(h); if (!ringan) for (let i = 0; i < n; i += 2) { const pn = kotak(0.012, 0.05, 0.012, emas); pn.position.set(x0 + i * jarak, y + 0.04, z); g.add(pn); } }
     function bentuk(p) {
       const K = I.KATALOG[p.jenis], g = new THREE.Group(), x = { g };
       const b = K.bentuk;
+      x.ujung = 0.05;   // tinggi titik kabel masuk
       if (b === 'papan') {
-        const pcb = kotak(0.55, 0.06, 0.3, M(0x1d4ed8)); pcb.position.y = 0.55; g.add(pcb);
-        const chip = kotak(0.2, 0.05, 0.18, M(0x9ca3af, { metalness: 0.6 })); chip.position.set(0.08, 0.6, 0); g.add(chip);
-        const tiang = silinder(0.03, 0.03, 0.5, M(0x6b7280)); tiang.position.y = 0.26; g.add(tiang);
-        x.led = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e })); x.led.position.set(-0.2, 0.62, 0.1); g.add(x.led);
+        const y = meja(g, 0.8, 0.5, 0.5), kecil = p.jenis === 'esp8266';
+        const pcb = kotak(kecil ? 0.5 : 0.6, 0.03, 0.28, M(kecil ? 0x111827 : 0x1e293b)); pcb.position.set(0, y + 0.015, 0); g.add(pcb);
+        const pelindung = kotak(0.2, 0.035, 0.17, M(0xc0c4cc, { metalness: 0.75, roughness: 0.3 })); pelindung.position.set(0.12, y + 0.045, 0); g.add(pelindung);
+        const antena = kotak(0.08, 0.01, 0.17, M(0x1d4ed8)); antena.position.set(0.25, y + 0.035, 0); g.add(antena);
+        const usb = kotak(0.07, 0.03, 0.08, M(0x9ca3af, { metalness: 0.7 })); usb.position.set(-0.28, y + 0.04, 0); g.add(usb);
+        pinBaris(g, 15, -0.22, y + 0.04, -0.12, 0.028); pinBaris(g, 15, -0.22, y + 0.04, 0.12, 0.028);
+        x.led = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e })); x.led.position.set(-0.18, y + 0.05, 0.05); g.add(x.led);
+        x.ujung = y + 0.04;
       } else if (b === 'router') {
-        const badan = kotak(0.6, 0.12, 0.4, M(0xf8fafc)); badan.position.y = 0.9; g.add(badan);
-        for (const dx of [-0.2, 0.2]) { const a = silinder(0.02, 0.02, 0.45, M(0x111827)); a.position.set(dx, 1.15, -0.15); g.add(a); }
-        const meja = silinder(0.05, 0.05, 0.85, M(0x8b5e34)); meja.position.y = 0.42; g.add(meja);
-        x.led = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e })); x.led.position.set(0.2, 0.92, 0.21); g.add(x.led);
+        const y = meja(g, 0.8, 0.5, 0.7);
+        const badan = kotak(0.55, 0.08, 0.36, M(0xf8fafc)); badan.position.y = y + 0.04; g.add(badan);
+        for (const dx of [-0.2, 0, 0.2]) { const a = silinder(0.015, 0.015, 0.4, M(0x111827)); a.position.set(dx, y + 0.25, -0.16); g.add(a); }
+        x.led = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e })); x.led.position.set(0.18, y + 0.06, 0.18); g.add(x.led);
+        x.ujung = y + 0.05;
       } else if (b === 'kipas') {
-        const tiang = silinder(0.05, 0.08, 1.1, M(0x374151)); tiang.position.y = 0.55; g.add(tiang);
-        const rumah = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 6, seg * 2), M(0x9ca3af)); rumah.position.y = 1.25; g.add(rumah);
-        x.baling = new THREE.Group(); x.baling.position.y = 1.25; g.add(x.baling);
-        for (let i = 0; i < 3; i++) { const daun = kotak(0.36, 0.02, 0.12, M(0x60a5fa)); daun.position.x = 0.18; const s = new THREE.Group(); s.rotation.z = i * 2.09; s.add(daun); x.baling.add(s); }
-        x.baling.rotation.y = 0; g.rotation.y = 0;
-        x.baling.children.forEach(c => { c.rotation.x = Math.PI / 2; });
+        const exhaust = p.jenis === 'exhaust';
+        if (exhaust) {   // kipas dinding dalam bingkai persegi
+          const bingkai = kotak(0.8, 0.8, 0.12, M(0xe5e7eb)); bingkai.position.y = 1.6; g.add(bingkai);
+          const lubang = new THREE.Mesh(new THREE.CircleGeometry(0.33, seg * 2), M(0x1f2937)); lubang.position.set(0, 1.6, 0.065); g.add(lubang);
+          x.baling = new THREE.Group(); x.baling.position.set(0, 1.6, 0.08); g.add(x.baling);
+          const t = silinder(0.03, 0.03, 1.2, M(0x9ca3af)); t.position.y = 0.6; g.add(t);
+        } else {         // kipas berdiri: alas, tiang, motor, kurungan, baling
+          const alas = silinder(0.32, 0.36, 0.06, M(0x374151)); alas.position.y = 0.03; g.add(alas);
+          const tiang = silinder(0.035, 0.035, 1.0, M(0x9ca3af, { metalness: 0.5 })); tiang.position.y = 0.55; g.add(tiang);
+          const motor = silinder(0.11, 0.13, 0.22, M(0x374151)); motor.rotation.x = Math.PI / 2; motor.position.set(0, 1.12, -0.12); g.add(motor);
+          const matK = M(0xd1d5db, { metalness: 0.4 });
+          for (const dz of [0.05, 0.12]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.012, 4, seg * 2), matK); r.position.set(0, 1.12, dz); g.add(r); }
+          if (!ringan) for (let i = 0; i < 8; i++) { const j = kotak(0.008, 0.8, 0.008, matK); j.position.set(0, 1.12, 0.12); j.rotation.z = i * Math.PI / 8; g.add(j); }
+          x.baling = new THREE.Group(); x.baling.position.set(0, 1.12, 0.08); g.add(x.baling);
+        }
+        const hub = silinder(0.06, 0.06, 0.05, M(0x1f2937)); hub.rotation.x = Math.PI / 2; x.baling.add(hub);
+        for (let i = 0; i < 3; i++) { const daun = new THREE.Mesh(new THREE.CircleGeometry(0.17, 10), M(0x60a5fa, { side: THREE.DoubleSide, transparent: true, opacity: 0.9 })); daun.scale.set(1, 0.55, 1); daun.position.x = 0.19; daun.rotation.y = 0.35; const s2 = new THREE.Group(); s2.rotation.z = i * 2.094; s2.add(daun); x.baling.add(s2); }
       } else if (b === 'lampu' || b === 'lampu_merah') {
-        const kabel = silinder(0.01, 0.01, 0.6, M(0x111827)); kabel.position.y = 2.1; g.add(kabel);
-        x.bohlam = new THREE.Mesh(new THREE.SphereGeometry(0.17, seg, seg), new THREE.MeshStandardMaterial({ color: b === 'lampu' ? 0xfff7d6 : 0xff7849, emissive: b === 'lampu' ? 0xffe8a3 : 0xff3b1f, emissiveIntensity: 0 }));
-        x.bohlam.position.y = 1.75; g.add(x.bohlam);
-        if (!ringan) { x.cahaya = new THREE.PointLight(b === 'lampu' ? 0xffe2a8 : 0xff6a3d, 0, 7); x.cahaya.position.y = 1.6; g.add(x.cahaya); }
+        const merah = b === 'lampu_merah', tinggi = merah ? 1.5 : 2.2;
+        const matT = M(0x4b5563, { metalness: 0.4 });
+        const alas = silinder(0.15, 0.18, 0.05, matT); alas.position.set(-0.6, 0.025, 0); g.add(alas);
+        const tiang = silinder(0.025, 0.025, 2.5, matT); tiang.position.set(-0.6, 1.25, 0); g.add(tiang);
+        const lengan = kotak(0.62, 0.03, 0.03, matT); lengan.position.set(-0.3, 2.5, 0); g.add(lengan);
+        const tali = silinder(0.008, 0.008, 2.5 - tinggi - 0.1, M(0x111827)); tali.position.y = (2.5 + tinggi + 0.1) / 2; g.add(tali);
+        const kap = new THREE.Mesh(new THREE.ConeGeometry(merah ? 0.3 : 0.22, merah ? 0.3 : 0.18, seg, 1, true), M(merah ? 0xc0c4cc : 0x334155, { side: THREE.DoubleSide, metalness: merah ? 0.8 : 0.1, roughness: 0.3, emissive: merah ? 0xff4d1f : 0xffd27a, emissiveIntensity: 0 })); kap.position.y = tinggi + 0.12; g.add(kap); x.kap = kap;
+        x.bohlam = new THREE.Mesh(new THREE.SphereGeometry(merah ? 0.13 : 0.1, seg, seg), new THREE.MeshStandardMaterial({ color: merah ? 0xff7849 : 0xfff7d6, emissive: merah ? 0xff3b1f : 0xffe8a3, emissiveIntensity: 0 }));
+        x.bohlam.position.y = tinggi; g.add(x.bohlam);
+        if (!ringan) { x.cahaya = new THREE.PointLight(merah ? 0xff6a3d : 0xffe2a8, 0, 7); x.cahaya.position.y = tinggi - 0.2; g.add(x.cahaya); }
+        x.puncak = 2.55;
       } else if (b === 'pompa') {
-        const badan = silinder(0.22, 0.22, 0.35, M(0x2563eb)); badan.rotation.z = Math.PI / 2; badan.position.y = 0.25; g.add(badan);
-        x.air = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0 })); x.air.position.set(0.5, 0.45, 0); x.air.rotation.z = -1.2; g.add(x.air);
+        const dudukan = kotak(0.5, 0.06, 0.3, M(0x4b5563)); dudukan.position.y = 0.03; g.add(dudukan);
+        const badan = silinder(0.15, 0.15, 0.32, M(0x2563eb)); badan.rotation.z = Math.PI / 2; badan.position.y = 0.21; g.add(badan);
+        const pipa = silinder(0.04, 0.04, 0.35, M(0x9ca3af)); pipa.position.set(0.2, 0.4, 0); g.add(pipa);
+        x.air = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0 })); x.air.position.set(0.45, 0.55, 0); x.air.rotation.z = -1.2; g.add(x.air);
       } else if (b === 'tandon') {
-        const t = silinder(0.9, 0.9, 1.8, M(0xe5e7eb)); t.position.y = 1.1; g.add(t);
-        x.isi = silinder(0.86, 0.86, 1, M(0x38bdf8, { transparent: true, opacity: 0.55 })); x.isi.position.y = 0.7; g.add(x.isi);
-      } else if (b === 'relay') { const r = kotak(0.45, 0.12, 0.25, M(0x0ea5e9)); r.position.y = 0.55; g.add(r); const t = silinder(0.03, 0.03, 0.5, M(0x6b7280)); t.position.y = 0.25; g.add(t); }
-      else if (b === 'adaptor') { const a = kotak(0.22, 0.25, 0.14, M(0x111827)); a.position.y = 0.4; g.add(a); }
-      else if (b === 'baterai' || b === 'surya') {
-        if (b === 'surya') { const pn = kotak(1.2, 0.05, 0.8, M(0x1e3a8a, { metalness: 0.4, roughness: 0.3 })); pn.position.y = 1.1; pn.rotation.x = -0.5; g.add(pn); const t = silinder(0.04, 0.04, 1.1, M(0x6b7280)); t.position.y = 0.55; g.add(t); }
-        const bt = kotak(0.3, 0.18, 0.18, M(0x16a34a)); bt.position.y = 0.12; g.add(bt);
-      } else if (b === 'servo') { const s = kotak(0.35, 0.3, 0.3, M(0xd97706)); s.position.y = 0.2; g.add(s); x.lengan = kotak(0.3, 0.04, 0.06, M(0xfafafa)); x.lengan.position.set(0.15, 0.38, 0); g.add(x.lengan); }
-      else if (b === 'kunci') { const k = kotak(0.2, 0.3, 0.1, M(0x374151, { metalness: 0.5 })); k.position.y = 1; g.add(k); }
-      else if (b === 'katup') { const k = silinder(0.08, 0.08, 0.5, M(0xb45309)); k.rotation.z = Math.PI / 2; k.position.y = 0.3; g.add(k); }
-      else if (b === 'tusuk') { const t = kotak(0.06, 0.45, 0.12, M(0x15803d)); t.position.y = 0.2; g.add(t); }
-      else if (b === 'timbangan') { const t = kotak(0.6, 0.08, 0.6, M(0x9ca3af, { metalness: 0.4 })); t.position.y = 0.05; g.add(t); x.pakan = kotak(0.5, 0.2, 0.5, M(0xd6b25e)); x.pakan.position.y = 0.2; g.add(x.pakan); }
-      else if (b === 'kubah') { const k = new THREE.Mesh(new THREE.SphereGeometry(0.12, seg, 8, 0, Math.PI * 2, 0, Math.PI / 2), M(0xf8fafc)); k.position.y = 1.8; g.add(k); }
-      else if (b === 'mata') { const m = kotak(0.3, 0.12, 0.08, M(0x2563eb)); m.position.y = 2.05; g.add(m); }
-      else { const s = kotak(0.22, 0.14, 0.18, M(b === 'sensor_kotak' ? 0x0d9488 : 0x7c3aed)); s.position.y = 1.2; g.add(s); const t = silinder(0.02, 0.02, 1.15, M(0x9ca3af)); t.position.y = 0.58; g.add(t); }
-      // area klik yang lebih besar dan tak terlihat
-      const hit = kotak(0.6, 1.3, 0.6, new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.65; hit.userData.id = p.id; g.add(hit); x.hit = hit;
+        const t = silinder(0.7, 0.7, 1.5, M(0x1e40af, { transparent: true, opacity: 0.45 })); t.position.y = 1.05; g.add(t);
+        const tutup = silinder(0.72, 0.72, 0.08, M(0x1e3a8a)); tutup.position.y = 1.84; g.add(tutup);
+        const kaki = silinder(0.6, 0.6, 0.3, M(0x6b7280)); kaki.position.y = 0.15; g.add(kaki);
+        x.isi = silinder(0.66, 0.66, 1, M(0x38bdf8, { transparent: true, opacity: 0.75 })); x.isi.position.y = 0.7; g.add(x.isi);
+        x.puncak = 1.9;
+      } else if (b === 'relay') {
+        const y = meja(g, 0.7, 0.45, 0.5), n = K.kanal || 1, w = 0.18 + n * 0.12;
+        const pcb = kotak(w, 0.025, 0.26, M(0x1d4ed8)); pcb.position.y = y + 0.012; g.add(pcb);
+        for (let i = 0; i < n; i++) {
+          const xi = -w / 2 + 0.14 + i * 0.12;
+          const rl = kotak(0.1, 0.09, 0.12, M(0x0f172a)); rl.position.set(xi, y + 0.07, -0.02); g.add(rl);
+          const tb = kotak(0.1, 0.06, 0.05, M(0x16a34a)); tb.position.set(xi, y + 0.05, 0.1); g.add(tb);
+        }
+        x.ujung = y + 0.04;
+      } else if (b === 'adaptor') {
+        const stop = kotak(0.3, 0.08, 0.16, M(0xf8fafc)); stop.position.y = 0.04; g.add(stop);
+        const a = kotak(0.16, 0.14, 0.11, M(0x111827)); a.position.set(-0.05, 0.15, 0); g.add(a);
+        const lampu = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshBasicMaterial({ color: 0xef4444 })); lampu.position.set(0.1, 0.085, 0.05); g.add(lampu);
+        x.ujung = 0.15;
+      } else if (b === 'baterai' || b === 'surya') {
+        if (b === 'surya') {
+          const pn = kotak(1.2, 0.04, 0.8, M(0x1e3a8a, { metalness: 0.4, roughness: 0.3 })); pn.position.y = 1.1; pn.rotation.x = -0.5; g.add(pn);
+          if (!ringan) for (let i = -2; i <= 2; i++) { const l = kotak(0.008, 0.045, 0.8, M(0xcbd5e1)); l.position.set(i * 0.24, 1.1, 0); l.rotation.x = -0.5; g.add(l); }
+          const t = silinder(0.035, 0.035, 1.1, M(0x6b7280)); t.position.y = 0.55; g.add(t);
+        }
+        const bt = kotak(0.3, 0.16, 0.2, M(0x16a34a)); bt.position.y = 0.08; g.add(bt);
+        for (const dx of [-0.07, 0.07]) { const t = silinder(0.02, 0.02, 0.04, M(dx < 0 ? 0xdc2626 : 0x111827)); t.position.set(dx, 0.18, 0); g.add(t); }
+        x.ujung = 0.16;
+      } else if (b === 'servo') {   // tempat pakan gantung: corong, servo di bawahnya, piring pakan
+        const matT = M(0x9ca3af, { metalness: 0.4 });
+        for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const k = silinder(0.02, 0.02, 1.0, matT); k.position.set(sx * 0.22, 0.5, sz * 0.22); g.add(k); }
+        const corong = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.08, 0.45, seg, 1, true), M(0xf59e0b, { side: THREE.DoubleSide })); corong.position.y = 1.05; g.add(corong);
+        const isi = silinder(0.27, 0.27, 0.05, M(0xd6b25e)); isi.position.y = 1.2; g.add(isi);
+        const s2 = kotak(0.14, 0.1, 0.08, M(0x1d4ed8)); s2.position.set(0, 0.76, 0.1); g.add(s2);
+        x.lengan = kotak(0.16, 0.02, 0.03, M(0xfafafa)); x.lengan.position.set(0.06, 0.8, 0.15); g.add(x.lengan);
+        const piring = silinder(0.3, 0.25, 0.06, M(0xb45309)); piring.position.y = 0.03; g.add(piring);
+        x.ujung = 0.76; x.puncak = 1.3;
+      } else if (b === 'kunci') {
+        const pintu = kotak(0.9, 1.9, 0.06, M(0x8b5e34)); pintu.position.y = 0.95; g.add(pintu);
+        const k = kotak(0.16, 0.22, 0.08, M(0x374151, { metalness: 0.6 })); k.position.set(0.3, 1.0, 0.07); g.add(k);
+        x.puncak = 1.95; x.ujung = 1.0;
+      } else if (b === 'katup') {
+        const pipa = silinder(0.05, 0.05, 0.9, M(0x9ca3af, { metalness: 0.5 })); pipa.rotation.z = Math.PI / 2; pipa.position.y = 0.2; g.add(pipa);
+        const k = kotak(0.16, 0.16, 0.14, M(0x334155)); k.position.y = 0.2; g.add(k);
+        const koil = silinder(0.07, 0.07, 0.14, M(0x111827)); koil.position.y = 0.36; g.add(koil);
+        x.ujung = 0.3;
+      } else if (b === 'tusuk') {
+        const papanS = kotak(0.12, 0.08, 0.03, M(0x1d4ed8)); papanS.position.y = 0.2; g.add(papanS);
+        for (const dx of [-0.03, 0.03]) { const t = kotak(0.02, 0.28, 0.01, M(0xd4a017, { metalness: 0.7 })); t.position.set(dx, 0.04, 0); g.add(t); }
+        x.ujung = 0.2;
+      } else if (b === 'timbangan') {
+        const t = kotak(0.6, 0.06, 0.6, M(0x9ca3af, { metalness: 0.4 })); t.position.y = 0.03; g.add(t);
+        const wadah = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.18, seg, 1, true), M(0xf97316, { side: THREE.DoubleSide })); wadah.position.y = 0.15; g.add(wadah);
+        x.pakan = silinder(0.24, 0.24, 0.16, M(0xd6b25e)); x.pakan.position.y = 0.14; g.add(x.pakan);
+      } else if (b === 'kubah') {
+        const t = silinder(0.02, 0.02, 1.7, M(0x9ca3af)); t.position.y = 0.85; g.add(t);
+        const badan = kotak(0.16, 0.1, 0.16, M(0x1d4ed8)); badan.position.y = 1.72; g.add(badan);
+        const k = new THREE.Mesh(new THREE.SphereGeometry(0.09, seg, 8, 0, Math.PI * 2, 0, Math.PI / 2), M(0xf8fafc, { transparent: true, opacity: 0.9 })); k.position.y = 1.77; g.add(k);
+      } else if (b === 'mata') {
+        const t = silinder(0.02, 0.02, 2.0, M(0x9ca3af)); t.position.y = 1.0; g.add(t);
+        const m = kotak(0.22, 0.1, 0.04, M(0x1d4ed8)); m.position.y = 2.0; g.add(m);
+        for (const dx of [-0.055, 0.055]) { const e = silinder(0.035, 0.035, 0.04, M(0xc0c4cc, { metalness: 0.7 })); e.rotation.x = Math.PI / 2; e.position.set(dx, 2.0, 0.04); g.add(e); }
+      } else if (b === 'sensor_kotak') {   // DHT22 (putih berkisi) atau MQ-2 (tabung berjaring) di tiang
+        const t = silinder(0.02, 0.02, 1.2, M(0x9ca3af)); t.position.y = 0.6; g.add(t);
+        if (p.jenis === 'mq2') { const pc = kotak(0.2, 0.02, 0.14, M(0x1d4ed8)); pc.position.y = 1.22; g.add(pc); const tb = silinder(0.07, 0.07, 0.09, M(0xc0c4cc, { metalness: 0.6 })); tb.position.y = 1.28; g.add(tb); }
+        else {
+          const bd = kotak(0.16, 0.24, 0.08, M(0xf8fafc)); bd.position.y = 1.32; g.add(bd);
+          if (!ringan) for (let i = 0; i < 5; i++) { const k = kotak(0.12, 0.012, 0.01, M(0x94a3b8)); k.position.set(0, 1.25 + i * 0.035, 0.045); g.add(k); }
+        }
+      } else {   // sensor kecil: LDR, reed, ACS712, buzzer
+        const t = silinder(0.02, 0.02, 1.0, M(0x9ca3af)); t.position.y = 0.5; g.add(t);
+        const pc = kotak(0.16, 0.02, 0.1, M(p.jenis === 'buzzer' ? 0x111827 : 0x1d4ed8)); pc.position.y = 1.01; g.add(pc);
+        if (p.jenis === 'ldr') { const d = silinder(0.03, 0.03, 0.02, M(0xb45309)); d.position.y = 1.04; g.add(d); }
+        else if (p.jenis === 'buzzer') { const d = silinder(0.05, 0.05, 0.05, M(0x111827)); d.position.y = 1.05; g.add(d); }
+        else if (p.jenis === 'reed') { const d = kotak(0.1, 0.03, 0.03, M(0xf8fafc)); d.position.y = 1.04; g.add(d); }
+        else { const d = kotak(0.05, 0.03, 0.05, M(0x16a34a)); d.position.y = 1.04; g.add(d); }
+      }
+      // puncak model: label diletakkan tepat di atasnya
+      g.updateMatrixWorld(true); const bx = new THREE.Box3().setFromObject(g);
+      if (x.puncak == null) x.puncak = bx.max.y;
+      // area klik tak terlihat seukuran model (minimal 0.35 m supaya benda kecil tetap mudah diklik, tidak menutupi kabel di sebelahnya)
+      const hw = Math.max(0.35, bx.max.x - bx.min.x), hd = Math.max(0.35, bx.max.z - bx.min.z), hh = Math.max(0.35, x.puncak);
+      const hit = kotak(hw, hh, hd, new THREE.MeshBasicMaterial({ visible: false })); hit.position.set((bx.max.x + bx.min.x) / 2, hh / 2, (bx.max.z + bx.min.z) / 2); hit.userData.id = p.id; g.add(hit); x.hit = hit;
       return x;
     }
 
@@ -3557,23 +3703,25 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     function muat(dunia, st) {
       W = dunia; lebar = W.lebar; dalam = W.dalam; bersihkan();
       const tanah = new THREE.Mesh(new THREE.PlaneGeometry(lebar, dalam), M(0x5f7d47)); tanah.rotation.x = -Math.PI / 2; tanah.position.set(lebar / 2, 0, dalam / 2); tanah.receiveShadow = !ringan; tanah.userData.lantai = true; grup.add(tanah);
-      const grid = new THREE.GridHelper(Math.max(lebar, dalam), Math.max(lebar, dalam), 0x5f7a46, 0x6d8a52); grid.position.set(Math.max(lebar, dalam) / 2, 0.01, Math.max(lebar, dalam) / 2); grid.material.opacity = 0.35; grid.material.transparent = true; grup.add(grid);
+      const tg = []; for (let i = 0; i <= lebar; i++) tg.push(i, 0.01, 0, i, 0.01, dalam); for (let j = 0; j <= dalam; j++) tg.push(0, 0.01, j, lebar, 0.01, j);
+      const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(tg, 3));
+      const grid = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: 0x4f6b3a, transparent: true, opacity: 0.35 })); grup.add(grid);
       for (const a of W.area) {
         const T = I.AREA[a.tipe];
-        const lantai = new THREE.Mesh(new THREE.PlaneGeometry(a.w, a.d), M(new THREE.Color(T.warna))); lantai.rotation.x = -Math.PI / 2; lantai.position.set(a.x + a.w / 2, 0.02, a.z + a.d / 2); lantai.receiveShadow = !ringan; grup.add(lantai);
+        const lantai = new THREE.Mesh(new THREE.PlaneGeometry(a.w, a.d), M(new THREE.Color(T.warna).multiplyScalar(T.dinding ? 0.86 : 1))); lantai.rotation.x = -Math.PI / 2; lantai.position.set(a.x + a.w / 2, 0.02, a.z + a.d / 2); lantai.receiveShadow = !ringan; grup.add(lantai);
         if (T.dinding) {
-          const mat = M(0xf5f1ea), t = 1.3;
+          const mat = M(0xece6dc, { emissive: 0x2a2620 }), t = 0.9;
           for (const [w, d, x, z] of [[a.w, 0.15, a.x + a.w / 2, a.z], [a.w, 0.15, a.x + a.w / 2, a.z + a.d], [0.15, a.d, a.x, a.z + a.d / 2], [0.15, a.d, a.x + a.w, a.z + a.d / 2]]) { const k = kotak(w, t, d, mat); k.position.set(x, t / 2, z); grup.add(k); }
         } else {
           const mat = M(0x8b6a43);
           for (let i = 0; i <= a.w; i += 1.5) for (const z of [a.z, a.z + a.d]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(a.x + i, 0.4, z); grup.add(t); }
           for (let i = 0; i <= a.d; i += 1.5) for (const x of [a.x, a.x + a.w]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(x, 0.4, a.z + i); grup.add(t); }
         }
-        const lb = sprite(a.nama, 'rgba(15,23,42,0.6)', 1.1); lb.position.set(a.x + a.w / 2, T.dinding ? 1.9 : 1.3, a.z + 0.4); grup.add(lb);
+        const lb = tulisanLantai(a.nama, Math.min(a.w - 0.6, 3.6)); lb.position.set(a.x + 0.3 + Math.min(a.w - 0.6, 3.6) / 2, 0.035, a.z + a.d - 0.45); grup.add(lb);
         if (T.tanaman) {
           const tan = [];
           for (let i = 0.8; i < a.w - 0.5; i += ringan ? 1.6 : 1.1) for (let j = 1; j < a.d - 0.5; j += ringan ? 1.8 : 1.3) {
-            const t = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 6), M(0x22a34a)); t.position.set(a.x + i, 0.32, a.z + j); grup.add(t); tan.push(t);
+            const t = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3, 0), M(0x22a34a)); t.scale.set(1, 0.7, 1); t.rotation.y = i * 1.7 + j; t.position.set(a.x + i, 0.2, a.z + j); grup.add(t); tan.push(t);
           }
           animasi.push((t, S) => { const A = S.area[a.id]; if (!A) return; const sehat = A.tanaman / 100, c = new THREE.Color().setHSL(0.08 + 0.25 * sehat, 0.65, 0.32 + 0.1 * (1 - sehat)); tan.forEach((m, i) => { m.material.color.copy(c); m.scale.y = 0.6 + 0.6 * sehat + Math.sin(t * 1.5 + i) * 0.02; }); lantai.material.color.setHSL(0.09, 0.35, 0.55 - 0.25 * (A.tanah || 0) / 100); });
         }
@@ -3600,7 +3748,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       for (const p of W.perangkat) {
         const x = bentuk(p); x.g.position.set(p.x, 0, p.z); x.g.userData.id = p.id; grup.add(x.g); obj[p.id] = x;
         // label nama: komponen kecil sulit dikenali tanpa label
-        x.label = sprite(p.nama, WARNA_LABEL[I.KATALOG[p.jenis].kategori] || 'rgba(20,24,40,0.85)', 1, true); x.label.position.y = ({ daya: 1.3, papan: 1.75, modul: 2.2, jaringan: 2.0, sensor: 2.65, aktuator: 3.1 })[I.KATALOG[p.jenis].kategori] || 2.25; x.g.add(x.label);   // tinggi berbeda per kategori supaya tidak bertumpuk
+        x.label = sprite(p.nama, WARNA_LABEL[I.KATALOG[p.jenis].kategori] || 'rgba(20,24,40,0.85)', 1, true); x.label.position.y = x.puncak + 0.12; x.label.center.set(0.5, 0); x.g.add(x.label);   // tepat di atas model; tumpukan diatur tataLabel()
         if (I.KATALOG[p.jenis].kategori === 'jaringan') {
           const cincin = [];
           for (const rssi of [-60, -70, I.AMBANG_WIFI]) {
@@ -3614,24 +3762,76 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       kabel(st || I.status(W, I.buatSim(W)));
       if (pilihan) pilih(pilihan);
     }
-    let grupKabel = null;
-    function kabel(st) {
+    let grupKabel = null, kabelPilih = null;
+    const daftarKabel = [];   // {kunci, dari, ke, jenis, m, hit}
+    /* kurva polyline (sudut tajam) supaya kabel tidak melengkung liar seperti Catmull-Rom */
+    class Polyline extends THREE.Curve {
+      constructor(pts) { super(); this.pts = pts; this.pjg = [0]; for (let i = 1; i < pts.length; i++) this.pjg.push(this.pjg[i - 1] + pts[i].distanceTo(pts[i - 1])); }
+      getPoint(t, out) {
+        const v = out || new THREE.Vector3(), L = this.pjg[this.pjg.length - 1] * t;
+        let i = 1; while (i < this.pjg.length - 1 && this.pjg[i] < L) i++;
+        const a = this.pts[i - 1], b = this.pts[i], seg = this.pjg[i] - this.pjg[i - 1] || 1;
+        return v.copy(a).lerp(b, (L - this.pjg[i - 1]) / seg);
+      }
+    }
+    const WARNA_KABEL = { data: 0xeab308, daya: 0xdc2626, beban: 0x475569, relay: 0x16a34a, salah: 0xf97316 };
+    function kabel(st, dunia) {
+      if (dunia) W = dunia;   // studio bisa mengganti objek dunia (periksaDunia membuat salinan baru)
       if (grupKabel) { grup.remove(grupKabel); grupKabel.traverse(n => { if (n.geometry) n.geometry.dispose(); }); }
-      grupKabel = new THREE.Group(); grup.add(grupKabel);
-      const garis = (a, b, warna, tebal) => {
-        const p1 = new THREE.Vector3(a.x, 0.06, a.z), p2 = new THREE.Vector3(b.x, 0.06, b.z), mid = p1.clone().lerp(p2, 0.5); mid.y = 0.06;
-        const c = new THREE.CatmullRomCurve3([p1, new THREE.Vector3((p1.x + mid.x) / 2, 0.12, (p1.z + mid.z) / 2 + 0.2), mid, new THREE.Vector3((p2.x + mid.x) / 2, 0.12, (p2.z + mid.z) / 2 - 0.2), p2]);
-        const m = new THREE.Mesh(new THREE.TubeGeometry(c, 20, tebal || 0.035, 5, false), new THREE.MeshStandardMaterial({ color: warna, roughness: 0.5 }));
-        grupKabel.add(m); return m;
+      grupKabel = new THREE.Group(); grup.add(grupKabel); daftarKabel.length = 0;
+      const urutan = {};   // geser sejajar kabel yang berangkat dari perangkat yang sama
+      const garis = (a, b, jenis, salah, kunci) => {
+        const oa = obj[a.id], ob = obj[b.id]; if (!oa || !ob) return;
+        const pa = oa.g.position, pb = ob.g.position;
+        const n = urutan[b.id] = (urutan[b.id] || 0) + 1, geser = (n - 1) * 0.12 - 0.15;
+        const h = 0.03 + n * 0.004, ya = oa.ujung, yb = ob.ujung;
+        // kabel daya keluar dari sisi belakang papan supaya tidak bertumpuk dengan berkas kabel data di depan
+        const ax = pa.x + (jenis === 'daya' ? -0.22 : 0), az = pa.z + (jenis === 'daya' ? -0.16 : 0.12);
+        const tA = new THREE.Vector3(ax, ya, az), tB = new THREE.Vector3(pb.x + geser, yb, pb.z + 0.18);
+        const pts = [tA, new THREE.Vector3(ax, h, az)];
+        // jalur siku: sepanjang x dulu, lalu z
+        pts.push(new THREE.Vector3(pb.x + geser, h, az), new THREE.Vector3(pb.x + geser, h, pb.z + 0.18), tB);
+        const kur = new Polyline(pts.filter((q, i) => i === 0 || q.distanceTo(pts[i - 1]) > 0.001));
+        const tebal = jenis === 'beban' ? 0.03 : 0.02;
+        const m = new THREE.Mesh(new THREE.TubeGeometry(kur, Math.max(12, kur.pts.length * 8), tebal, 5, false), new THREE.MeshStandardMaterial({ color: salah ? WARNA_KABEL.salah : WARNA_KABEL[jenis], roughness: 0.5, emissive: 0x000000 }));
+        const hit = new THREE.Mesh(new THREE.TubeGeometry(kur, Math.max(12, kur.pts.length * 8), 0.055, 4, false), new THREE.MeshBasicMaterial({ visible: false }));
+        hit.userData.kabel = kunci; grupKabel.add(m, hit);
+        daftarKabel.push({ kunci, dari: a.id, ke: b.id, jenis, salah, m, hit });
       };
       for (const p of W.perangkat) {
         const K = I.KATALOG[p.jenis], s = st.rk[p.id];
-        const salah = s && s.masalah.length;
-        if (K.kategori === 'papan' && p.daya) { const d = W.perangkat.find(q => q.id === p.daya); if (d) garis(p, d, 0xdc2626, 0.04); }
+        const salah = !!(s && s.masalah.length);
+        if (K.kategori === 'papan' && p.daya) { const d = W.perangkat.find(q => q.id === p.daya); if (d) garis(p, d, 'daya', false, p.id + '>daya'); }
         if (!p.sambung) continue;
         const tujuan = W.perangkat.find(q => q.id === (p.sambung.relay || p.sambung.esp)); if (!tujuan) continue;
-        garis(p, tujuan, salah ? 0xf97316 : p.sambung.relay ? 0x475569 : K.kanal ? 0x16a34a : 0xeab308, p.sambung.relay ? 0.05 : 0.035);
+        garis(p, tujuan, p.sambung.relay ? 'beban' : K.kanal ? 'relay' : 'data', salah, p.id + '>sambung');
       }
+      if (kabelPilih && !daftarKabel.some(k => k.kunci === kabelPilih)) kabelPilih = null;
+      pilihKabel(kabelPilih);
+    }
+    function pilihKabel(kunci) {
+      kabelPilih = kunci || null;
+      for (const k of daftarKabel) { const on = k.kunci === kabelPilih; k.m.material.emissive.setHex(on ? 0x38bdf8 : 0x000000); k.m.material.emissiveIntensity = on ? 0.9 : 0; k.m.scale.setScalar(1); }
+    }
+    function ambilKabel(cx, cy) { if (!grupKabel) return null; scene.updateMatrixWorld(); sinar(cx, cy); const hit = ray.intersectObjects(daftarKabel.map(k => k.hit), false)[0]; return hit ? hit.object.userData.kabel : null; }
+
+    /* label perangkat tidak saling tumpuk: label yang bertabrakan di layar didorong ke atas */
+    let labelAkhir = [];
+    function tataLabel() {
+      const r = o.canvas.getBoundingClientRect(), Hh = r.height || 1, Ww = r.width || 1, f = 1 / (2 * Math.tan(camera.fov * Math.PI / 360));
+      const hPx = 0.023 * f * Hh, v = new THREE.Vector3(), kotakL = [];
+      const daftar = Object.entries(obj).filter(([, x]) => x.label && x.label.visible).map(([id, x]) => {
+        x.label.getWorldPosition(v); const jarak = v.distanceTo(camera.position); v.project(camera);
+        return { id, x, sx: (v.x + 1) / 2 * Ww, sy: (1 - v.y) / 2 * Hh, w: 0.115 * f * Hh * (x.label.userData.lebar || 1), jarak, dpn: v.z < 1 };
+      }).sort((a, b) => (b.id === pilihan) - (a.id === pilihan) || a.jarak - b.jarak);
+      for (const L of daftar) {
+        let naik = 0;
+        const tabrak = () => kotakL.some(k => Math.abs(k.sx - L.sx) < (k.w + L.w) / 2 + 2 && Math.abs((k.sy - k.naik * (hPx + 2)) - (L.sy - naik * (hPx + 2))) < hPx + 1);
+        while (naik < 3 && tabrak()) naik++;
+        if (naik >= 3 && L.id !== pilihan) { L.x.label.visible = false; continue; }   // terlalu padat: sembunyikan yang jauh
+        L.x.label.center.set(0.5, -naik * 1.09); L.naik = naik; kotakL.push(L);
+      }
+      labelAkhir = kotakL.map(L => ({ id: L.id, x: L.sx, y: L.sy - L.naik * (hPx + 2) - hPx / 2, w: L.w, h: hPx }));
     }
 
     /* ---------- pemilihan dan sorotan ---------- */
@@ -3655,8 +3855,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       return { x: Math.round(p.x * 2) / 2, z: Math.round(p.z * 2) / 2 };
     }
     function ambilPerangkat(cx, cy) { scene.updateMatrixWorld(); sinar(cx, cy); const hit = ray.intersectObjects(Object.values(obj).map(x => x.hit), false)[0]; return hit ? hit.object.userData.id : null; }
-    function layar(id) { const x = obj[id]; if (!x) return null; scene.updateMatrixWorld(); const v = x.g.position.clone(); v.y = 0.65; v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
-    function pindah(id, x, z) { const o2 = obj[id]; if (o2) o2.g.position.set(x, 0, z); if (cincinPilih && pilihan === id) cincinPilih.position.set(x, 0.07, z); }
+    function layar(id) { const x = obj[id]; if (!x) return null; scene.updateMatrixWorld(); const v = x.g.position.clone(); v.y = Math.min(0.65, x.puncak / 2); v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
+    function pindah(id, x, z) { const o2 = obj[id]; if (o2) o2.g.position.set(x, 0, z); if (cincinPilih && pilihan === id) cincinPilih.position.set(x, 0.07, z); if (o2 && o2.cincin) o2.cincin.forEach(c => c.position.set(x, 0.05, z)); }
 
     /* ---------- animasi per frame ---------- */
     let t0 = performance.now();
@@ -3673,7 +3873,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
         const x = obj[p.id]; if (!x) continue; const al = S.alat[p.id], on = al && al.on;
         if (x.label) { const m = o.tampilLabel ? o.tampilLabel() : 'semua'; x.label.visible = m === 'semua' || (m === 'pilih' && pilihan === p.id); }
         if (x.baling && on) x.baling.rotation.z += dt * (6 + 5 * al.level);
-        if (x.bohlam) { x.bohlam.material.emissiveIntensity = on ? 1.6 : 0; if (x.cahaya) x.cahaya.intensity = on ? 1.2 + malam : 0; }
+        if (x.bohlam) { x.bohlam.material.emissiveIntensity = on ? 1.6 : 0; if (x.kap) x.kap.material.emissiveIntensity = on ? 0.5 : 0; if (x.cahaya) x.cahaya.intensity = on ? 1.2 + malam : 0; }
         if (x.air) x.air.material.opacity = on && S.tandon > 1 ? 0.55 + 0.2 * Math.sin(t * 12) : 0;
         if (x.isi) { const f = Math.max(0.02, S.tandon / 100); x.isi.scale.y = f * 1.6; x.isi.position.y = 0.2 + f * 0.8; }
         if (x.pakan) { const A = S.area[st.rk[p.id].area]; x.pakan.scale.y = A && A.pakan != null ? Math.max(0.05, A.pakan / 100) : 1; }
@@ -3685,12 +3885,25 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       }
       for (const f of animasi) f(t, S, dt);
       if (cincinPilih) cincinPilih.rotation.z += dt;
+      if (kabelPilih) { const k = daftarKabel.find(q => q.kunci === kabelPilih); if (k) k.m.material.emissiveIntensity = 0.6 + 0.4 * Math.sin(t * 6); }
+      tataLabel();
       renderer.render(scene, camera);
     }
     function ukur() { const r = o.canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+    function fokus(x, z, jarak, theta, phi) { kam.target.set(x, 0, z); if (jarak) kam.jarak = jarak; if (theta != null) kam.theta = theta; if (phi != null) kam.phi = phi; pasangKamera(); }
     function resetKamera() { kam.theta = -0.75; kam.phi = 0.9; kam.jarak = Math.max(lebar, dalam) * 1.05; kam.target.set(lebar / 2, 0, dalam / 2); pasangKamera(); }
     pasangKamera();
-    return { muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer, kualitas: () => (ringan ? 'ringan' : 'realistis'), info: () => ({ segitiga: renderer.info.render.triangles, gambar: renderer.info.render.calls }) };
+    /* titik layar pada kabel yang benar-benar bisa diklik (tidak tertutup perangkat) */
+    function layarKabel(kunci) {
+      const k = daftarKabel.find(q => q.kunci === kunci); if (!k) return null; scene.updateMatrixWorld();
+      const r = o.canvas.getBoundingClientRect(), path = k.hit.geometry.parameters.path;
+      for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.15, 0.85]) {
+        const v = path.getPoint(t).clone(); v.project(camera); const q = { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+        if (!ambilPerangkat(q.x, q.y) && ambilKabel(q.x, q.y) === kunci) return q;
+      }
+      return null;
+    }
+    return { labelTerlihat: () => labelAkhir, fokus, ambilKabel, pilihKabel, layarKabel, daftarKabel: () => daftarKabel.map(k => ({ kunci: k.kunci, dari: k.dari, ke: k.ke, jenis: k.jenis, salah: k.salah })), muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer, kualitas: () => (ringan ? 'ringan' : 'realistis'), info: () => ({ segitiga: renderer.info.render.triangles, gambar: renderer.info.render.calls }) };
   }
   root.Dunia3D = { buat };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -4294,11 +4507,20 @@ window.KURIKULUM = {
     if (mode === 'otak') return;
     if (menaruh) { taruh(menaruh, e.clientX, e.clientY); menaruh = null; $$('.item').forEach(x => x.classList.remove('menaruh')); e.preventDefault(); return; }
     const id = D3.ambilPerangkat(e.clientX, e.clientY);
+    if (menyambung && e.button === 0) {   // mode sambung: klik perangkat tujuan
+      const dari = menyambung; menyambung = null; panggung.classList.remove('menyambung');
+      if (id) { const r = I.sambungKe(W, dari, id); toast(r.ok ? r.teks + '.' : 'Tidak bisa: ' + r.alasan + '.', r.ok); if (r.ok) terapRangkaian(); }
+      else toast('Sambung dibatalkan.');
+      pilihan = 'p:' + dari; D3.pilih(dari); renderInspektur(); return;
+    }
     if (id) {
+      D3.pilihKabel(null);
       pilihan = 'p:' + id; pilihArea = null; D3.pilih(id); renderInspektur(); tab('inspektur');
       if (mode === 'bangun' && e.button === 0) { geser = { id, gerak: false }; D3.kamera.aktif = false; }
       return;
     }
+    const kb = e.button === 0 && D3.ambilKabel(e.clientX, e.clientY);
+    if (kb) { pilihan = 'kabel3d:' + kb; pilihArea = null; D3.pilih(null); D3.pilihKabel(kb); renderInspektur(); tab('inspektur'); return; }
     const t = D3.titikLantai(e.clientX, e.clientY);
     const a = t && I.areaDi(W, t.x, t.z);
     if (a && mode === 'bangun' && e.button === 0 && e.altKey === false && e.detail >= 2) { pilihArea = a.id; pilihan = null; D3.pilih(null); renderInspektur(); tab('inspektur'); }
@@ -4307,8 +4529,23 @@ window.KURIKULUM = {
   window.addEventListener('pointermove', e => {
     if (!geser) return; const t = D3.titikLantai(e.clientX, e.clientY); if (!t) return;
     const p = W.perangkat.find(x => x.id === geser.id); if (!p) return; p.x = t.x; p.z = t.z; geser.gerak = true; D3.pindah(p.id, t.x, t.z);
+    if (!geser.kabelAntre) { geser.kabelAntre = true; requestAnimationFrame(() => { if (geser) geser.kabelAntre = false; D3.kabel(st, W); }); }   // kabel ikut bergerak saat perangkat digeser
   });
-  window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st); renderInspektur(); } });
+  /* kabel: putuskan dengan tombol Delete, batalkan mode sambung dengan Esc */
+  let menyambung = null;
+  function terapRangkaian() { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderPetunjuk(); }
+  function putuskanKabel(kunci) {
+    const [id] = kunci.split('>'), p = W.perangkat.find(q => q.id === id); if (!p) return;
+    if (kunci.endsWith('>daya')) delete p.daya; else delete p.sambung;
+    terapRangkaian(); D3.pilihKabel(null); pilihan = 'p:' + id; D3.pilih(id); renderInspektur();
+    toast('Kabel ' + p.nama + ' diputus.', true);
+  }
+  window.addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
+    if (e.key === 'Escape' && menyambung) { menyambung = null; panggung.classList.remove('menyambung'); toast('Sambung dibatalkan.'); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && pilihan && pilihan.startsWith('kabel3d:') && mode === 'bangun') { e.preventDefault(); putuskanKabel(pilihan.slice(8)); }
+  });
+  window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); } });
 
   /* ---------- tab ---------- */
   function tab(n) { $$('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === n)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.pane === n)); if (n === 'dasbor') renderDasbor(); if (n === 'misi') renderMisi(); if (n === 'kode') renderKode(); if (n === 'telegram') renderTelegram(); if (n === 'lab') renderLab(); if (n === 'model') renderModel(); }
@@ -4324,6 +4561,19 @@ window.KURIKULUM = {
       P.appendChild(mk('h3', '', 'Kabel'));
       P.appendChild(mk('p', 'note', `${k.dari}.${k.port} ke ${k.ke}.${k.portKe}`));
       const b = mk('button', 'btn bahaya', 'Hapus kabel'); b.type = 'button'; b.onclick = () => { KV.hapusKabel(k); pilihan = null; renderInspektur(); }; P.appendChild(b);
+      return;
+    }
+    if (pilihan && pilihan.startsWith('kabel3d:')) {
+      const kunci = pilihan.slice(8), [id] = kunci.split('>'), p = W.perangkat.find(q => q.id === id);
+      const k = D3.daftarKabel().find(q => q.kunci === kunci);
+      if (!p || !k) { pilihan = null; return renderInspektur(); }
+      const ke = W.perangkat.find(q => q.id === k.ke) || {};
+      const nmJenis = { data: 'Kabel data (sinyal sensor atau aktuator kecil ke pin ESP)', daya: 'Kabel daya 5 V ke ESP', beban: 'Kabel beban lewat relay (listrik besar)', relay: 'Kabel kendali relay dari pin ESP' }[k.jenis];
+      P.appendChild(mk('h3', '', 'Kabel'));
+      P.appendChild(mk('p', 'note', `${nmJenis}: ${p.nama} ke ${ke.nama || k.ke}${p.sambung && p.sambung.pin && !kunci.endsWith('>daya') ? ' (pin ' + p.sambung.pin + ')' : p.sambung && p.sambung.kanal && !kunci.endsWith('>daya') ? ' (kanal ' + p.sambung.kanal + ')' : ''}.`));
+      if (k.salah) { const ul = mk('ul', 'masalah'); (st.rk[id] || { masalah: [] }).masalah.forEach(m => ul.appendChild(mk('li', '', m))); P.appendChild(ul); }
+      const b = mk('button', 'btn bahaya', 'Putuskan kabel'); b.type = 'button'; b.id = 'putusKabel'; b.onclick = () => putuskanKabel(kunci); P.appendChild(b);
+      P.appendChild(mk('p', 'note', 'Tombol Delete juga memutus kabel yang dipilih. Warna kabel: kuning data, merah daya, hijau kendali relay, abu-abu beban, oranye salah sambung.'));
       return;
     }
     if (pilihan && pilihan.startsWith('b:')) return inspekturBlok(P, pilihan.slice(2));
@@ -4350,7 +4600,7 @@ window.KURIKULUM = {
     P.appendChild(mk('h3', '', p.nama));
     P.appendChild(mk('p', 'note', `${Kt.nama}. ${Kt.deskripsi}`));
     const nama = field(P, 'Nama', mk('input')); nama.type = 'text'; nama.value = p.nama; nama.maxLength = 24; nama.onchange = () => { p.nama = nama.value; simpanDunia(); };
-    const ubah = () => { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st); renderInspektur(); renderPetunjuk(); };
+    const ubah = () => { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); renderPetunjuk(); };
     const papan = W.perangkat.filter(q => I.KATALOG[q.jenis].kategori === 'papan'), relay = W.perangkat.filter(q => I.KATALOG[q.jenis].kanal);
     if (Kt.kategori === 'papan') {
       const dy = field(P, 'Sumber daya', pilihanEl([['', '(belum)']].concat(W.perangkat.filter(q => I.KATALOG[q.jenis].kategori === 'daya').map(q => [q.id, q.nama])), p.daya));
@@ -4385,9 +4635,16 @@ window.KURIKULUM = {
     }
     const row2 = mk('div', 'baris'); row2.style.marginTop = '10px';
     const oto = mk('button', 'btn sm', 'Sambung otomatis'), hap = mk('button', 'btn sm bahaya', 'Hapus'); oto.type = hap.type = 'button';
+    const adaKabel = !!(p.sambung || p.daya), bisaKabel = Kt.kategori !== 'jaringan' && Kt.kategori !== 'daya' && p.jenis !== 'tandon';
+    if (bisaKabel) {
+      const sb = mk('button', 'btn sm', 'Sambung ke...'); sb.type = 'button'; sb.id = 'sambungKe'; sb.title = 'Lalu klik perangkat tujuan di dunia 3D';
+      sb.onclick = () => { menyambung = p.id; panggung.classList.add('menyambung'); toast(Kt.kategori === 'papan' ? 'Klik sumber daya (adaptor, baterai, panel surya) di 3D. Esc untuk batal.' : Kt.butuhRelay ? 'Klik modul relay tujuan di 3D. Esc untuk batal.' : 'Klik ESP tujuan di 3D. Esc untuk batal.'); };
+      row2.appendChild(sb);
+    }
+    if (adaKabel) { const pt = mk('button', 'btn sm', 'Putuskan kabel'); pt.type = 'button'; pt.id = 'putusPerangkat'; pt.onclick = () => { I.putuskan(W, p.id); ubah(); toast('Kabel ' + p.nama + ' diputus.', true); }; row2.appendChild(pt); }
     oto.onclick = () => { if (!I.sambungOtomatis(W, p.id)) toast('Tidak ada ESP, relay, atau pin bebas yang cocok.'); ubah(); };
     hap.onclick = () => { W.perangkat = W.perangkat.filter(q => q.id !== p.id); W.perangkat.forEach(q => { if (q.daya === p.id) delete q.daya; if (q.sambung && (q.sambung.esp === p.id || q.sambung.relay === p.id)) delete q.sambung; }); pilihan = null; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); };
-    if (Kt.kategori !== 'jaringan' && Kt.kategori !== 'daya' && p.jenis !== 'tandon') row2.appendChild(oto);
+    if (bisaKabel && !adaKabel) row2.appendChild(oto);
     row2.appendChild(hap); P.appendChild(row2);
     const konsep = { papan: 'Pin digital hanya tahu 0 dan 1. Pin analog (ADC) membaca tegangan bertingkat. Di ESP32, pin 34 sampai 39 hanya bisa input.', sensor: 'Sensor analog butuh pin ADC. Bila salah pin, ESP membaca angka acak: NaN di simulasi ini.', aktuator: Kt.butuhRelay ? 'Beban besar dikendalikan lewat relay. ESP hanya mengirim sinyal kecil ke relay; relay yang menyambung listrik besar.' : 'Beban kecil boleh langsung ke pin ESP.', jaringan: 'Sinyal Wi-Fi melemah oleh jarak dan dinding. Lingkaran biru menunjukkan jangkauan kira-kira.', daya: 'ESP butuh daya stabil 5 V. Adaptor mati saat listrik padam; baterai dan panel surya tetap menyala.', modul: Kt.kanal ? 'Relay adalah saklar yang digerakkan magnet. Satu modul 4 kanal bisa mengendalikan empat beban.' : 'Tandon menyimpan air untuk pompa.' };
     P.appendChild(mk('div', 'konsep', konsep[Kt.kategori] || ''));

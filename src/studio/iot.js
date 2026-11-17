@@ -330,7 +330,7 @@
       area: [{ id: 'kamar', tipe: 'kamar', x: 4, z: 4, w: 6, d: 5 }, { id: 'ruang_tamu', tipe: 'ruang_tamu', x: 10, z: 4, w: 7, d: 5 }],
       perangkat: [
         { id: 'router', jenis: 'router', x: 13, z: 6 },
-        { id: 'esp_kamar', jenis: 'esp32', x: 5, z: 5, daya: 'adaptor_kamar' }, { id: 'adaptor_kamar', jenis: 'adaptor', x: 5.5, z: 5 },
+        { id: 'esp_kamar', jenis: 'esp32', x: 5, z: 5, daya: 'adaptor_kamar' }, { id: 'adaptor_kamar', jenis: 'adaptor', x: 5.9, z: 5 },
         { id: 'dht_kamar', jenis: 'dht22', nama: 'DHT22 kamar', x: 6, z: 6, sambung: { esp: 'esp_kamar', pin: 'GPIO4' } },
         { id: 'relay_kamar', jenis: 'relay1', x: 5, z: 6, sambung: { esp: 'esp_kamar', pin: 'GPIO26' } },
         { id: 'kipas_kamar', jenis: 'kipas', nama: 'Kipas kamar', x: 8, z: 7, sambung: { relay: 'relay_kamar', kanal: 1 } }
@@ -342,10 +342,10 @@
         { id: 'kebun', tipe: 'kebun', x: 3, z: 13, w: 12, d: 9 }, { id: 'kandang', tipe: 'kandang', x: 23, z: 12, w: 9, d: 7 }],
       perangkat: [
         { id: 'router', jenis: 'router', x: 12, z: 5 },
-        { id: 'esp_rumah', jenis: 'esp32', nama: 'ESP rumah', x: 10, z: 7, daya: 'adaptor_rumah' }, { id: 'adaptor_rumah', jenis: 'adaptor', x: 10.6, z: 7.2 },
+        { id: 'esp_rumah', jenis: 'esp32', nama: 'ESP rumah', x: 10, z: 6.5, daya: 'adaptor_rumah' }, { id: 'adaptor_rumah', jenis: 'adaptor', x: 10, z: 7.4 },
         { id: 'dht_kamar', jenis: 'dht22', nama: 'DHT22 kamar', x: 5, z: 5, sambung: { esp: 'esp_rumah', pin: 'GPIO4' } },
         { id: 'mq2_dapur', jenis: 'mq2', nama: 'Gas dapur', x: 18, z: 5, sambung: { esp: 'esp_rumah', pin: 'GPIO34' } },
-        { id: 'relay_rumah', jenis: 'relay4', nama: 'Relay rumah', x: 11, z: 7, sambung: { esp: 'esp_rumah', pin: 'GPIO26' } },
+        { id: 'relay_rumah', jenis: 'relay4', nama: 'Relay rumah', x: 11.1, z: 6.5, sambung: { esp: 'esp_rumah', pin: 'GPIO26' } },
         { id: 'kipas_kamar', jenis: 'kipas', nama: 'Kipas kamar', x: 7, z: 6, sambung: { relay: 'relay_rumah', kanal: 1 } },
         { id: 'lampu_tamu', jenis: 'lampu', nama: 'Lampu ruang tamu', x: 12, z: 4.5, sambung: { relay: 'relay_rumah', kanal: 2 } },
         { id: 'exhaust_dapur', jenis: 'exhaust', nama: 'Exhaust dapur', x: 19, z: 7, sambung: { relay: 'relay_rumah', kanal: 3 } },
@@ -356,7 +356,7 @@
         { id: 'relay_kebun', jenis: 'relay1', x: 7, z: 14.5, sambung: { esp: 'esp_kebun', pin: 'GPIO27' } },
         { id: 'pompa_kebun', jenis: 'pompa', nama: 'Pompa kebun', x: 6, z: 16, sambung: { relay: 'relay_kebun', kanal: 1 } },
         { id: 'repeater', jenis: 'repeater', x: 20, z: 10 },
-        { id: 'esp_kandang', jenis: 'esp32', nama: 'ESP kandang', x: 25, z: 13, daya: 'adaptor_kandang' }, { id: 'adaptor_kandang', jenis: 'adaptor', x: 25.6, z: 13 },
+        { id: 'esp_kandang', jenis: 'esp32', nama: 'ESP kandang', x: 25, z: 13, daya: 'adaptor_kandang' }, { id: 'adaptor_kandang', jenis: 'adaptor', x: 25, z: 13.8 },
         { id: 'dht_kandang', jenis: 'dht22', nama: 'DHT22 kandang', x: 27, z: 15, sambung: { esp: 'esp_kandang', pin: 'GPIO4' } },
         { id: 'pakan_kandang', jenis: 'loadcell', nama: 'Timbangan pakan', x: 29, z: 17, sambung: { esp: 'esp_kandang', pin: 'GPIO16' } },
         { id: 'servo_kandang', jenis: 'servo_pakan', nama: 'Pemberi pakan', x: 30, z: 17, sambung: { esp: 'esp_kandang', pin: 'GPIO18' } },
@@ -388,7 +388,43 @@
     return true;
   }
 
-  const api = { VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
+  /* Memutus semua kabel milik satu perangkat. Kabel perangkat lain yang tersambung KE perangkat ini juga putus,
+     misalnya ESP dihapus kabelnya: sensor tetap tercatat menuju ESP itu (supaya terlihat salah), tetapi daya ESP lepas. */
+  function putuskan(W, id) {
+    const p = cari(W, id); if (!p) return { ok: false, alasan: 'perangkat tidak ada' };
+    const ada = !!(p.sambung || p.daya);
+    delete p.sambung; delete p.daya;
+    return ada ? { ok: true } : { ok: false, alasan: 'perangkat ini belum punya kabel' };
+  }
+  /* Menyambung perangkat ke tujuan yang dipilih di 3D: ESP (pin bebas yang cocok), relay (kanal bebas), atau sumber daya. */
+  function sambungKe(W, id, tujuanId) {
+    const p = cari(W, id), t = cari(W, tujuanId);
+    if (!p || !t) return { ok: false, alasan: 'perangkat tidak ada' };
+    if (p === t) return { ok: false, alasan: 'tidak bisa menyambung ke dirinya sendiri' };
+    const K = KATALOG[p.jenis], KT = KATALOG[t.jenis];
+    if (K.kategori === 'papan') {
+      if (KT.kategori !== 'daya') return { ok: false, alasan: `${K.nama} disambung ke sumber daya (adaptor, baterai, panel surya), bukan ke ${KT.nama}` };
+      p.daya = t.id; return { ok: true, teks: `${p.nama} mendapat daya dari ${t.nama}` };
+    }
+    if (K.kategori === 'aktuator' && K.butuhRelay) {
+      if (!KT.kanal) return { ok: false, alasan: `${K.nama} berarus ${K.arus} mA, jadi harus disambung ke modul relay, bukan ke ${KT.nama}` };
+      for (let k = 1; k <= KT.kanal; k++) if (!W.perangkat.some(q => q !== p && q.sambung && q.sambung.relay === t.id && q.sambung.kanal === k)) { p.sambung = { relay: t.id, kanal: k }; return { ok: true, teks: `${p.nama} tersambung ke ${t.nama} kanal ${k}` }; }
+      return { ok: false, alasan: `semua kanal ${t.nama} sudah terpakai` };
+    }
+    if (K.kategori === 'sensor' || K.kategori === 'aktuator' || K.kanal) {
+      if (KT.kategori !== 'papan') return { ok: false, alasan: `${K.nama} disambung ke ESP, bukan ke ${KT.nama}` };
+      const dipakai = new Set(W.perangkat.filter(q => q !== p && q.sambung && q.sambung.esp === t.id).map(q => q.sambung.pin));
+      const output = K.kategori === 'aktuator' || !!K.kanal;
+      // pin digital murni didahulukan untuk sensor digital, supaya pin analog tetap tersedia untuk sensor analog
+      const urut = daftarPin(t.jenis).sort((a, b) => (K.sinyal === 'analog' ? 0 : (pinAnalog(t.jenis, a) ? 1 : 0) - (pinAnalog(t.jenis, b) ? 1 : 0)));
+      const pin = urut.find(x => !dipakai.has(x) && (K.sinyal === 'analog' ? pinAnalog(t.jenis, x) : true) && !(output && pinInputSaja(t.jenis, x)));
+      if (!pin) return { ok: false, alasan: K.sinyal === 'analog' ? `tidak ada pin analog bebas di ${t.nama}` : `tidak ada pin bebas di ${t.nama}` };
+      p.sambung = { esp: t.id, pin }; return { ok: true, teks: `${p.nama} tersambung ke ${t.nama} pin ${pin}` };
+    }
+    return { ok: false, alasan: `${K.nama} tidak memakai kabel data` };
+  }
+
+  const api = { putuskan, sambungKe, VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.IoT = api;
 })(typeof window !== 'undefined' ? window : globalThis);

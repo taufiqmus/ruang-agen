@@ -138,6 +138,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   .sisi { border-left: 0; border-top: 2px solid var(--ink); min-height: 60vh; }
 }
 @media (prefers-reduced-motion: reduce) { .kabel.alir, .msg.ngetik i { animation: none; } }
+#panggung.menyambung #c3d { cursor: crosshair; }
+#panggung.menyambung::after { content: "Klik perangkat tujuan"; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: #161a2e; color: #fff; padding: 4px 12px; border-radius: 99px; font-size: 13px; pointer-events: none; }
 </style>
 </head>
 <body>

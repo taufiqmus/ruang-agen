@@ -101,5 +101,26 @@ cek('dapur: gas naik saat jam masak', (() => { const S5 = I.buatSim(W3, { mulai:
 cek('sambung otomatis memilih pin analog untuk sensor analog', (() => { const W6 = dunia('rumah_kecil'); W6.perangkat.push({ id: 'ldr1', jenis: 'ldr', x: 6, z: 6 }); I.sambungOtomatis(W6, 'ldr1'); const p = W6.perangkat.find(q => q.id === 'ldr1'); return I.pinAnalog('esp32', p.sambung.pin) && !I.periksaRangkaian(W6).ldr1.masalah.length; })());
 cek('sambung otomatis aktuator besar memilih relay kosong', (() => { const W7 = dunia('rumah_kebun_kandang'); W7.perangkat.push({ id: 'lampu2', jenis: 'lampu', x: 12, z: 6 }); I.sambungOtomatis(W7, 'lampu2'); const p = W7.perangkat.find(q => q.id === 'lampu2'); return p.sambung.relay === 'relay_rumah' && p.sambung.kanal === 4 && !I.periksaRangkaian(W7).lampu2.masalah.length; })());
 
+/* memutus dan menyambung kabel dari 3D */
+{
+  const Wx = dunia('rumah_kebun_kandang');
+  cek('putuskan kabel sensor: sensor kehilangan sambungan', I.putuskan(Wx, 'dht_kandang').ok && !Wx.perangkat.find(p => p.id === 'dht_kandang').sambung && /Belum disambungkan/.test(I.periksaRangkaian(Wx).dht_kandang.masalah[0]));
+  cek('putuskan perangkat tanpa kabel: ditolak dengan alasan', !I.putuskan(Wx, 'dht_kandang').ok);
+  cek('putuskan daya ESP: ESP tanpa sumber daya, sensornya tidak terbaca', I.putuskan(Wx, 'esp_kebun').ok && !I.bacaSensor(Wx, I.buatSim(Wx), 'soil_kebun').ok);
+  let r = I.sambungKe(Wx, 'dht_kandang', 'esp_kandang');
+  cek('sambungKe ESP: memilih pin digital bebas', r.ok && /^GPIO/.test(Wx.perangkat.find(p => p.id === 'dht_kandang').sambung.pin) && !I.periksaRangkaian(Wx).dht_kandang.masalah.length, r);
+  Wx.perangkat.push({ id: 'ldr9', jenis: 'ldr', x: 26, z: 14 });
+  r = I.sambungKe(Wx, 'ldr9', 'esp_kandang');
+  cek('sambungKe ESP untuk sensor analog: pin analog', r.ok && I.pinAnalog('esp32', Wx.perangkat.find(p => p.id === 'ldr9').sambung.pin), r);
+  r = I.sambungKe(Wx, 'kipas_kandang', 'esp_kandang');
+  cek('kipas ke ESP langsung ditolak: harus ke relay', !r.ok && /relay/.test(r.alasan));
+  I.putuskan(Wx, 'kipas_kandang'); r = I.sambungKe(Wx, 'kipas_kandang', 'relay_kandang');
+  cek('kipas ke relay: kanal bebas', r.ok && Wx.perangkat.find(p => p.id === 'kipas_kandang').sambung.kanal >= 1 && !I.periksaRangkaian(Wx).kipas_kandang.masalah.length, r);
+  r = I.sambungKe(Wx, 'esp_kebun', 'surya_kebun');
+  cek('ESP ke panel surya: daya tersambung', r.ok && Wx.perangkat.find(p => p.id === 'esp_kebun').daya === 'surya_kebun');
+  cek('ESP ke sensor ditolak', !I.sambungKe(Wx, 'esp_kebun', 'soil_kebun').ok);
+  cek('sensor ke router ditolak', !I.sambungKe(Wx, 'soil_kebun', 'router').ok);
+}
+
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

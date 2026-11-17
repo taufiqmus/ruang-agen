@@ -81,6 +81,20 @@ Tampilan bisa diatur:
 - **Bentrok:** satu pin atau satu kanal relay tidak boleh dipakai dua perangkat.
 - **Sambung otomatis:** memilih ESP, pin, atau relay terdekat yang cocok.
 
+**Kabel di dunia 3D.** Setiap sambungan tampil sebagai kabel yang turun dari papan ke lantai lalu berbelok siku ke perangkatnya.
+
+| Warna kabel 3D | Arti |
+|---|---|
+| Kuning | Data: sensor atau aktuator kecil ke pin ESP |
+| Merah | Daya 5 V ke ESP |
+| Hijau | Kendali relay dari pin ESP |
+| Abu-abu tebal | Beban listrik besar lewat relay |
+| Oranye | Salah sambung (lihat alasannya di Inspektur) |
+
+- **Memutus kabel:** klik kabelnya di 3D, lalu **Putuskan kabel** (atau tekan Delete). Bisa juga dari Inspektur perangkat: **Putuskan kabel**.
+- **Menyambung manual:** klik perangkat, **Sambung ke...**, lalu klik tujuannya di 3D (ESP untuk sensor, relay untuk beban besar, adaptor atau baterai atau panel surya untuk ESP). Sambungan yang melanggar aturan ditolak dengan alasannya. Esc membatalkan.
+- Saat perangkat digeser, kabelnya ikut bergerak.
+
 **Wi-Fi.** Lingkaran biru di sekitar router menunjukkan jangkauan. Sinyal melemah oleh jarak dan sekitar 6 dB per dinding yang ditembus. ESP yang terlalu jauh menjadi offline, ditandai lampu kecil berwarna:
 
 | Warna lampu | Arti |

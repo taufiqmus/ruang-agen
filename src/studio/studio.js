@@ -188,11 +188,20 @@
     if (mode === 'otak') return;
     if (menaruh) { taruh(menaruh, e.clientX, e.clientY); menaruh = null; $$('.item').forEach(x => x.classList.remove('menaruh')); e.preventDefault(); return; }
     const id = D3.ambilPerangkat(e.clientX, e.clientY);
+    if (menyambung && e.button === 0) {   // mode sambung: klik perangkat tujuan
+      const dari = menyambung; menyambung = null; panggung.classList.remove('menyambung');
+      if (id) { const r = I.sambungKe(W, dari, id); toast(r.ok ? r.teks + '.' : 'Tidak bisa: ' + r.alasan + '.', r.ok); if (r.ok) terapRangkaian(); }
+      else toast('Sambung dibatalkan.');
+      pilihan = 'p:' + dari; D3.pilih(dari); renderInspektur(); return;
+    }
     if (id) {
+      D3.pilihKabel(null);
       pilihan = 'p:' + id; pilihArea = null; D3.pilih(id); renderInspektur(); tab('inspektur');
       if (mode === 'bangun' && e.button === 0) { geser = { id, gerak: false }; D3.kamera.aktif = false; }
       return;
     }
+    const kb = e.button === 0 && D3.ambilKabel(e.clientX, e.clientY);
+    if (kb) { pilihan = 'kabel3d:' + kb; pilihArea = null; D3.pilih(null); D3.pilihKabel(kb); renderInspektur(); tab('inspektur'); return; }
     const t = D3.titikLantai(e.clientX, e.clientY);
     const a = t && I.areaDi(W, t.x, t.z);
     if (a && mode === 'bangun' && e.button === 0 && e.altKey === false && e.detail >= 2) { pilihArea = a.id; pilihan = null; D3.pilih(null); renderInspektur(); tab('inspektur'); }
@@ -201,8 +210,23 @@
   window.addEventListener('pointermove', e => {
     if (!geser) return; const t = D3.titikLantai(e.clientX, e.clientY); if (!t) return;
     const p = W.perangkat.find(x => x.id === geser.id); if (!p) return; p.x = t.x; p.z = t.z; geser.gerak = true; D3.pindah(p.id, t.x, t.z);
+    if (!geser.kabelAntre) { geser.kabelAntre = true; requestAnimationFrame(() => { if (geser) geser.kabelAntre = false; D3.kabel(st, W); }); }   // kabel ikut bergerak saat perangkat digeser
   });
-  window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st); renderInspektur(); } });
+  /* kabel: putuskan dengan tombol Delete, batalkan mode sambung dengan Esc */
+  let menyambung = null;
+  function terapRangkaian() { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderPetunjuk(); }
+  function putuskanKabel(kunci) {
+    const [id] = kunci.split('>'), p = W.perangkat.find(q => q.id === id); if (!p) return;
+    if (kunci.endsWith('>daya')) delete p.daya; else delete p.sambung;
+    terapRangkaian(); D3.pilihKabel(null); pilihan = 'p:' + id; D3.pilih(id); renderInspektur();
+    toast('Kabel ' + p.nama + ' diputus.', true);
+  }
+  window.addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
+    if (e.key === 'Escape' && menyambung) { menyambung = null; panggung.classList.remove('menyambung'); toast('Sambung dibatalkan.'); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && pilihan && pilihan.startsWith('kabel3d:') && mode === 'bangun') { e.preventDefault(); putuskanKabel(pilihan.slice(8)); }
+  });
+  window.addEventListener('pointerup', () => { if (!geser) return; const g = geser; geser = null; if (mode !== 'otak') D3.kamera.aktif = true; if (g.gerak) { simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); } });
 
   /* ---------- tab ---------- */
   function tab(n) { $$('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === n)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.pane === n)); if (n === 'dasbor') renderDasbor(); if (n === 'misi') renderMisi(); if (n === 'kode') renderKode(); if (n === 'telegram') renderTelegram(); if (n === 'lab') renderLab(); if (n === 'model') renderModel(); }
@@ -218,6 +242,19 @@
       P.appendChild(mk('h3', '', 'Kabel'));
       P.appendChild(mk('p', 'note', `${k.dari}.${k.port} ke ${k.ke}.${k.portKe}`));
       const b = mk('button', 'btn bahaya', 'Hapus kabel'); b.type = 'button'; b.onclick = () => { KV.hapusKabel(k); pilihan = null; renderInspektur(); }; P.appendChild(b);
+      return;
+    }
+    if (pilihan && pilihan.startsWith('kabel3d:')) {
+      const kunci = pilihan.slice(8), [id] = kunci.split('>'), p = W.perangkat.find(q => q.id === id);
+      const k = D3.daftarKabel().find(q => q.kunci === kunci);
+      if (!p || !k) { pilihan = null; return renderInspektur(); }
+      const ke = W.perangkat.find(q => q.id === k.ke) || {};
+      const nmJenis = { data: 'Kabel data (sinyal sensor atau aktuator kecil ke pin ESP)', daya: 'Kabel daya 5 V ke ESP', beban: 'Kabel beban lewat relay (listrik besar)', relay: 'Kabel kendali relay dari pin ESP' }[k.jenis];
+      P.appendChild(mk('h3', '', 'Kabel'));
+      P.appendChild(mk('p', 'note', `${nmJenis}: ${p.nama} ke ${ke.nama || k.ke}${p.sambung && p.sambung.pin && !kunci.endsWith('>daya') ? ' (pin ' + p.sambung.pin + ')' : p.sambung && p.sambung.kanal && !kunci.endsWith('>daya') ? ' (kanal ' + p.sambung.kanal + ')' : ''}.`));
+      if (k.salah) { const ul = mk('ul', 'masalah'); (st.rk[id] || { masalah: [] }).masalah.forEach(m => ul.appendChild(mk('li', '', m))); P.appendChild(ul); }
+      const b = mk('button', 'btn bahaya', 'Putuskan kabel'); b.type = 'button'; b.id = 'putusKabel'; b.onclick = () => putuskanKabel(kunci); P.appendChild(b);
+      P.appendChild(mk('p', 'note', 'Tombol Delete juga memutus kabel yang dipilih. Warna kabel: kuning data, merah daya, hijau kendali relay, abu-abu beban, oranye salah sambung.'));
       return;
     }
     if (pilihan && pilihan.startsWith('b:')) return inspekturBlok(P, pilihan.slice(2));
@@ -244,7 +281,7 @@
     P.appendChild(mk('h3', '', p.nama));
     P.appendChild(mk('p', 'note', `${Kt.nama}. ${Kt.deskripsi}`));
     const nama = field(P, 'Nama', mk('input')); nama.type = 'text'; nama.value = p.nama; nama.maxLength = 24; nama.onchange = () => { p.nama = nama.value; simpanDunia(); };
-    const ubah = () => { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st); renderInspektur(); renderPetunjuk(); };
+    const ubah = () => { W = I.periksaDunia(W).dunia; simpanDunia(); st = I.status(W, S); D3.kabel(st, W); renderInspektur(); renderPetunjuk(); };
     const papan = W.perangkat.filter(q => I.KATALOG[q.jenis].kategori === 'papan'), relay = W.perangkat.filter(q => I.KATALOG[q.jenis].kanal);
     if (Kt.kategori === 'papan') {
       const dy = field(P, 'Sumber daya', pilihanEl([['', '(belum)']].concat(W.perangkat.filter(q => I.KATALOG[q.jenis].kategori === 'daya').map(q => [q.id, q.nama])), p.daya));
@@ -279,9 +316,16 @@
     }
     const row2 = mk('div', 'baris'); row2.style.marginTop = '10px';
     const oto = mk('button', 'btn sm', 'Sambung otomatis'), hap = mk('button', 'btn sm bahaya', 'Hapus'); oto.type = hap.type = 'button';
+    const adaKabel = !!(p.sambung || p.daya), bisaKabel = Kt.kategori !== 'jaringan' && Kt.kategori !== 'daya' && p.jenis !== 'tandon';
+    if (bisaKabel) {
+      const sb = mk('button', 'btn sm', 'Sambung ke...'); sb.type = 'button'; sb.id = 'sambungKe'; sb.title = 'Lalu klik perangkat tujuan di dunia 3D';
+      sb.onclick = () => { menyambung = p.id; panggung.classList.add('menyambung'); toast(Kt.kategori === 'papan' ? 'Klik sumber daya (adaptor, baterai, panel surya) di 3D. Esc untuk batal.' : Kt.butuhRelay ? 'Klik modul relay tujuan di 3D. Esc untuk batal.' : 'Klik ESP tujuan di 3D. Esc untuk batal.'); };
+      row2.appendChild(sb);
+    }
+    if (adaKabel) { const pt = mk('button', 'btn sm', 'Putuskan kabel'); pt.type = 'button'; pt.id = 'putusPerangkat'; pt.onclick = () => { I.putuskan(W, p.id); ubah(); toast('Kabel ' + p.nama + ' diputus.', true); }; row2.appendChild(pt); }
     oto.onclick = () => { if (!I.sambungOtomatis(W, p.id)) toast('Tidak ada ESP, relay, atau pin bebas yang cocok.'); ubah(); };
     hap.onclick = () => { W.perangkat = W.perangkat.filter(q => q.id !== p.id); W.perangkat.forEach(q => { if (q.daya === p.id) delete q.daya; if (q.sambung && (q.sambung.esp === p.id || q.sambung.relay === p.id)) delete q.sambung; }); pilihan = null; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); };
-    if (Kt.kategori !== 'jaringan' && Kt.kategori !== 'daya' && p.jenis !== 'tandon') row2.appendChild(oto);
+    if (bisaKabel && !adaKabel) row2.appendChild(oto);
     row2.appendChild(hap); P.appendChild(row2);
     const konsep = { papan: 'Pin digital hanya tahu 0 dan 1. Pin analog (ADC) membaca tegangan bertingkat. Di ESP32, pin 34 sampai 39 hanya bisa input.', sensor: 'Sensor analog butuh pin ADC. Bila salah pin, ESP membaca angka acak: NaN di simulasi ini.', aktuator: Kt.butuhRelay ? 'Beban besar dikendalikan lewat relay. ESP hanya mengirim sinyal kecil ke relay; relay yang menyambung listrik besar.' : 'Beban kecil boleh langsung ke pin ESP.', jaringan: 'Sinyal Wi-Fi melemah oleh jarak dan dinding. Lingkaran biru menunjukkan jangkauan kira-kira.', daya: 'ESP butuh daya stabil 5 V. Adaptor mati saat listrik padam; baterai dan panel surya tetap menyala.', modul: Kt.kanal ? 'Relay adalah saklar yang digerakkan magnet. Satu modul 4 kanal bisa mengendalikan empat beban.' : 'Tandon menyimpan air untuk pompa.' };
     P.appendChild(mk('div', 'konsep', konsep[Kt.kategori] || ''));
