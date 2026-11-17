@@ -242,7 +242,7 @@ const cek = (n, c, i) => { if (!c) { gagal++; console.log('GAGAL:', n, i !== und
   cek('mobile 390px: tanpa scroll horizontal dan semua tab terlihat', lebar.sw <= lebar.iw && lebar.tabs, lebar);
   const sp3 = await page.evaluate(() => { const r = document.querySelector('[data-sp="3"]').getBoundingClientRect(); return { kanan: r.right, kiri: r.left, lebar: window.innerWidth }; });
   cek('mobile 390px: tombol 3x ada di dalam layar', sp3.kiri >= 0 && sp3.kanan <= sp3.lebar, sp3);
-  await page.screenshot({ path: process.env.SHOT || 'layar-mobile.png' });
+  await page.screenshot({ path: process.env.SHOT || require('path').join(require('os').tmpdir(), 'ruang-agen-mobile.png') });
 
   cek('tanpa galat JS selama seluruh alur', galatHalaman.length === 0, galatHalaman);
   await browser.close();
