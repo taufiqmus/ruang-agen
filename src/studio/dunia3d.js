@@ -24,6 +24,7 @@
     let W = null, lebar = 36, dalam = 26;
     const obj = {};      // id perangkat -> {g, led, baling, cahaya, label}
     const animasi = [];   // fungsi(t, S, st)
+    const WARNA_LABEL = { papan: 'rgba(29,78,216,0.92)', sensor: 'rgba(13,148,136,0.92)', aktuator: 'rgba(234,88,12,0.92)', modul: 'rgba(2,132,199,0.92)', daya: 'rgba(22,163,74,0.92)', jaringan: 'rgba(124,58,237,0.92)' };
     let pilihan = null, sorotan = new Map();
 
     /* ---------- kamera orbit ---------- */
@@ -46,12 +47,15 @@
     o.canvas.addEventListener('contextmenu', e => e.preventDefault());
 
     /* ---------- tekstur label ---------- */
-    function sprite(teks, warna, skala) {
-      const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
-      g.fillStyle = warna || 'rgba(20,24,40,0.82)'; g.beginPath(); if (g.roundRect) g.roundRect(0, 0, 256, 64, 14); else g.rect(0, 0, 256, 64); g.fill();
-      g.fillStyle = '#fff'; g.font = '600 28px Onest, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(teks).slice(0, 18), 128, 33);
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
-      s.scale.set(2.6 * (skala || 1), 0.65 * (skala || 1), 1); s.renderOrder = 10; return s;
+    /* layar = true: ukuran tetap di layar (label perangkat tetap terbaca saat kamera menjauh) */
+    function sprite(teks, warna, skala, layar) {
+      const t = String(teks).slice(0, 22), c = document.createElement('canvas'); c.width = 320; c.height = 64; const g = c.getContext('2d');
+      g.font = '600 30px Onest, sans-serif'; const w = Math.min(316, g.measureText(t).width + 28);
+      g.fillStyle = warna || 'rgba(20,24,40,0.82)'; g.beginPath(); if (g.roundRect) g.roundRect((320 - w) / 2, 4, w, 56, 14); else g.rect((320 - w) / 2, 4, w, 56); g.fill();
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, 160, 34);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true, sizeAttenuation: !layar }));
+      if (layar) s.scale.set(0.115 * (skala || 1), 0.023 * (skala || 1), 1); else s.scale.set(3.2 * (skala || 1), 0.64 * (skala || 1), 1);
+      s.renderOrder = 10; return s;
     }
 
     /* ---------- bentuk perangkat ---------- */
@@ -151,6 +155,8 @@
       }
       for (const p of W.perangkat) {
         const x = bentuk(p); x.g.position.set(p.x, 0, p.z); x.g.userData.id = p.id; grup.add(x.g); obj[p.id] = x;
+        // label nama: komponen kecil sulit dikenali tanpa label
+        x.label = sprite(p.nama, WARNA_LABEL[I.KATALOG[p.jenis].kategori] || 'rgba(20,24,40,0.85)', 1, true); x.label.position.y = ({ daya: 1.3, papan: 1.75, modul: 2.2, jaringan: 2.0, sensor: 2.65, aktuator: 3.1 })[I.KATALOG[p.jenis].kategori] || 2.25; x.g.add(x.label);   // tinggi berbeda per kategori supaya tidak bertumpuk
         if (I.KATALOG[p.jenis].kategori === 'jaringan') {
           const cincin = [];
           for (const rssi of [-60, -70, I.AMBANG_WIFI]) {
@@ -214,11 +220,14 @@
       const now = performance.now(), dt = Math.min(0.1, (now - t0) / 1000), t = now / 1000; t0 = now;
       if (!W) return;
       const terang = I.cahayaLuar(S) / 900, malam = 1 - terang;
-      hemi.intensity = 0.2 + 0.45 * terang; mentari.intensity = 0.08 + 0.62 * terang;
-      scene.background = new THREE.Color().setHSL(0.6, 0.45, 0.12 + 0.62 * terang);
+      // malam tetap terlihat: cahaya bulan kebiruan sebagai batas bawah
+      hemi.intensity = 0.62 + 0.18 * terang; mentari.intensity = 0.3 + 0.45 * terang;
+      hemi.color.setHSL(0.6, 0.35 * malam, 0.82 + 0.1 * terang); mentari.color.setHSL(0.6 - 0.48 * terang, 0.25, 0.85);
+      scene.background = new THREE.Color().setHSL(0.62, 0.42, 0.24 + 0.5 * terang);
       const j = I.jam(S); mentari.position.set(lebar / 2 + 30 * Math.cos((j - 6) / 12 * Math.PI), 10 + 30 * Math.max(0.1, Math.sin((j - 6) / 12 * Math.PI)), dalam / 2); mentari.target.position.set(lebar / 2, 0, dalam / 2);
       for (const p of W.perangkat) {
         const x = obj[p.id]; if (!x) continue; const al = S.alat[p.id], on = al && al.on;
+        if (x.label) { const m = o.tampilLabel ? o.tampilLabel() : 'semua'; x.label.visible = m === 'semua' || (m === 'pilih' && pilihan === p.id); }
         if (x.baling && on) x.baling.rotation.z += dt * (6 + 5 * al.level);
         if (x.bohlam) { x.bohlam.material.emissiveIntensity = on ? 1.6 : 0; if (x.cahaya) x.cahaya.intensity = on ? 1.2 + malam : 0; }
         if (x.air) x.air.material.opacity = on && S.tandon > 1 ? 0.55 + 0.2 * Math.sin(t * 12) : 0;

@@ -16,9 +16,11 @@
   const awal = param.get('awal');
   let W = I.periksaDunia(awal ? salin(I.PRESET[awal] || I.PRESET.rumah_kebun_kandang) : baca(K.dunia, salin(I.PRESET.rumah_kebun_kandang))).dunia;
   let H = GR.periksaGraf(param.get('graf') ? salin(GR.GRAF_PRESET[param.get('graf')] || GR.GRAF_PRESET.agen_rumah) : baca(K.graf, salin(GR.GRAF_PRESET.agen_rumah))).graf;
-  let S = I.buatSim(W, { mulai: +(param.get('jam') || 7) * 60 });
+  let S = I.buatSim(W, { mulai: +(param.get('jam') || 9) * 60 });
   let st = I.status(W, S);
   const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: (/^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:8000') + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
+  // pilihan dari menu penyiapan MULAI.bat (?otak=ollama&model=...), hanya bila mahasiswa belum memilih otak sendiri
+  if (['parser', 'ollama', 'lokal'].includes(param.get('otak')) && !baca(K.cfg, null)) { cfg.mode = param.get('otak'); if (param.get('model')) cfg.ollamaModel = param.get('model'); tulis(K.cfg, Object.assign({}, cfg, { otomatis: true })); }
   const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, laporanJadwal: 0 }, baca(K.stat, {}));
   const misiSelesai = new Set(baca(K.misi, []));
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
@@ -49,14 +51,36 @@
 
   /* ---------- 3D ---------- */
   const lemah = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
-  let tampilWifi = true;
-  const D3 = window.Dunia3D.buat({ canvas: $('#c3d'), kualitas: param.get('grafis') || (lemah ? 'ringan' : 'realistis'), tampilWifi: () => tampilWifi });
+  let tampilWifi = true, tampilLabel = ['semua', 'pilih', 'mati'].includes(baca('studio-label', 'semua')) ? baca('studio-label', 'semua') : 'semua';
+  const D3 = window.Dunia3D.buat({ canvas: $('#c3d'), kualitas: param.get('grafis') || (lemah ? 'ringan' : 'realistis'), tampilWifi: () => tampilWifi, tampilLabel: () => tampilLabel });
   function muat3D() { st = I.status(W, S); D3.muat(W, st); }
   muat3D(); D3.ukur(); D3.resetKamera();
   window.addEventListener('resize', () => D3.ukur());
   if (window.ResizeObserver) new ResizeObserver(() => D3.ukur()).observe($('#panggung'));
   $('#btnKamera').onclick = () => D3.resetKamera();
   $('#btnWifi').onclick = e => { tampilWifi = !tampilWifi; e.target.setAttribute('aria-pressed', tampilWifi); };
+  const NAMA_LABEL = { semua: 'Label: semua', pilih: 'Label: dipilih', mati: 'Label: mati' };
+  const tulisLabel = () => { $('#btnLabel').textContent = NAMA_LABEL[tampilLabel]; $('#btnLabel').setAttribute('aria-pressed', tampilLabel !== 'mati'); };
+  tulisLabel();
+  $('#btnLabel').onclick = () => { tampilLabel = tampilLabel === 'semua' ? 'pilih' : tampilLabel === 'pilih' ? 'mati' : 'semua'; tulis('studio-label', tampilLabel); tulisLabel(); };
+
+  /* ---------- palet dan panel kanan bisa diubah lebarnya dengan kursor ---------- */
+  const lebar = Object.assign({ kiri: 220, kanan: 380 }, baca('studio-lebar', {}));
+  function terapLebar() {
+    const t = $('.tengah'); t.style.setProperty('--kiri', lebar.kiri + 'px'); t.style.setProperty('--kanan', lebar.kanan + 'px');
+    $('#palet').classList.toggle('tutup', lebar.kiri < 40); $('.sisi').classList.toggle('tutup', lebar.kanan < 40);
+    tulis('studio-lebar', lebar); D3.ukur();
+  }
+  function pasangGeser(el, sisi, min, maks) {
+    let mulai = null;
+    el.addEventListener('pointerdown', e => { mulai = { x: e.clientX, w: lebar[sisi] }; el.classList.add('aktif'); el.setPointerCapture(e.pointerId); e.preventDefault(); });
+    el.addEventListener('pointermove', e => { if (!mulai) return; const d = (e.clientX - mulai.x) * (sisi === 'kiri' ? 1 : -1); lebar[sisi] = Math.max(0, Math.min(maks, mulai.w + d)); if (lebar[sisi] < min) lebar[sisi] = lebar[sisi] < min / 2 ? 0 : min; terapLebar(); });
+    el.addEventListener('pointerup', () => { mulai = null; el.classList.remove('aktif'); });
+    el.addEventListener('dblclick', () => { if (lebar[sisi] > 0) { lebar['simpan_' + sisi] = lebar[sisi]; lebar[sisi] = 0; } else lebar[sisi] = lebar['simpan_' + sisi] || (sisi === 'kiri' ? 220 : 380); terapLebar(); });
+    el.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { lebar[sisi] = Math.max(0, Math.min(maks, lebar[sisi] + ((e.key === 'ArrowRight') === (sisi === 'kiri') ? 20 : -20))); terapLebar(); e.preventDefault(); } });
+  }
+  pasangGeser($('#geserKiri'), 'kiri', 140, 460); pasangGeser($('#geserKanan'), 'kanan', 260, 720);
+  terapLebar();
 
   /* ---------- papan otak ---------- */
   const KV = window.Kanvas.buat({
@@ -79,14 +103,16 @@
     if (m === 'main') tab('chat');
   }
   $$('[data-mode]').forEach(b => { b.onclick = () => aturMode(b.dataset.mode); });
+  $('#petunjuk').classList.toggle('ciut', baca('studio-petunjuk-ciut', false));
+  $('#petunjuk').onclick = () => { const c = $('#petunjuk').classList.toggle('ciut'); tulis('studio-petunjuk-ciut', c); };
   $$('[data-cepat]').forEach(b => { b.onclick = () => { cepat = +b.dataset.cepat; $$('[data-cepat]').forEach(x => x.setAttribute('aria-pressed', x === b)); }; });
   $$('[data-cepat]').forEach(x => x.setAttribute('aria-pressed', +x.dataset.cepat === cepat));
   function renderPetunjuk() {
     const n = MS.nilai({ W, S, H, stat, selesai: misiSelesai }), m = n.find(x => !x.selesai);
     const isi = $('#petunjuk'); isi.replaceChildren();
-    if (!m) { isi.appendChild(mk('b', '', 'Semua misi selesai. ')); isi.appendChild(document.createTextNode('Rancang rumahmu sendiri dan uji agenmu di tab Kode.')); return; }
+    if (!m) { isi.appendChild(mk('b', '', 'Semua misi selesai. ')); isi.appendChild(mk('span', '', 'Rancang rumahmu sendiri dan uji agenmu di tab Kode.')); return; }
     const d = MS.MISI.find(x => x.id === m.id);
-    isi.appendChild(mk('b', '', d.judul + ': ')); isi.appendChild(document.createTextNode(d.petunjuk));
+    isi.appendChild(mk('b', '', d.judul + ': ')); isi.appendChild(mk('span', '', d.petunjuk)); isi.appendChild(mk('small', '', 'Klik untuk menciutkan'));
   }
 
   /* ---------- palet ---------- */

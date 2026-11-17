@@ -3326,6 +3326,8 @@ function bangunPromptTool(pesan, state, ekstra) {
   const cfg = Object.assign({ mode: 'parser', apiKey: '', models: 'openrouter/free', batasSesi: 30, ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:1.5b', lokalUrl: 'http://localhost:8000/v1', lokalModel: 'qwen2.5-1.5b', hemat: true, konteks: 0,
     router: 'aturan', embedModel: 'embeddinggemma', guardModel: '', ragMode: 'tfidf', rerank: false, kutip: false, ringkasRiwayat: false, ingatBertahan: false }, baca(KFG, {}));
   if (!['parser', 'kunci', 'ollama', 'lokal'].includes(cfg.mode)) cfg.mode = 'parser'; // mode lama yang sudah dihapus
+  // pilihan dari menu penyiapan MULAI.bat (?otak=ollama&model=...), hanya bila pemain belum memilih otak sendiri
+  { const q = new URLSearchParams(location.search); if (q.get('otak') === 'ollama' && !baca(KFG, null)) { cfg.mode = 'ollama'; if (q.get('model')) cfg.ollamaModel = q.get('model'); cfg.otomatis = true; tulis(KFG, cfg); } }
   const simpanCfg = () => tulis(KFG, cfg);
   const lokalan = () => cfg.mode === 'lokal' || cfg.mode === 'ollama';
   const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), lokalUrl: String(cfg.lokalUrl).trim(), lokalModel: String(cfg.lokalModel).trim(),

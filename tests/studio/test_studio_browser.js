@@ -244,7 +244,24 @@ const srvTg = http.createServer((q, r) => {
   await page.click('[data-tab="chat"]'); await page.click('#chatlog .kembalikan >> nth=-1');
   cek('Kembalikan memulihkan papan sebelumnya', JSON.stringify((await ST()).H.blok.map(b => b.id)) === JSON.stringify(JSON.parse(sebelumH).blok.map(b => b.id)));
 
-  /* 11. layar HP */
+  /* 11. sidebar bisa diubah lebarnya dengan kursor, label perangkat */
+  const lebarAwal = (await (await page.$('#palet')).boundingBox()).width;
+  const gk = await (await page.$('#geserKiri')).boundingBox();
+  await page.mouse.move(gk.x + 3, gk.y + 200); await page.mouse.down(); await page.mouse.move(gk.x + 103, gk.y + 200, { steps: 6 }); await page.mouse.up();
+  const lebarBaru = (await (await page.$('#palet')).boundingBox()).width;
+  cek('palet kiri bisa dilebarkan dengan menyeret pembatas', lebarBaru > lebarAwal + 60, [lebarAwal, lebarBaru]);
+  const gn = await (await page.$('#geserKanan')).boundingBox();
+  await page.mouse.dblclick(gn.x + 3, gn.y + 200);
+  cek('klik dua kali pembatas kanan menyembunyikan panel kanan', (await (await page.$('.sisi')).boundingBox()).width < 10);
+  await page.mouse.dblclick(gn.x + 3, gn.y + 200); await page.waitForTimeout(100);
+  const gn2 = await (await page.$('#geserKanan')).boundingBox(); await page.mouse.dblclick(gn2.x + 3, gn2.y + 200);
+  cek('klik dua kali lagi memunculkan panel kanan', (await (await page.$('.sisi')).boundingBox()).width > 250);
+  cek('semua tab panel kanan terlihat tanpa digeser', await page.evaluate(() => [...document.querySelectorAll('#tabs button')].every(b => { const r = b.getBoundingClientRect(), p = document.querySelector('#tabs').getBoundingClientRect(); return r.right <= p.right + 1 && r.width > 0; })));
+  await page.click('[data-mode="bangun"]');
+  await page.click('#btnLabel'); cek('tombol label berganti: semua, dipilih, mati', /dipilih/.test(await page.textContent('#btnLabel')));
+  await page.click('#btnLabel'); await page.click('#btnLabel'); cek('label kembali ke semua', /semua/.test(await page.textContent('#btnLabel')));
+
+  /* 12. layar HP */
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400);
   const lebar = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
   cek('layar 390 px: tanpa gulir ke samping', lebar.sw <= lebar.iw + 1, lebar);

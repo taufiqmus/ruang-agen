@@ -97,6 +97,7 @@ def main() -> None:
     a.add_argument("--tanpa-model", action="store_true", help="hanya menyajikan game dengan otak parser")
     a.add_argument("--buka", action="store_true", help="buka browser otomatis")
     a.add_argument("--studio", action="store_true", help="buka Studio Rumah Agen, bukan game Ruang Agen")
+    a.add_argument("--kueri", default="", help="parameter alamat untuk halaman, misalnya otak=ollama&model=qwen2.5:7b (dari menu penyiapan)")
     arg = a.parse_args()
 
     try:
@@ -115,7 +116,7 @@ def main() -> None:
         print(f"      Model: {os.path.basename(berkas)}", flush=True)
 
     port = port_kosong(arg.port)
-    alamat = f"http://127.0.0.1:{port}/" + ("studio.html" if arg.studio else "")
+    alamat = f"http://127.0.0.1:{port}/" + ("studio.html" if arg.studio else "") + ("?" + arg.kueri if arg.kueri else "")
     print("[4/4] Menjalankan server", flush=True)
     app = buat_app(berkas, arg.n_ctx, arg.threads)
     print("\n" + "=" * 58)

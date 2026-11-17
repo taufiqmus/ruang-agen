@@ -13,9 +13,26 @@ Klik dua kali `index.html` dan buka dengan Chrome atau Edge. Agen memakai **pars
 ### B. Dengan AI di laptop sendiri (disarankan)
 
 1. Klik dua kali **`MULAI.bat`** di folder game. Di Mac atau Linux, buka terminal di folder game lalu jalankan `./mulai.sh`.
-2. Tunggu. Pertama kali butuh internet dan beberapa menit (mengunduh sekitar 1,2 GB). Kemajuan tampil sebagai langkah `[1/4]` sampai `[4/4]`.
-3. Browser terbuka sendiri. Agen otomatis memakai model AI di laptopmu. Tidak ada yang perlu diatur.
-4. **Biarkan jendela hitam tetap terbuka selama bermain.** Tutup jendela itu untuk berhenti.
+2. Jawab menu penyiapan (lihat di bawah).
+3. Tunggu. Pertama kali butuh internet dan beberapa menit. Kemajuan tampil sebagai langkah `[1/4]` sampai `[4/4]`.
+4. Browser terbuka sendiri dan langsung memakai otak yang kamu pilih.
+5. **Biarkan jendela hitam tetap terbuka selama bermain.** Tutup jendela itu untuk berhenti.
+
+Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
+1. Menu menampilkan isi laptopmu: jumlah inti CPU, RAM, kartu grafis NVIDIA (bila ada), dan apakah Ollama sudah terpasang.
+2. Pilih otak AI. Menu memberi saran sesuai laptopmu, tetapi pilihannya bebas:
+
+   | Pilihan | Unduhan | Cocok untuk |
+   |---|---|---|
+   | 1. Tanpa AI (parser) | Tidak ada model | Laptop apa pun |
+   | 2. Model lokal kecil 0,5B | Sekitar 0,5 GB | RAM 4 GB, jawaban sederhana |
+   | 3. Model lokal sedang 1,5B | Sekitar 1 GB | RAM 8 GB ke atas, tanpa kartu grafis |
+   | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
+
+3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
+4. Pilih aplikasi yang dibuka: **Studio Rumah Agen** atau **Ruang Agen**.
+
+Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
 
 Berikutnya cukup klik dua kali `MULAI.bat` lagi. Game siap dalam beberapa detik tanpa mengunduh ulang.
 

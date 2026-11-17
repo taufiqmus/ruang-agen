@@ -1,6 +1,7 @@
 # hasil MULAI.bat
 .venv/
 model/
+.ruangagen-pilihan.json
 # alat uji
 node_modules/
 # lain-lain

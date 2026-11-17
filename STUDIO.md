@@ -7,9 +7,25 @@ Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor
 | Cara | Langkah | Bisa memakai |
 |---|---|---|
 | Paling cepat | Klik dua kali `studio.html` | Parser, OpenRouter, Telegram |
-| Dengan AI di laptop | Jalankan `MULAI.bat --studio` (atau `MULAI.bat --tanpa-model --studio` bila memakai Ollama). Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama dan model lokal |
+| Dengan AI di laptop | Klik dua kali `MULAI.bat`, lalu di menu penyiapan pilih otak AI, model, dan **Studio Rumah Agen**. Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama dan model lokal |
 
 Ollama hanya mau dipanggil dari alamat `http://127.0.0.1` atau `http://localhost`, jadi untuk Ollama buka studio lewat `MULAI.bat`.
+
+Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
+1. Menu menampilkan isi laptopmu: jumlah inti CPU, RAM, kartu grafis NVIDIA (bila ada), dan apakah Ollama sudah terpasang.
+2. Pilih otak AI. Menu memberi saran sesuai laptopmu, tetapi pilihannya bebas:
+
+   | Pilihan | Unduhan | Cocok untuk |
+   |---|---|---|
+   | 1. Tanpa AI (parser) | Tidak ada model | Laptop apa pun |
+   | 2. Model lokal kecil 0,5B | Sekitar 0,5 GB | RAM 4 GB, jawaban sederhana |
+   | 3. Model lokal sedang 1,5B | Sekitar 1 GB | RAM 8 GB ke atas, tanpa kartu grafis |
+   | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
+
+3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
+4. Pilih aplikasi yang dibuka: **Studio Rumah Agen** atau **Ruang Agen**.
+
+Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
 
 Saat pertama dibuka, studio memeriksa laptopmu (jumlah inti CPU, RAM, kartu grafis), mencari Ollama dan server model lokal, lalu menyarankan otak yang cocok. Pilihannya tetap bebas:
 
@@ -33,6 +49,12 @@ Kamu juga memilih titik awal: **Lahan kosong** (ikuti misi dari ESP pertama) ata
 Jam simulasi tampil di atas. Tombol **II, 1x, 10x, 60x** menjeda atau mempercepat waktu (60x berarti satu jam simulasi per menit). Siang dan malam, cuaca, tanah yang mengering, pakan yang berkurang, dan suhu kandang semuanya bergerak mengikuti jam ini.
 
 ## 3. Mode Bangun: merakit rumah
+
+Tampilan bisa diatur:
+- **Lebar palet kiri dan panel kanan:** seret garis pembatasnya. Klik dua kali garis pembatas untuk menyembunyikan atau memunculkan panelnya.
+- **Label perangkat:** tombol **Label** berganti antara semua, hanya yang dipilih, dan mati.
+- **Kartu petunjuk misi:** klik kartunya untuk menciutkan.
+- **Malam:** dunia tetap terlihat dengan cahaya bulan, dan lampu yang menyala tampak lebih terang.
 
 - **Menaruh:** seret item dari palet kiri ke lahan. Bisa juga klik item lalu klik lahan (cocok untuk layar sentuh).
 - **Memilih:** klik perangkat untuk membuka **Inspektur**. Klik dua kali lantai sebuah area untuk mengubah nama, posisi, atau ukurannya.

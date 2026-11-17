@@ -189,7 +189,7 @@
   function buatSim(W, opsi) {
     opsi = opsi || {};
     const S = {
-      menit: angka(opsi.mulai, 0, 1439, 7 * 60), hari: 1, cuaca: 'cerah', listrik: true, rnd: acak(opsi.seed || 7),
+      menit: angka(opsi.mulai, 0, 1439, 9 * 60), hari: 1, cuaca: 'cerah', listrik: true, rnd: acak(opsi.seed || 7),
       area: {}, alat: {}, baterai: {}, tandon: 70, log: [], sejarah: {}, kekacauan: { wifi: false, sensorRusak: null, listrik: false }
     };
     for (const a of W.area) {

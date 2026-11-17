@@ -1,0 +1,3 @@
+# Server game tanpa model lokal (otak parser, Ollama, atau OpenRouter), lihat server_lokal.py
+fastapi
+uvicorn
