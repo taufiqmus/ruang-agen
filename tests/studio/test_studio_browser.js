@@ -43,7 +43,7 @@ const srvTg = http.createServer((q, r) => {
   });
   const page = await ctx.newPage();
   const galat = []; page.on('pageerror', e => galat.push(String(e))); page.on('console', m => { if (m.type() === 'error' && !/Failed to load|ERR_/.test(m.text())) galat.push(m.text()); });
-  const url = require('url').pathToFileURL(ALAT.AKAR + '/studio.html').href + '?grafis=ringan&jam=13&tgbase=http://127.0.0.1:' + srvTg.address().port;
+  const url = require('url').pathToFileURL(ALAT.AKAR + '/studio.html').href + '?grafis=ringan&jam=13&tanpaTutorial=1&tgbase=http://127.0.0.1:' + srvTg.address().port;
   await page.goto(url);
   const ST = () => page.evaluate(() => ({ W: window.__studio.W, H: window.__studio.H, stat: window.__studio.stat, alat: window.__studio.S.alat }));
   const kirim = async t => { const n = await page.$$eval('#chatlog li', e => e.length); await page.click('[data-tab="chat"]'); await page.fill('#inp', t); await page.click('#kirim'); await page.waitForFunction(n => document.querySelectorAll('#chatlog li').length > n + 1 && !document.querySelector('#chatlog .ngetik') && !document.querySelector('#kirim').disabled, n, { timeout: 20000 }); await page.waitForTimeout(150); return page.$eval('#chatlog li:last-child', e => e.textContent); };

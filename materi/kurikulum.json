@@ -1,0 +1,60 @@
+{
+  "judul": "Belajar Agentic AI dengan Ruang Agen dan Studio Rumah Agen",
+  "catatan": "Sumber tunggal untuk tutorial interaktif, slide, dan naskah video. Ubah di sini, lalu bangun ulang.",
+  "pertemuan": [
+    {
+      "no": 1,
+      "judul": "Apa itu agen AI?",
+      "aplikasi": "Ruang Agen",
+      "misi": [],
+      "konsep": ["agen = menerima pesan, berpikir, bertindak", "parser aturan dibanding model AI", "jejak langkah agen", "pipeline: masukan, memori, router, RAG, otak, guard, orkestrator, spesialis, keluaran"],
+      "coba": ["nyalakan lampu dan kipas", "gerah nih", "berapa suhu nyaman?", "putar lengan robot 200%"],
+      "tujuan": "Memahami bahwa agen bukan satu otak, tetapi rangkaian komponen yang bisa diamati di tab Jejak."
+    },
+    {
+      "no": 2,
+      "judul": "Merakit rumah pintar",
+      "aplikasi": "Studio Rumah Agen",
+      "misi": [1, 2, 3],
+      "konsep": ["ESP32 butuh daya dan Wi-Fi", "sensor digital dan analog", "beban besar wajib lewat relay", "sinyal Wi-Fi melemah oleh jarak dan dinding"],
+      "label": ["Bangun", "Sambung otomatis", "Inspektur", "Dashboard", "Wi-Fi", "Label"],
+      "tujuan": "Merakit ESP, sensor, relay, dan aktuator yang tersambung benar di dunia simulasi."
+    },
+    {
+      "no": 3,
+      "judul": "Otak pertama: chatbot dan alat",
+      "aplikasi": "Studio Rumah Agen",
+      "misi": [4, 5],
+      "konsep": ["pemicu, agen, keluaran", "kabel bertipe", "tool: AI memilih, kode menjalankan", "router hemat: parser dulu, AI bila perlu"],
+      "label": ["Otak", "Chat", "Agen", "Balas", "Alat Sensor", "Alat Aktuator", "Jejak"],
+      "tujuan": "Merakit chatbot, lalu memberinya alat sehingga bisa membaca sensor dan menyalakan perangkat."
+    },
+    {
+      "no": 4,
+      "judul": "Aturan atau AI? Dan agen yang membaca",
+      "aplikasi": "Studio Rumah Agen",
+      "misi": [6, 7],
+      "konsep": ["aturan JIKA-MAKA tanpa AI", "kapan AI memang dibutuhkan", "RAG: mencari di rak pengetahuan sebelum menjawab", "agen jujur saat tidak tahu"],
+      "label": ["Aturan JIKA-MAKA", "Pemicu Sensor", "Rak Pengetahuan"],
+      "tujuan": "Membandingkan otomasi berbasis aturan dengan agen AI, dan memberi agen pengetahuan dari rak."
+    },
+    {
+      "no": 5,
+      "judul": "Keamanan agen",
+      "aplikasi": "Studio Rumah Agen",
+      "misi": [8, 11],
+      "konsep": ["Guard Masukan menangkap upaya menipu agen", "Guard Aksi menjaga batas fisik di kode", "persetujuan manusia untuk aksi berisiko", "uji kekacauan: Wi-Fi putus, listrik padam, sensor rusak"],
+      "label": ["Guard Masukan", "Guard Aksi", "Lab", "Setujui"],
+      "tujuan": "Membuktikan bahwa AI bisa tertipu tetapi pengaman di kode tidak, dan agen tetap jujur saat sistem gagal."
+    },
+    {
+      "no": 6,
+      "judul": "Tim agen, Telegram, dan laporan otomatis",
+      "aplikasi": "Studio Rumah Agen",
+      "misi": [9, 10, 12],
+      "konsep": ["orkestrator membagi tugas ke agen spesialis", "lingkup wilayah alat", "bot Telegram sungguhan dan daftar izin", "agen yang bekerja sendiri lewat Jadwal"],
+      "label": ["Orkestrator", "Telegram", "Hubungkan dan dengarkan", "Izinkan", "Jadwal"],
+      "tujuan": "Merakit tim agen untuk rumah, kebun, dan kandang, lalu menyambungkannya ke HP lewat Telegram."
+    }
+  ]
+}

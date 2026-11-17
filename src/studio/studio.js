@@ -177,8 +177,10 @@
   }
   function syncSim() { for (const a of W.area) if (!S.area[a.id]) { const T = I.AREA[a.tipe]; S.area[a.id] = { suhu: T.luar ? 29 : 27, lembap: 70, cahaya: 0, tanah: T.tanaman ? 55 : null, pakan: T.hewan ? 80 : null, gas: a.tipe === 'dapur' ? 20 : 5, gerak: false, pintu: false, tanaman: T.tanaman ? 90 : null, ayam: T.hewan ? 90 : null }; } for (const p of W.perangkat) if (I.KATALOG[p.jenis].kategori === 'aktuator' && !S.alat[p.id]) S.alat[p.id] = { on: false, level: 2, sejak: 0 }; }
   const panggung = $('#panggung');
-  panggung.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
-  panggung.addEventListener('drop', e => { e.preventDefault(); const d = e.dataTransfer.getData('text/plain'); if (d) taruh(d, e.clientX, e.clientY); });
+  // seret-lepas ditangani di tingkat halaman: titik jatuh di dalam panggung tetap diterima walau tertutup gelembung tutorial
+  const diPanggung = e => { const r = panggung.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; };
+  window.addEventListener('dragover', e => { if (diPanggung(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+  window.addEventListener('drop', e => { if (!diPanggung(e)) return; e.preventDefault(); const d = e.dataTransfer.getData('text/plain'); if (d) taruh(d, e.clientX, e.clientY); });
 
   /* ---------- klik dan seret di dunia 3D ---------- */
   let geser = null;
@@ -641,6 +643,7 @@
     const pernah = baca(K.wizard, false);
     let mulai = pernah ? 'tetap' : 'lengkap';
     (pernah ? [['tetap', 'Pertahankan rumah dan papanku', 'Hanya ganti model, rakitanmu tidak berubah.']] : []).concat([['kosong', 'Lahan kosong', 'Ikuti misi dari ESP pertama. Paling bagus untuk belajar.'], ['lengkap', 'Rumah, kebun, kandang', 'Rumah siap pakai untuk dijelajahi dan diubah.']]).forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === mulai); b.append(mk('b', '', j), mk('small', '', d)); b.onclick = () => { mulai = v; grid2.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid2.appendChild(b); });
+    const lt = mk('label', 'cek'); const ct = mk('input'); ct.type = 'checkbox'; ct.id = 'wizardTutorial'; ct.checked = !pernah; lt.append(ct, document.createTextNode(' Ikuti tutorial setelah ini')); P.appendChild(lt);
     const ok = mk('button', 'btn pri', 'Mulai'); ok.type = 'button'; ok.id = 'wizardMulai'; P.appendChild(ok);
     ok.onclick = () => {
       cfg.mode = dipilih; if (dipilih === 'ollama' && saranM) cfg.ollamaModel = saranM.nama; simpanCfg();
@@ -650,10 +653,43 @@
         else { W = I.periksaDunia(salin(I.PRESET.rumah_kebun_kandang)).dunia; H = GR.periksaGraf(salin(GR.GRAF_PRESET.agen_rumah)).graf; }
         S = I.buatSim(W); simpanDunia(); simpanGraf(); muat3D(); D3.resetKamera(); KV.muat(H); renderPetunjuk();
       }
-      tulis(K.wizard, true); M.hidden = true; if (dipilih !== 'parser') tab('model');
+      tulis(K.wizard, true); M.hidden = true; if (dipilih !== 'parser' && !ct.checked) tab('model');
+      if (ct.checked && !param.get('tanpaTutorial')) mulaiBab('kenalan');
     };
   }
   $('#btnWizard').onclick = wizard;
+
+  /* ---------- tutorial interaktif ---------- */
+  let babAktif = null;
+  const selesaiBab = new Set(baca('studio-tutorial-selesai', []));
+  const TUR = window.Tutorial.buat({
+    kunci: 'studio-tutorial', judul: 'Tutorial', babAktif: () => babAktif,
+    onTutup: ok => {
+      if (ok && babAktif) { selesaiBab.add(babAktif); tulis('studio-tutorial-selesai', [...selesaiBab]); }
+      const daftar = window.TutorialStudio.bab(), i = daftar.findIndex(b => b.id === babAktif), berikut = daftar[i + 1];
+      if (ok && berikut) { tab('chat'); const li = chat('sis', 'Bab selesai. '); const b = mk('button', 'btn sm pri', 'Lanjut: ' + berikut.judul); b.type = 'button'; b.className = 'btn sm pri babBerikut'; b.onclick = () => mulaiBab(berikut.id); li.appendChild(b); }
+      babAktif = null;
+    }
+  });
+  function mulaiBab(id, dari) {
+    const b = window.TutorialStudio.bab().find(x => x.id === id); if (!b) return;
+    $('#tutorialMenu').hidden = true; babAktif = id; TUR.mulai(b.langkah, dari || 0);
+  }
+  $('#btnTutorial').onclick = () => {
+    const M = $('#tutorialMenu'), P = $('#tutorialIsi'); P.replaceChildren(); M.hidden = false;
+    P.appendChild(mk('h2', '', 'Tutorial'));
+    P.appendChild(mk('p', 'note', 'Satu bab untuk setiap pertemuan. Setiap langkah praktik selesai saat kamu benar-benar melakukannya. Tutup kapan saja dengan Esc.'));
+    const g = mk('div', 'pilihan'); P.appendChild(g);
+    window.TutorialStudio.bab().forEach(b => { const t = mk('button'); t.type = 'button'; t.dataset.bab = b.id; t.append(mk('b', '', (selesaiBab.has(b.id) ? 'Selesai: ' : '') + b.judul), mk('small', '', b.langkah.length + ' langkah')); t.onclick = () => mulaiBab(b.id); g.appendChild(t); });
+    const tutup = mk('button', 'btn', 'Tutup'); tutup.type = 'button'; tutup.onclick = () => { M.hidden = true; }; P.appendChild(tutup);
+  };
+  { const sim = TUR.simpanan(); if (sim && sim.bab && !param.get('tanpaTutorial')) { const li = chat('sis', 'Tutorial sebelumnya belum selesai. '); const b = mk('button', 'btn sm', 'Lanjutkan tutorial'); b.type = 'button'; b.onclick = () => mulaiBab(sim.bab, sim.i); li.appendChild(b); } }
+  function muatPreset(dunia, graf) {
+    cadangkan(dunia && graf ? 'Rumah dan papan otak' : dunia ? 'Rumah' : 'Papan otak');
+    if (dunia) { W = I.periksaDunia(salin(I.PRESET[dunia])).dunia; S = I.buatSim(W); simpanDunia(); muat3D(); D3.resetKamera(); }
+    if (graf) { H = GR.periksaGraf(salin(GR.GRAF_PRESET[graf])).graf; KV.muat(H); simpanGraf(); renderSaran(); }
+    renderPetunjuk(); renderInspektur();
+  }
 
   /* ---------- proyek: preset, ekspor, impor ---------- */
   $('#btnProyek').onclick = () => {
@@ -677,5 +713,5 @@
   chat('sis', 'Selamat datang. Mode Bangun: rakit rumah. Mode Otak: rakit papan otak agen. Mode Main: jalankan simulasi dan mengobrol dengan agenmu.');
   if (!baca(K.wizard, false) && !param.get('tanpaWizard')) wizard();
   muatOllama();
-  window.__studio = { get W() { return W; }, get H() { return H; }, get S() { return S; }, stat, data, jejakData, taruh, aturMode, tab, KV, D3, jalankanGraf, get klien() { return klien; } };
+  window.__studio = { muatPreset, mulaiBab, TUR, get W() { return W; }, get H() { return H; }, get S() { return S; }, stat, data, jejakData, taruh, aturMode, tab, KV, D3, jalankanGraf, get klien() { return klien; } };
 })();

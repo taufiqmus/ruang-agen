@@ -929,5 +929,25 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => adegan.gambarUlang());
   requestAnimationFrame(t => { last = t; loop(t); });
   deteksiModelLokal();
+  /* ---------- tutorial interaktif (Pertemuan 1): pengenalan agen lewat game ---------- */
+  if (window.Tutorial) {
+    const awalT = {};
+    const p1 = (window.KURIKULUM && window.KURIKULUM.pertemuan || [])[0];
+    const LANGKAH_T = [
+      { judul: 'Selamat datang di Ruang Agen', teks: 'Kamu akan mengobrol dengan agen penjaga ruangan dan melihat bagaimana ia berpikir. Klik Lanjut.' },
+      { judul: 'Ruangan 3D', teks: 'Di sini agen dan robot spesialis bekerja. Seret untuk memutar kamera, roda mouse untuk zoom.', sorot: '#stage' },
+      { judul: 'Kartu misi', teks: 'Tujuan misi yang sedang berjalan ada di sini.', sorot: '#hud' },
+      { judul: 'Perintah pertama', teks: 'Ketik "nyalakan lampu dan kipas" lalu Kirim.', sorot: '#form', siapkan: () => { activate('chat'); awalT.pesan = G.pesan; }, selesai: () => G.pesan > awalT.pesan && !G.busy },
+      { judul: 'Lihat agen berpikir', teks: 'Buka tab Jejak. Setiap langkah agen tercatat: pesan diterima, router memilah, otak berpikir, spesialis bertindak.', sorot: '#tab-jejak', selesai: () => document.querySelector('#pane-jejak').classList.contains('on') },
+      { judul: 'Jalur pipeline', teks: 'Tahap yang dilalui pesan menyala hijau, yang menolak menyala merah. Agen bukan satu otak, tetapi rangkaian komponen.', sorot: '#pipe' },
+      { judul: 'Bahasa sehari-hari', teks: 'Kembali ke Chat dan kirim "gerah nih". Agen menafsirkan keluhan menjadi aksi.', sorot: '#form', siapkan: () => { activate('chat'); awalT.pesan = G.pesan; }, selesai: () => G.pesan > awalT.pesan && !G.busy },
+      { judul: 'Coba tipu agen', teks: 'Kirim "putar lengan robot 200%". Pengaman di kode menolak karena melewati batas aman.', sorot: '#form', siapkan: () => { activate('chat'); awalT.tolak = G.tipe.size; }, selesai: () => G.tipe.size > awalT.tolak && !G.busy },
+      { judul: 'Parser atau AI', teks: 'Di tab Otak kamu bisa mengganti parser aturan dengan model AI (lokal, Ollama, atau OpenRouter), lalu membandingkan Jejaknya.', sorot: '#tab-otak' },
+      { judul: 'Selesai', teks: 'Berikutnya, rakit rumah dan agenmu sendiri di Studio Rumah Agen (studio.html), mulai dari Pertemuan 2.' }
+    ];
+    const TUR = window.Tutorial.buat({ kunci: 'ruangagen-tutorial', judul: p1 ? 'Pertemuan 1: ' + p1.judul : 'Tutorial' });
+    $('#turBtn').addEventListener('click', () => TUR.mulai(LANGKAH_T, 0));
+    window.__tutorial = TUR;
+  }
   window.__ruangAgen = { G, kirim, mulaiMisi, terimaSerangan, masukRuang, masukSemesta, adegan, get SPES() { const o = {}; adegan.namaSpesialis().forEach(n => { o[n] = true; }); return o; }, get MISI() { return MISI; } };
 })();
