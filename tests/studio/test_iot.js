@@ -122,5 +122,18 @@ cek('sambung otomatis aktuator besar memilih relay kosong', (() => { const W7 = 
   cek('sensor ke router ditolak', !I.sambungKe(Wx, 'soil_kebun', 'router').ok);
 }
 
+/* penempatan area */
+{
+  const Wx = dunia('rumah_kebun_kandang');
+  const kandang = Wx.area.find(a => a.id === 'kandang');
+  cek('area di tempat asal tidak bentrok', !I.areaBentrok(Wx, kandang));
+  cek('area menimpa area lain: bentrok', /menimpa Kebun/.test((I.areaBentrok(Wx, { ...kandang, x: 10, z: 13 }) || {}).alasan));
+  cek('area bersentuhan tepi: boleh', !I.areaBentrok(Wx, { id: 'baru', x: 9, z: 8, w: 7, d: 4 }));
+  cek('area keluar lahan: bentrok', /keluar/.test((I.areaBentrok(Wx, { ...kandang, x: 35 }) || {}).alasan));
+  const t = I.tempatBebas(Wx, { id: 'baru', w: 6, d: 5 }, 10, 15);
+  cek('tempatBebas: titik terdekat yang tidak bentrok', t && !I.areaBentrok(Wx, { id: 'baru', x: t.x, z: t.z, w: 6, d: 5 }), t);
+  cek('tempatBebas: null bila lahan penuh', I.tempatBebas({ lebar: 10, dalam: 10, area: [{ id: 'a', nama: 'A', x: 0, z: 0, w: 10, d: 10 }] }, { id: 'b', w: 3, d: 3 }, 0, 0) === null);
+}
+
 console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');
 process.exit(gagal ? 1 : 0);

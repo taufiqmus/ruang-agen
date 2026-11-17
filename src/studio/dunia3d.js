@@ -217,7 +217,8 @@
     }
 
     /* ---------- membangun adegan dari data dunia ---------- */
-    function bersihkan() { while (grup.children.length) { const c = grup.children.pop(); c.traverse(n => { if (n.geometry) n.geometry.dispose(); }); } for (const k of Object.keys(obj)) delete obj[k]; animasi.length = 0; }
+    const grupArea = {};
+    function bersihkan() { for (const k of Object.keys(grupArea)) delete grupArea[k]; while (grup.children.length) { const c = grup.children.pop(); c.traverse(n => { if (n.geometry) n.geometry.dispose(); }); } for (const k of Object.keys(obj)) delete obj[k]; animasi.length = 0; }
     function muat(dunia, st) {
       W = dunia; lebar = W.lebar; dalam = W.dalam; bersihkan();
       const tanah = new THREE.Mesh(new THREE.PlaneGeometry(lebar, dalam), M(0x5f7d47)); tanah.rotation.x = -Math.PI / 2; tanah.position.set(lebar / 2, 0, dalam / 2); tanah.receiveShadow = !ringan; tanah.userData.lantai = true; grup.add(tanah);
@@ -225,21 +226,22 @@
       const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(tg, 3));
       const grid = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ color: 0x4f6b3a, transparent: true, opacity: 0.35 })); grup.add(grid);
       for (const a of W.area) {
+        const ga = new THREE.Group(); grup.add(ga); grupArea[a.id] = ga;
         const T = I.AREA[a.tipe];
-        const lantai = new THREE.Mesh(new THREE.PlaneGeometry(a.w, a.d), M(new THREE.Color(T.warna).multiplyScalar(T.dinding ? 0.86 : 1))); lantai.rotation.x = -Math.PI / 2; lantai.position.set(a.x + a.w / 2, 0.02, a.z + a.d / 2); lantai.receiveShadow = !ringan; grup.add(lantai);
+        const lantai = new THREE.Mesh(new THREE.PlaneGeometry(a.w, a.d), M(new THREE.Color(T.warna).multiplyScalar(T.dinding ? 0.86 : 1))); lantai.rotation.x = -Math.PI / 2; lantai.position.set(a.x + a.w / 2, 0.02, a.z + a.d / 2); lantai.receiveShadow = !ringan; lantai.userData.area = a.id; ga.add(lantai);
         if (T.dinding) {
           const mat = M(0xece6dc, { emissive: 0x2a2620 }), t = 0.9;
-          for (const [w, d, x, z] of [[a.w, 0.15, a.x + a.w / 2, a.z], [a.w, 0.15, a.x + a.w / 2, a.z + a.d], [0.15, a.d, a.x, a.z + a.d / 2], [0.15, a.d, a.x + a.w, a.z + a.d / 2]]) { const k = kotak(w, t, d, mat); k.position.set(x, t / 2, z); grup.add(k); }
+          for (const [w, d, x, z] of [[a.w, 0.15, a.x + a.w / 2, a.z], [a.w, 0.15, a.x + a.w / 2, a.z + a.d], [0.15, a.d, a.x, a.z + a.d / 2], [0.15, a.d, a.x + a.w, a.z + a.d / 2]]) { const k = kotak(w, t, d, mat); k.position.set(x, t / 2, z); ga.add(k); }
         } else {
           const mat = M(0x8b6a43);
-          for (let i = 0; i <= a.w; i += 1.5) for (const z of [a.z, a.z + a.d]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(a.x + i, 0.4, z); grup.add(t); }
-          for (let i = 0; i <= a.d; i += 1.5) for (const x of [a.x, a.x + a.w]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(x, 0.4, a.z + i); grup.add(t); }
+          for (let i = 0; i <= a.w; i += 1.5) for (const z of [a.z, a.z + a.d]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(a.x + i, 0.4, z); ga.add(t); }
+          for (let i = 0; i <= a.d; i += 1.5) for (const x of [a.x, a.x + a.w]) { const t = silinder(0.05, 0.05, 0.8, mat); t.position.set(x, 0.4, a.z + i); ga.add(t); }
         }
-        const lb = tulisanLantai(a.nama, Math.min(a.w - 0.6, 3.6)); lb.position.set(a.x + 0.3 + Math.min(a.w - 0.6, 3.6) / 2, 0.035, a.z + a.d - 0.45); grup.add(lb);
+        const lb = tulisanLantai(a.nama, Math.min(a.w - 0.6, 3.6)); lb.position.set(a.x + 0.3 + Math.min(a.w - 0.6, 3.6) / 2, 0.035, a.z + a.d - 0.45); ga.add(lb);
         if (T.tanaman) {
           const tan = [];
           for (let i = 0.8; i < a.w - 0.5; i += ringan ? 1.6 : 1.1) for (let j = 1; j < a.d - 0.5; j += ringan ? 1.8 : 1.3) {
-            const t = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3, 0), M(0x22a34a)); t.scale.set(1, 0.7, 1); t.rotation.y = i * 1.7 + j; t.position.set(a.x + i, 0.2, a.z + j); grup.add(t); tan.push(t);
+            const t = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3, 0), M(0x22a34a)); t.scale.set(1, 0.7, 1); t.rotation.y = i * 1.7 + j; t.position.set(a.x + i, 0.2, a.z + j); ga.add(t); tan.push(t);
           }
           animasi.push((t, S) => { const A = S.area[a.id]; if (!A) return; const sehat = A.tanaman / 100, c = new THREE.Color().setHSL(0.08 + 0.25 * sehat, 0.65, 0.32 + 0.1 * (1 - sehat)); tan.forEach((m, i) => { m.material.color.copy(c); m.scale.y = 0.6 + 0.6 * sehat + Math.sin(t * 1.5 + i) * 0.02; }); lantai.material.color.setHSL(0.09, 0.35, 0.55 - 0.25 * (A.tanah || 0) / 100); });
         }
@@ -249,7 +251,7 @@
             const g = new THREE.Group(); const badan = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), M(0xfaf5e9)); badan.scale.set(1.2, 1, 1); badan.position.y = 0.3; g.add(badan);
             const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), M(0xfaf5e9)); kepala.position.set(0.28, 0.5, 0); g.add(kepala);
             const jengger = kotak(0.08, 0.1, 0.04, M(0xdc2626)); jengger.position.set(0.3, 0.64, 0); g.add(jengger);
-            g.position.set(a.x + 1 + Math.random() * (a.w - 2), 0, a.z + 1 + Math.random() * (a.d - 2)); grup.add(g);
+            g.position.set(a.x + 1 + Math.random() * (a.w - 2), 0, a.z + 1 + Math.random() * (a.d - 2)); ga.add(g);
             ayam.push({ g, tujuan: g.position.clone(), fase: Math.random() * 6 });
           }
           animasi.push((t, S, dt) => {
@@ -279,6 +281,7 @@
       }
       kabel(st || I.status(W, I.buatSim(W)));
       if (pilihan) pilih(pilihan);
+      pilihArea(areaPilih);
     }
     let grupKabel = null, kabelPilih = null;
     const daftarKabel = [];   // {kunci, dari, ke, jenis, m, hit}
@@ -361,6 +364,29 @@
       cincinPilih = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.7, 32), new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthWrite: false }));
       cincinPilih.rotation.x = -Math.PI / 2; cincinPilih.position.set(x.g.position.x, 0.07, x.g.position.z); grup.add(cincinPilih);
     }
+    /* area terpilih: garis tepi kuning dan pegangan sudut untuk mengubah ukuran */
+    let areaPilih = null, tepiArea = null, pegangan = null;
+    function pilihArea(id, ukuran, salah) {
+      areaPilih = id || null;
+      for (const m of [tepiArea, pegangan]) if (m) { grup.remove(m); m.geometry.dispose(); }
+      tepiArea = pegangan = null;
+      const a = id && W && W.area.find(x => x.id === id); if (!a) return;
+      const w = ukuran ? ukuran.w : a.w, d = ukuran ? ukuran.d : a.d, warna = salah ? 0xef4444 : 0xfacc15;
+      const pts = [[0, 0], [w, 0], [w, d], [0, d], [0, 0]].map(([x, z]) => new THREE.Vector3(a.x + x, 0.08, a.z + z));
+      tepiArea = new THREE.Mesh(new THREE.TubeGeometry(new Polyline(pts), 40, 0.06, 4, false), new THREE.MeshBasicMaterial({ color: warna }));
+      pegangan = kotak(0.6, 0.3, 0.6, new THREE.MeshBasicMaterial({ color: warna })); pegangan.position.set(a.x + w, 0.15, a.z + d); pegangan.userData.pegangan = true;
+      grup.add(tepiArea, pegangan);
+    }
+    /* pratinjau saat area diseret: grup area, garis tepi, dan pegangan ikut bergeser */
+    function geserArea(id, dx, dz, salah) {
+      if (grupArea[id]) grupArea[id].position.set(dx, 0, dz);
+      for (const m of [tepiArea, pegangan]) if (m) { m.position.x = (m === pegangan ? m.userData.x0 : 0) + dx; m.position.z = (m === pegangan ? m.userData.z0 : 0) + dz; }
+      if (tepiArea) tepiArea.material.color.setHex(salah ? 0xef4444 : 0xfacc15);
+      if (pegangan) pegangan.material.color.setHex(salah ? 0xef4444 : 0xfacc15);
+    }
+    function mulaiGeserArea() { if (pegangan) { pegangan.userData.x0 = pegangan.position.x; pegangan.userData.z0 = pegangan.position.z; } }
+    function ambilPegangan(cx, cy) { if (!pegangan) return false; scene.updateMatrixWorld(); sinar(cx, cy); return ray.intersectObject(pegangan, false).length > 0; }
+
     function sorot(ids) { const t = performance.now(); for (const id of ids || []) sorotan.set(id, t); }
 
     /* ---------- raycast ---------- */
@@ -421,7 +447,7 @@
       }
       return null;
     }
-    return { labelTerlihat: () => labelAkhir, fokus, ambilKabel, pilihKabel, layarKabel, daftarKabel: () => daftarKabel.map(k => ({ kunci: k.kunci, dari: k.dari, ke: k.ke, jenis: k.jenis, salah: k.salah })), muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer, kualitas: () => (ringan ? 'ringan' : 'realistis'), info: () => ({ segitiga: renderer.info.render.triangles, gambar: renderer.info.render.calls }) };
+    return { pilihArea, geserArea, mulaiGeserArea, ambilPegangan, areaTerpilih: () => areaPilih, labelTerlihat: () => labelAkhir, fokus, ambilKabel, pilihKabel, layarKabel, daftarKabel: () => daftarKabel.map(k => ({ kunci: k.kunci, dari: k.dari, ke: k.ke, jenis: k.jenis, salah: k.salah })), muat, kabel, perbarui, pilih, sorot, titikLantai, ambilPerangkat, layar, pindah, ukur, resetKamera, kamera: kam, renderer, kualitas: () => (ringan ? 'ringan' : 'realistis'), info: () => ({ segitiga: renderer.info.render.triangles, gambar: renderer.info.render.calls }) };
   }
   root.Dunia3D = { buat };
 })(typeof window !== 'undefined' ? window : globalThis);

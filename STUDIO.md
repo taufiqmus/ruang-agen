@@ -57,7 +57,8 @@ Tampilan bisa diatur:
 - **Malam:** dunia tetap terlihat dengan cahaya bulan, dan lampu yang menyala tampak lebih terang.
 
 - **Menaruh:** seret item dari palet kiri ke lahan. Bisa juga klik item lalu klik lahan (cocok untuk layar sentuh).
-- **Memilih:** klik perangkat untuk membuka **Inspektur**. Klik dua kali lantai sebuah area untuk mengubah nama, posisi, atau ukurannya.
+- **Memilih:** klik perangkat untuk membuka **Inspektur**. Klik lantai sebuah area untuk memilihnya (bergaris kuning) dan mengubah nama, posisi, atau ukurannya.
+- **Memindah dan mengubah ukuran area:** seret area yang sudah terpilih untuk memindahkannya; perangkat di dalamnya ikut pindah. Seret kotak kuning di sudut kanan bawah untuk mengubah ukuran. Area tidak boleh menimpa area lain atau keluar lahan: garisnya menjadi merah dan area kembali ke tempat semula. Area baru dari palet yang jatuh di atas area lain digeser ke tempat kosong terdekat.
 - **Memindah:** seret perangkat yang sudah dipilih.
 - **Kamera:** seret lahan kosong untuk memutar, klik kanan atau Shift sambil menyeret untuk menggeser, roda mouse untuk zoom.
 

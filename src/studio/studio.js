@@ -161,7 +161,9 @@
       if (W.area.length >= I.BATAS.area) { toast(`Maksimal ${I.BATAS.area} area.`); return false; }
       let id = kode, i = 2; while (W.area.some(a => a.id === id)) id = kode + '_' + i++;
       const T = I.AREA[kode], w = T.luar ? 10 : 6, d = T.luar ? 8 : 5;
-      W.area.push({ id, tipe: kode, nama: T.nama + (i > 2 ? ' ' + (i - 1) : ''), x: Math.max(0, Math.min(W.lebar - w, t.x - w / 2)), z: Math.max(0, Math.min(W.dalam - d, t.z - d / 2)), w, d });
+      const baru = { id, tipe: kode, nama: T.nama + (i > 2 ? ' ' + (i - 1) : ''), x: Math.max(0, Math.min(W.lebar - w, Math.round((t.x - w / 2) * 2) / 2)), z: Math.max(0, Math.min(W.dalam - d, Math.round((t.z - d / 2) * 2) / 2)), w, d };
+      if (I.areaBentrok(W, baru)) { const b = I.tempatBebas(W, baru, baru.x, baru.z); if (!b) { toast('Lahan penuh: tidak ada tempat untuk area baru.'); return false; } baru.x = b.x; baru.z = b.z; toast(baru.nama + ' digeser ke tempat kosong terdekat supaya tidak menimpa area lain.', true); }
+      W.area.push(baru);
       pilihArea = id; pilihan = null;
     } else {
       if (W.perangkat.length >= I.BATAS.perangkat) { toast(`Maksimal ${I.BATAS.perangkat} perangkat (supaya ringan).`); return false; }
@@ -172,7 +174,7 @@
       pilihan = 'p:' + id; pilihArea = null; if (I.KATALOG[kode].kategori === 'aktuator') S.alat[id] = { on: false, level: I.KATALOG[kode].level ? 2 : 1, sejak: 0 };
       if (I.KATALOG[kode].kapasitas) S.baterai[id] = I.KATALOG[kode].kapasitas * 0.8;
     }
-    W = I.periksaDunia(W).dunia; simpanDunia(); syncSim(); muat3D(); D3.pilih(pilihan && pilihan.slice(2)); renderInspektur(); tab('inspektur'); renderPetunjuk();
+    W = I.periksaDunia(W).dunia; simpanDunia(); syncSim(); muat3D(); D3.pilih(pilihan && pilihan.slice(2)); D3.pilihArea(pilihArea); renderInspektur(); tab('inspektur'); renderPetunjuk();
     return true;
   }
   function syncSim() { for (const a of W.area) if (!S.area[a.id]) { const T = I.AREA[a.tipe]; S.area[a.id] = { suhu: T.luar ? 29 : 27, lembap: 70, cahaya: 0, tanah: T.tanaman ? 55 : null, pakan: T.hewan ? 80 : null, gas: a.tipe === 'dapur' ? 20 : 5, gerak: false, pintu: false, tanaman: T.tanaman ? 90 : null, ayam: T.hewan ? 90 : null }; } for (const p of W.perangkat) if (I.KATALOG[p.jenis].kategori === 'aktuator' && !S.alat[p.id]) S.alat[p.id] = { on: false, level: 2, sejak: 0 }; }
@@ -195,18 +197,52 @@
       pilihan = 'p:' + dari; D3.pilih(dari); renderInspektur(); return;
     }
     if (id) {
-      D3.pilihKabel(null);
+      D3.pilihKabel(null); D3.pilihArea(null);
       pilihan = 'p:' + id; pilihArea = null; D3.pilih(id); renderInspektur(); tab('inspektur');
       if (mode === 'bangun' && e.button === 0) { geser = { id, gerak: false }; D3.kamera.aktif = false; }
       return;
     }
     const kb = e.button === 0 && D3.ambilKabel(e.clientX, e.clientY);
-    if (kb) { pilihan = 'kabel3d:' + kb; pilihArea = null; D3.pilih(null); D3.pilihKabel(kb); renderInspektur(); tab('inspektur'); return; }
+    if (kb) { pilihan = 'kabel3d:' + kb; pilihArea = null; D3.pilih(null); D3.pilihArea(null); D3.pilihKabel(kb); renderInspektur(); tab('inspektur'); return; }
+    if (mode !== 'bangun' || e.button !== 0) return;
+    // area: klik memilih; seret area yang sudah dipilih untuk memindah; seret pegangan sudut untuk mengubah ukuran
+    if (pilihArea && D3.ambilPegangan(e.clientX, e.clientY)) {
+      const a = W.area.find(x => x.id === pilihArea);
+      if (a) { geserArea = { jenis: 'ukur', a, w: a.w, d: a.d }; D3.kamera.aktif = false; }
+      return;
+    }
     const t = D3.titikLantai(e.clientX, e.clientY);
     const a = t && I.areaDi(W, t.x, t.z);
-    if (a && mode === 'bangun' && e.button === 0 && e.altKey === false && e.detail >= 2) { pilihArea = a.id; pilihan = null; D3.pilih(null); renderInspektur(); tab('inspektur'); }
+    if (!a) { if (pilihArea) { pilihArea = null; D3.pilihArea(null); renderInspektur(); } return; }
+    if (pilihArea === a.id) {
+      geserArea = { jenis: 'pindah', a, t0: t, x0: a.x, z0: a.z, isi: W.perangkat.filter(p => I.areaDi(W, p.x, p.z) === a).map(p => ({ p, x: p.x, z: p.z })), dx: 0, dz: 0 };
+      D3.mulaiGeserArea(); D3.kamera.aktif = false; return;
+    }
+    pilihArea = a.id; pilihan = null; D3.pilih(null); D3.pilihKabel(null); D3.pilihArea(a.id); renderInspektur(); tab('inspektur');
   });
-  $('#c3d').addEventListener('dblclick', e => { if (mode !== 'bangun') return; const t = D3.titikLantai(e.clientX, e.clientY), a = t && I.areaDi(W, t.x, t.z); if (a) { pilihArea = a.id; pilihan = null; D3.pilih(null); renderInspektur(); tab('inspektur'); } });
+  let geserArea = null;
+  window.addEventListener('pointermove', e => {
+    if (!geserArea) return; const t = D3.titikLantai(e.clientX, e.clientY); if (!t) return;
+    const g = geserArea, a = g.a; g.gerak = true;
+    if (g.jenis === 'pindah') {
+      g.dx = t.x - g.t0.x; g.dz = t.z - g.t0.z;
+      const calon = { ...a, x: g.x0 + g.dx, z: g.z0 + g.dz }; g.salah = I.areaBentrok(W, calon);
+      D3.geserArea(a.id, g.dx, g.dz, !!g.salah);
+      g.isi.forEach(q => D3.pindah(q.p.id, q.x + g.dx, q.z + g.dz));
+    } else {
+      g.w = Math.max(2, Math.min(20, Math.round((t.x - a.x) * 2) / 2)); g.d = Math.max(2, Math.min(20, Math.round((t.z - a.z) * 2) / 2));
+      g.salah = I.areaBentrok(W, { ...a, w: g.w, d: g.d });
+      D3.pilihArea(a.id, { w: g.w, d: g.d }, !!g.salah);
+    }
+  });
+  window.addEventListener('pointerup', () => {
+    const g = geserArea; if (!g) return; geserArea = null; D3.kamera.aktif = true;
+    if (!g.gerak) return;
+    if (g.salah) { toast('Area tidak bisa ditaruh di situ: ' + g.salah.alasan + '.'); muat3D(); return; }
+    if (g.jenis === 'pindah') { g.a.x = g.x0 + g.dx; g.a.z = g.z0 + g.dz; g.isi.forEach(q => { q.p.x = q.x + g.dx; q.p.z = q.z + g.dz; }); }
+    else { g.a.w = g.w; g.a.d = g.d; }
+    W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+  });
   window.addEventListener('pointermove', e => {
     if (!geser) return; const t = D3.titikLantai(e.clientX, e.clientY); if (!t) return;
     const p = W.perangkat.find(x => x.id === geser.id); if (!p) return; p.x = t.x; p.z = t.z; geser.gerak = true; D3.pindah(p.id, t.x, t.z);
@@ -252,7 +288,7 @@
   function hapusArea(id) {
     const a = W.area.find(x => x.id === id); if (!a) return;
     simpanUrung('Area ' + a.nama);
-    W.area = W.area.filter(x => x.id !== id); pilihArea = null; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
+    W.area = W.area.filter(x => x.id !== id); pilihArea = null; D3.pilihArea(null); W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); renderInspektur(); renderPetunjuk();
     toast('Area ' + a.nama + ' dihapus. Ctrl+Z untuk mengurungkan.', true);
   }
   function hapusBlok(id) {
@@ -296,16 +332,17 @@
     if (pilihan && pilihan.startsWith('p:')) return inspekturPerangkat(P, pilihan.slice(2));
     if (pilihArea) return inspekturArea(P, pilihArea);
     P.appendChild(mk('h3', '', 'Inspektur'));
-    P.appendChild(mk('p', 'note', mode === 'otak' ? 'Klik sebuah blok atau kabel untuk mengatur isinya.' : 'Klik perangkat di dunia 3D untuk melihat kabel, pin, dan statusnya. Klik dua kali lantai sebuah area untuk mengubah area.'));
+    P.appendChild(mk('p', 'note', mode === 'otak' ? 'Klik sebuah blok atau kabel untuk mengatur isinya.' : 'Klik perangkat di dunia 3D untuk melihat kabel, pin, dan statusnya. Klik lantai sebuah area untuk memilih, memindah, atau mengubah ukurannya.'));
   }
   function inspekturArea(P, id) {
     const a = W.area.find(x => x.id === id); if (!a) return;
     P.appendChild(mk('h3', '', 'Area: ' + a.nama));
     const nama = field(P, 'Nama', mk('input')); nama.type = 'text'; nama.value = a.nama; nama.maxLength = 24;
     const row = mk('div', 'baris'); P.appendChild(row);
-    const num = (lbl, k, min, max) => { const w = mk('div'); const i = mk('input'); i.type = 'number'; i.min = min; i.max = max; i.step = 0.5; i.value = a[k]; field(w, lbl, i); row.appendChild(w); i.onchange = () => { a[k] = +i.value; terap(); }; return i; };
+    const num = (lbl, k, min, max) => { const w = mk('div'); const i = mk('input'); i.type = 'number'; i.min = min; i.max = max; i.step = 0.5; i.value = a[k]; field(w, lbl, i); row.appendChild(w); i.onchange = () => { const b = I.areaBentrok(W, { ...a, [k]: +i.value }); if (b) { toast('Tidak bisa: area ' + b.alasan + '.'); i.value = a[k]; return; } a[k] = +i.value; terap(); }; return i; };
     num('X', 'x', 0, W.lebar); num('Z', 'z', 0, W.dalam); num('Lebar', 'w', 2, 20); num('Dalam', 'd', 2, 20);
     const terap = () => { a.nama = nama.value; W = I.periksaDunia(W).dunia; simpanDunia(); muat3D(); };
+    P.appendChild(mk('p', 'note', 'Seret area yang terpilih (bergaris kuning) untuk memindahkannya: perangkat di dalamnya ikut pindah. Seret kotak kuning di sudut untuk mengubah ukuran. Garis menjadi merah bila area menimpa area lain atau keluar lahan.'));
     nama.onchange = terap;
     const h = mk('button', 'btn bahaya', 'Hapus area (Delete)'); h.type = 'button'; h.style.marginTop = '10px'; h.onclick = () => hapusArea(id); P.appendChild(h);
     P.appendChild(mk('div', 'konsep', I.AREA[a.tipe].dinding ? 'Dinding ruang melemahkan sinyal Wi-Fi sekitar 6 dB per dinding yang ditembus.' : 'Area luar tanpa dinding. Butuh ESP tahan cuaca dan sering jauh dari router: pertimbangkan repeater dan panel surya.'));

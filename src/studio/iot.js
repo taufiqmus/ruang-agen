@@ -424,7 +424,23 @@
     return { ok: false, alasan: `${K.nama} tidak memakai kabel data` };
   }
 
-  const api = { putuskan, sambungKe, VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
+  /* Penempatan area: tidak boleh keluar lahan atau menimpa area lain (bersentuhan di tepi boleh). */
+  function areaBentrok(W, a) {
+    if (a.x < 0 || a.z < 0 || a.x + a.w > W.lebar + 1e-6 || a.z + a.d > W.dalam + 1e-6) return { alasan: 'keluar dari lahan' };
+    const lain = W.area.find(b => b.id !== a.id && a.x < b.x + b.w - 1e-6 && b.x < a.x + a.w - 1e-6 && a.z < b.z + b.d - 1e-6 && b.z < a.z + a.d - 1e-6);
+    return lain ? { alasan: 'menimpa ' + lain.nama, lain } : null;
+  }
+  /* Titik bebas terdekat dari (x, z) untuk area berukuran a.w x a.d; null bila lahan penuh. */
+  function tempatBebas(W, a, x, z) {
+    let terbaik = null, jarak = Infinity;
+    for (let zz = 0; zz + a.d <= W.dalam + 1e-6; zz += 0.5) for (let xx = 0; xx + a.w <= W.lebar + 1e-6; xx += 0.5) {
+      const d = (xx - x) ** 2 + (zz - z) ** 2; if (d >= jarak) continue;
+      if (!areaBentrok(W, { id: a.id, x: xx, z: zz, w: a.w, d: a.d })) { terbaik = { x: xx, z: zz }; jarak = d; }
+    }
+    return terbaik;
+  }
+
+  const api = { areaBentrok, tempatBebas, putuskan, sambungKe, VERSI, BATAS, AREA, KATALOG, VAR, AMBANG_WIFI, PRESET, periksaDunia, periksaRangkaian, hitungWifi, dindingDilewati, rssiDari, buatSim, langkah, status, bacaSensor, aturAktuator, areaDi, daftarPin, pinAnalog, sambungOtomatis, jam, suhuLuar, cahayaLuar, dayaTerpakai };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.IoT = api;
 })(typeof window !== 'undefined' ? window : globalThis);
