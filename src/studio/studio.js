@@ -476,7 +476,7 @@
       ta.value = (c.rute || []).map(r => `${r.nama}: ${r.kata.join(', ')}${r.contoh.length ? ' | ' + r.contoh.join('; ') : ''}`).join('\n');
       ta.onchange = () => { c.rute = ta.value.split('\n').filter(x => x.includes(':')).map(l => { const [n, isi] = l.split(/:(.*)/s); const [kata, contoh] = (isi || '').split('|'); return { nama: n.trim(), kata: (kata || '').split(',').map(s => s.trim()).filter(Boolean), contoh: (contoh || '').split(';').map(s => s.trim()).filter(Boolean) }; }); terap(); renderInspektur(); };
     }
-    if (b.jenis === 'rak') editorRAG(P, b, terap);
+    if (b.jenis === 'rak') { cekF('Agen boleh menulis lewat chat (ingat ..., ralat: ..., hapus catatan ...)', 'tulis'); editorRAG(P, b, terap); }
     const masuk = H.kabel.filter(k => k.ke === id).map(k => `${k.dari} (${k.portKe})`), keluar = H.kabel.filter(k => k.dari === id).map(k => `${k.ke} (${k.port})`);
     P.appendChild(mk('p', 'note', `Masuk dari: ${masuk.join(', ') || '-'}. Keluar ke: ${keluar.join(', ') || '-'}.`));
     const h = mk('button', 'btn bahaya', 'Hapus blok (Delete)'); h.type = 'button'; h.style.marginTop = '8px'; h.onclick = () => hapusBlok(id); P.appendChild(h);
@@ -515,6 +515,8 @@
       // pesan dari Telegram: pemilik mungkin jauh dari laptop, jadi persetujuan dibatasi 75 detik dan pengirim diberi tahu
       setuju: /^telegram/.test(pesan.sumber) ? async t => { if (klien && pesan.chatId) klien.kirim(pesan.chatId, 'Aksi ini butuh persetujuan pemilik di laptop (maksimal 75 detik): ' + t); return setuju(t + ' (dari Telegram ' + (pesan.nama || '') + ')', 75000); } : t => setuju(t), log: data.log, pengingat: data.pengingat,
       jejak, lewatKabel: k => KV.sorotKabel(k), maksLLM: 8,
+      // agen menulis RAG lewat chat: simpan papan, buang draf editor yang sudah usang
+      grafBerubah: id => { delete drafRAG[id]; simpanGraf(); KV.gambar(); if (pilihan === 'b:' + id) renderInspektur(); },
       kirimTelegram: klien && klien.izin.size ? t => klien.kirimPemilik(t) : null,
       cekGuardModel: (t, model) => window.OtakLLM.cekGuardModel(t, { ollamaUrl: cfg.ollamaUrl, guardModel: model }),
       ambilCuaca: async c => { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code`).then(x => x.json()); const w = r.current.weather_code; return { kondisi: w >= 61 ? 'hujan' : w >= 3 ? 'berawan' : 'cerah', suhu_luar: r.current.temperature_2m }; },
@@ -679,7 +681,7 @@
       for (const c of kasus) {
         const W2 = salin(W), S2 = I.buatSim(W2, { mulai: S.menit % 1440 }); if (c.awal) c.awal(S2);
         const out = []; const t0 = performance.now();
-        try { await GR.jalankan(H, (H.blok.find(b => b.jenis === 'chat') || {}).id, { teks: c.pesan, sumber: 'chat' }, { W: W2, S: S2, cfgModel: cfgModel(), riwayat: {}, kalender: [], log: [], pengingat: [], setuju: async () => true, keluaran: (j, t) => out.push(t) }); } catch (e) { out.push('galat: ' + e.message); }
+        try { await GR.jalankan(salin(H), (H.blok.find(b => b.jenis === 'chat') || {}).id, { teks: c.pesan, sumber: 'chat' }, { W: W2, S: S2, cfgModel: cfgModel(), riwayat: {}, kalender: [], log: [], pengingat: [], setuju: async () => true, keluaran: (j, t) => out.push(t) }); } catch (e) { out.push('galat: ' + e.message); }
         const ok = c.cek({ teks: out.join(' ') }, S2); if (ok) benar++;
         hasil.appendChild(mk('li', '', `${ok ? 'benar' : 'SALAH'} | ${c.kat}: "${c.pesan}" (${((performance.now() - t0) / 1000).toFixed(1)} dtk) -> ${potong(out.join(' ') || '(tanpa jawaban)', 90)}`));
       }

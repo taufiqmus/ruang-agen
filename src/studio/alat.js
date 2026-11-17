@@ -179,7 +179,7 @@
       return { jenis: 'aksi', aksi: target.map(p => ({ perangkat: p.id, aksi: mati ? 'mati' : 'nyala', level: lv ? +lv[2] : undefined })) };
     }
     const varDisebut = Object.keys(KATA_VAR).filter(v => ada(t, KATA_VAR[v]));
-    if (rak && rak.length && /(^|\s)(cara|kenapa|mengapa|tips|aturan|sop|jadwal|kapan|ideal|seharusnya|sebaiknya|menurut)(\s|$|\?)/.test(t)) {
+    if (rak && rak.length && /(^|\s)(cara|kenapa|mengapa|tips|aturan|sop|jadwal|kapan|ideal|seharusnya|sebaiknya|menurut|di ?mana|siapa)(\s|$|\?)/.test(t)) {
       const hit = root.Manual ? root.Manual.cari(teks, rak, 2, 0.5) : [];
       if (hit.length) return { jenis: 'rak', hit };
     }
@@ -187,6 +187,8 @@
     if (cfgAlat.alat_kalkulator && /^(hitung|berapa)\s+[\d(]/.test(t)) return { jenis: 'hitung', ekspresi: t.replace(/^(hitung|berapa)\s+/, '') };
     if (cfgAlat.alat_cuaca && /(cuaca|hujan|cerah)/.test(t)) return { jenis: 'cuaca' };
     if (dis.length) return { jenis: 'tanya_balik', balasan: `Mau diapakan ${dis[0].nama}? Bilang "nyalakan" atau "matikan".` };
+    // pesan lain yang mirip kuat dengan satu dokumen RAG (misalnya "di mana kunci gudang?") dijawab dari dokumen itu
+    if (rak && rak.length && root.Manual) { const hit = root.Manual.cari(teks, rak, 1, 0.8); if (hit.length) return { jenis: 'rak', hit }; }
     return { jenis: 'tidak_paham' };
   }
 
@@ -211,10 +213,62 @@
   /* ---------- pelaksana blok Agen ----------
      sambungan: { alat: {jenis: cfg}, rak: [dokumen], memori: cfg|null, pengaman: cfg|null }
      ctx: { W, S, cfgModel, setuju(), kirimTelegram(), riwayat: {kunci: []}, jejak(k, t) } */
+  /* Menulis pengetahuan lewat chat. Dikerjakan kode, bukan AI: apa yang boleh masuk RAG tidak diserahkan ke model.
+       "ingat ya, ..." / "catat: ..." / "simpan ..."   menambah dokumen
+       "ralat: ..." / "koreksi: ..."                   mengganti dokumen yang paling mirip
+       "hapus catatan ..." / "lupakan catatan ..."     membuang dokumen yang paling mirip */
+  function perintahRAG(teks) {
+    const t = String(teks || '').trim().replace(/\s+/g, ' ');
+    if (/\?\s*$/.test(t)) return null;
+    let m = t.match(/^(?:tolong\s+)?(?:hapus|lupakan|buang)\s+(?:catatan|pengetahuan|dokumen)(?:\s+(?:tentang|soal|yang))?\s*[,:]?\s*(.{2,})$/i);
+    if (m) return { jenis: 'hapus', isi: m[1].trim() };
+    m = t.match(/^(?:tolong\s+)?(?:ralat|koreksi|perbaiki catatan)\s*[,:]?\s+(.{3,})$/i);
+    if (m) return { jenis: 'ralat', isi: m[1].trim() };
+    m = t.match(/^(?:tolong\s+)?(?:ingat(?:lah|kan)?|catat(?:lah|kan)?|simpan(?:\s+(?:pengetahuan|catatan))?)(?:\s+(?:ya|dong|ini|yang ini))?\s*[,:]?\s+(?:bahwa\s+)?(.{3,})$/i);
+    if (m) return { jenis: 'catat', isi: m[1].trim() };
+    return null;
+  }
+  const judulDari = isi => { const k = isi.replace(/[.,;:!]+/g, ' ').trim().split(' ').slice(0, 6).join(' '); return potong(k.charAt(0).toUpperCase() + k.slice(1), 50); };
+  function tulisRAG(cmd, sambungan, ctx) {
+    const bl = (sambungan.rakBlok || []).filter(Boolean);
+    if (!bl.length) return 'Aku tidak punya RAG untuk menyimpan pengetahuan. Sambungkan blok RAG ke port "pengetahuan" milikku.';
+    const b = bl.find(x => x.cfg.tulis);
+    if (!b) { ctx.jejak('guard', 'RAG hanya-baca: perintah menulis pengetahuan ditolak.'); return 'RAG-ku hanya bisa dibaca. Hidupkan "Agen boleh menulis lewat chat" di blok RAG kalau aku boleh menyimpan pengetahuan.'; }
+    const isi = potong(cmd.isi, 400);
+    if (root.Otak && root.Otak.adaInjeksi(isi)) { ctx.jejak('guard', 'Guard: catatan berpola injeksi tidak boleh masuk RAG.'); return 'Catatan itu tidak kusimpan karena berisi pola perintah yang mencurigakan.'; }
+    const bawaan = (root.Graf && root.Graf.RAK[b.cfg.preset]) || [];
+    const docs = (b.cfg.dokumen && b.cfg.dokumen.length ? b.cfg.dokumen : bawaan).map((d, i) => ({ id: 'd' + i, judul: d.judul, teks: d.teks }));
+    const mirip = (q, min) => (root.Manual ? root.Manual.cari(q, docs, 1, min) : [])[0];
+    const simpanDocs = list => { b.cfg.dokumen = list.map(d => ({ judul: d.judul, teks: d.teks })); if (ctx.grafBerubah) ctx.grafBerubah(b.id); };
+    if (cmd.jenis === 'hapus') {
+      const h = mirip(isi, 0.3);
+      if (!h) return `Aku tidak menemukan catatan tentang "${potong(isi, 60)}" di RAG.`;
+      simpanDocs(docs.filter(d => d.id !== h.id));
+      ctx.jejak('catat', `Menghapus dokumen RAG: "${h.judul}"`);
+      return `Oke, dokumen "${h.judul}" kuhapus dari RAG.`;
+    }
+    if (cmd.jenis === 'ralat') {
+      const h = mirip(isi, 0.3);
+      if (h) {
+        simpanDocs(docs.map(d => d.id === h.id ? { judul: d.judul, teks: isi } : d));
+        ctx.jejak('catat', `Meralat dokumen RAG "${h.judul}": "${potong(isi, 80)}"`);
+        return `Oke, dokumen "${h.judul}" kuralat menjadi: "${potong(isi, 120)}"`;
+      }
+    }
+    if (docs.some(d => d.teks.trim().toLowerCase() === isi.toLowerCase())) return 'Itu sudah ada di RAG.';
+    if (docs.length >= 16) { ctx.jejak('guard', 'RAG penuh (16 dokumen): catatan baru ditolak.'); return 'RAG sudah penuh (16 dokumen). Hapus satu catatan dulu, misalnya "hapus catatan ...".'; }
+    const judul = judulDari(isi);
+    simpanDocs(docs.concat([{ judul, teks: isi }]));
+    ctx.jejak('catat', `Menulis dokumen RAG baru: "${judul}"`);
+    return `Oke, kucatat di RAG: "${potong(isi, 120)}"`;
+  }
+
   async function jalankanAgen(nodeCfg, pesan, sambungan, ctx) {
     const W = ctx.W, S = ctx.S, st = I().status(W, S);
     const k = { W, S, st, ctx, cfgAlat: sambungan.alat || {}, pengaman: sambungan.pengaman, aksi: [], ditolak: [], jejak: ctx.jejak, panggilan: 0 };
     const rak = sambungan.rak || [];
+    const cmd = perintahRAG(pesan.teks);
+    if (cmd) return { balasan: tulisRAG(cmd, sambungan, ctx), aksi: [], ditolak: [], asal: 'kode', panggilan: 0, diambil: [] };
     const kunciR = (pesan.sumber || 'chat') + ':' + (pesan.chatId || '');
     const mem = sambungan.memori;
     const riwayat = mem && mem.konteks > 0 ? ((ctx.riwayat && ctx.riwayat[kunciR]) || []).slice(-mem.konteks) : [];
@@ -292,7 +346,7 @@
     return 'Aku belum paham. Coba sebut perangkat dan areanya, misalnya "nyalakan kipas kandang", atau tanya "berapa suhu kamar?".';
   }
 
-  const api = { diLingkup, ALAT, KATA_JENIS, KATA_AREA, parse, jalankanTool, jalankanAgen, cekGuardAksi, hitung, promptAgen, sekarang };
+  const api = { perintahRAG, diLingkup, ALAT, KATA_JENIS, KATA_AREA, parse, jalankanTool, jalankanAgen, cekGuardAksi, hitung, promptAgen, sekarang };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.AlatStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);

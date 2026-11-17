@@ -85,6 +85,24 @@ const cek = (n, c, info) => { if (!c) { gagal++; console.log('GAGAL:', n, info !
   await page.click('#inspektur .btn:has-text("Batalkan perubahan")');
   cek('Batalkan perubahan mengembalikan isi tersimpan', (await page.$$eval('#inspektur .ragDok', e => e.length)) === n);
 
+  /* 8. menulis RAG lewat chat */
+  await page.click('[data-mode="main"]');
+  r = await kirim('ingat ya, kunci gudang disimpan di laci dapur');
+  cek('chat: RAG hanya-baca menolak dengan petunjuk', /hanya bisa dibaca/.test(r), r);
+  await page.click('[data-mode="otak"]'); await page.click('#svgPapan .blok[data-id="rak"]');
+  await page.check('#inspektur label.cek:has-text("Agen boleh menulis lewat chat") input');
+  await page.click('[data-mode="main"]');
+  r = await kirim('ingat ya, kunci gudang disimpan di laci dapur');
+  cek('chat: ingat menulis ke RAG', /kucatat/.test(r), r);
+  cek('Jejak mencatat CATAT', /Menulis dokumen RAG baru/.test(await page.textContent('#jejak')));
+  r = await kirim('di mana kunci gudang disimpan');
+  cek('chat: pengetahuan baru dipakai menjawab', /laci dapur/.test(r), r);
+  await page.click('[data-mode="otak"]'); await page.click('#svgPapan .blok[data-id="rak"]');
+  cek('Inspektur RAG menampilkan dokumen dari chat, status tersimpan', (await page.$$eval('#inspektur .ragIsi', e => e.map(x => x.value))).some(v => /laci dapur/.test(v)) && /Tersimpan/.test(await page.textContent('#ragStatus')));
+  await page.click('[data-mode="main"]');
+  r = await kirim('hapus catatan kunci gudang');
+  cek('chat: hapus catatan', /kuhapus/.test(r) && !(await S(() => window.__studio.H.blok.find(b => b.id === 'rak').cfg.dokumen.some(d => /laci/.test(d.teks)))), r);
+
   cek('tanpa galat JS', galat.length === 0, galat);
   await browser.close();
   console.log(gagal ? `\n${gagal} gagal` : '\nsemua lulus');

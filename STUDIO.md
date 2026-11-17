@@ -137,6 +137,16 @@ Setiap blok punya kartu konsep di Inspektur. **Saran** di pojok kanan atas papan
 
 Isi RAG tersimpan di browser ini bersama papan otak, dan ikut file proyek saat diekspor lewat **Proyek**. Batasnya 16 dokumen, masing-masing 400 huruf. **Atau mulai dari dokumen bawaan** mengganti isinya dengan kumpulan bawaan (rumah, kebun, ternak).
 
+**Menulis RAG lewat chat.** Centang **Agen boleh menulis lewat chat** di blok RAG. Blok minimum: Chat, Agen, Balas, dan RAG yang tersambung ke port **pengetahuan** Agen. Guard Masukan disarankan, karena tanpa itu siapa pun yang bisa mengirim pesan bisa mengubah pengetahuan agen.
+
+| Ketik di chat | Hasil |
+|---|---|
+| `ingat ya, kunci gudang di laci dapur` (juga `catat: ...`, `simpan ...`) | Dokumen baru masuk RAG |
+| `ralat: kunci gudang di lemari ruang tamu` | Dokumen yang paling mirip diganti isinya |
+| `hapus catatan kunci gudang` (juga `lupakan catatan ...`) | Dokumen yang paling mirip dibuang |
+
+Perintah ini dikerjakan kode, bukan AI, dan tercatat di Jejak sebagai CATAT. Hasilnya langsung tersimpan seperti menekan Simpan RAG. Catatan berpola injeksi ditolak, dan RAG yang sudah berisi 16 dokumen menolak catatan baru. Tanpa centang, agen menjawab bahwa RAG-nya hanya bisa dibaca.
+
 **Menghapus dengan keyboard.** Pilih perangkat, area, kabel, atau blok, lalu tekan **Delete** (atau Backspace). **Ctrl+Z** mengembalikan hapusan terakhir.
 
 **Alat berlingkup.** Alat Sensor dan Alat Aktuator punya lingkup wilayah: semua area, semua ruang di dalam rumah, atau satu area. Agen kebun tidak bisa menyalakan kipas kandang, sehingga tugas terbagi jelas.

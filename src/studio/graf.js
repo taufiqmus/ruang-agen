@@ -25,7 +25,7 @@
     aturan: { kelompok: 'proses', judul: 'Aturan JIKA-MAKA', warna: '#1f9e6e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan']], cfg: { sensor: '', variabel: 'suhu', op: '>', nilai: 30, aktuator: '', aksi: 'nyala', sebaliknya: true }, konsep: 'Otomasi tanpa AI. Untuk keputusan sederhana, aturan lebih cepat, murah, dan pasti daripada AI.' },
     orkestrator: { kelompok: 'otak', judul: 'Orkestrator', warna: '#0f766e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan'], ['tugas', 'tugas']], cfg: { mode: 'otomatis' }, konsep: 'Membagi pesan ke beberapa agen pekerja (multi-agen), lalu menggabungkan jawabannya.' },
     agen: { kelompok: 'otak', judul: 'Agen', warna: '#16a34a', masuk: [['masuk', 'pesan'], ['tugas', 'tugas'], ['alat', 'alat'], ['pengetahuan', 'pengetahuan'], ['memori', 'memori'], ['pengaman', 'pengaman']], keluar: [['keluar', 'pesan']], cfg: { nama: 'Agen Rumah', persona: 'asisten rumah yang ramah', model: '', hemat: true, maksLangkah: 4 }, konsep: 'Otak yang berpikir dengan model AI (atau parser) dan memanggil alat yang tersambung ke port "alat".' },
-    rak: { kelompok: 'pendukung', judul: 'RAG', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah' }, konsep: 'RAG (Retrieval-Augmented Generation): dokumen yang dicari dan dibaca agen sebelum menjawab.' },
+    rak: { kelompok: 'pendukung', judul: 'RAG', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah', tulis: false }, konsep: 'RAG (Retrieval-Augmented Generation): dokumen yang dicari dan dibaca agen sebelum menjawab. Bila diizinkan, agen bisa menambah, meralat, dan menghapus dokumen lewat chat.' },
     memori: { kelompok: 'pendukung', judul: 'Memori', warna: '#9333ea', keluar: [['keluar', 'memori']], cfg: { konteks: 4 }, konsep: 'Context window: beberapa pesan terakhir ikut diingat agen.' },
     guard_aksi: { kelompok: 'pendukung', judul: 'Guard Aksi', warna: '#dc2626', keluar: [['keluar', 'pengaman']], cfg: { batas: true, persetujuan: true }, konsep: 'Batas aman di kode: pemanas di atas 33 C, pompa saat tandon kosong, kipas dan pemanas bersamaan, plus persetujuan manusia untuk aksi berisiko.' },
     alat_sensor: { kelompok: 'alat', judul: 'Alat Sensor', warna: '#0891b2', keluar: [['keluar', 'alat']], cfg: { lingkup: 'semua' }, konsep: 'Tool baca_sensor: membaca sensor lewat ESP.' },
@@ -139,6 +139,7 @@
       if (!ke(a.id, 'alat').length) s.push({ tingkat: 'info', teks: `${a.cfg.nama}: belum punya alat. Tanpa alat, agen hanya bisa mengobrol.` });
       if (ke(a.id, 'alat').some(k => H.blok.find(b => b.id === k.dari).jenis === 'alat_aktuator') && !ke(a.id, 'pengaman').length) s.push({ tingkat: 'peringatan', teks: `${a.cfg.nama}: mengendalikan perangkat tanpa Guard Aksi (mode rentan).` });
     }
+    if (H.blok.some(b => b.jenis === 'rak' && b.cfg.tulis) && !H.blok.some(b => b.jenis === 'guard_masukan')) s.push({ tingkat: 'peringatan', teks: 'RAG bisa ditulis lewat chat, tetapi belum ada Guard Masukan. Siapa pun yang bisa mengirim pesan bisa mengubah pengetahuan agen.' });
     const pemicuLuar = H.blok.filter(b => b.jenis === 'telegram');
     for (const t of pemicuLuar) if (!dari(t.id).some(k => H.blok.find(b => b.id === k.ke).jenis === 'guard_masukan')) s.push({ tingkat: 'peringatan', teks: 'Pesan Telegram langsung masuk tanpa Guard Masukan. Orang asing bisa mencoba menipu agen.' });
     return s;
@@ -157,7 +158,7 @@
       const alat = {}; ke('alat').forEach(b => { alat[b.jenis] = b.cfg || {}; });
       const rak = [].concat(...ke('pengetahuan').map(b => (b.cfg.dokumen && b.cfg.dokumen.length ? b.cfg.dokumen : RAK[b.cfg.preset] || [])));
       const mem = ke('memori')[0], pg = ke('pengaman')[0];
-      return { alat, rak, memori: mem ? mem.cfg : null, pengaman: pg ? pg.cfg : null };
+      return { alat, rak, rakBlok: ke('pengetahuan'), memori: mem ? mem.cfg : null, pengaman: pg ? pg.cfg : null };
     };
     const jejak = (k, t, id) => ctx.jejak && ctx.jejak(k, t, id);
     async function kirim(id, port, msg) { for (const k of keluarDari(id, port)) await kunjungi(k.ke, msg, k); }

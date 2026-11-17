@@ -2908,7 +2908,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       return { jenis: 'aksi', aksi: target.map(p => ({ perangkat: p.id, aksi: mati ? 'mati' : 'nyala', level: lv ? +lv[2] : undefined })) };
     }
     const varDisebut = Object.keys(KATA_VAR).filter(v => ada(t, KATA_VAR[v]));
-    if (rak && rak.length && /(^|\s)(cara|kenapa|mengapa|tips|aturan|sop|jadwal|kapan|ideal|seharusnya|sebaiknya|menurut)(\s|$|\?)/.test(t)) {
+    if (rak && rak.length && /(^|\s)(cara|kenapa|mengapa|tips|aturan|sop|jadwal|kapan|ideal|seharusnya|sebaiknya|menurut|di ?mana|siapa)(\s|$|\?)/.test(t)) {
       const hit = root.Manual ? root.Manual.cari(teks, rak, 2, 0.5) : [];
       if (hit.length) return { jenis: 'rak', hit };
     }
@@ -2916,6 +2916,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     if (cfgAlat.alat_kalkulator && /^(hitung|berapa)\s+[\d(]/.test(t)) return { jenis: 'hitung', ekspresi: t.replace(/^(hitung|berapa)\s+/, '') };
     if (cfgAlat.alat_cuaca && /(cuaca|hujan|cerah)/.test(t)) return { jenis: 'cuaca' };
     if (dis.length) return { jenis: 'tanya_balik', balasan: `Mau diapakan ${dis[0].nama}? Bilang "nyalakan" atau "matikan".` };
+    // pesan lain yang mirip kuat dengan satu dokumen RAG (misalnya "di mana kunci gudang?") dijawab dari dokumen itu
+    if (rak && rak.length && root.Manual) { const hit = root.Manual.cari(teks, rak, 1, 0.8); if (hit.length) return { jenis: 'rak', hit }; }
     return { jenis: 'tidak_paham' };
   }
 
@@ -2940,10 +2942,62 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   /* ---------- pelaksana blok Agen ----------
      sambungan: { alat: {jenis: cfg}, rak: [dokumen], memori: cfg|null, pengaman: cfg|null }
      ctx: { W, S, cfgModel, setuju(), kirimTelegram(), riwayat: {kunci: []}, jejak(k, t) } */
+  /* Menulis pengetahuan lewat chat. Dikerjakan kode, bukan AI: apa yang boleh masuk RAG tidak diserahkan ke model.
+       "ingat ya, ..." / "catat: ..." / "simpan ..."   menambah dokumen
+       "ralat: ..." / "koreksi: ..."                   mengganti dokumen yang paling mirip
+       "hapus catatan ..." / "lupakan catatan ..."     membuang dokumen yang paling mirip */
+  function perintahRAG(teks) {
+    const t = String(teks || '').trim().replace(/\s+/g, ' ');
+    if (/\?\s*$/.test(t)) return null;
+    let m = t.match(/^(?:tolong\s+)?(?:hapus|lupakan|buang)\s+(?:catatan|pengetahuan|dokumen)(?:\s+(?:tentang|soal|yang))?\s*[,:]?\s*(.{2,})$/i);
+    if (m) return { jenis: 'hapus', isi: m[1].trim() };
+    m = t.match(/^(?:tolong\s+)?(?:ralat|koreksi|perbaiki catatan)\s*[,:]?\s+(.{3,})$/i);
+    if (m) return { jenis: 'ralat', isi: m[1].trim() };
+    m = t.match(/^(?:tolong\s+)?(?:ingat(?:lah|kan)?|catat(?:lah|kan)?|simpan(?:\s+(?:pengetahuan|catatan))?)(?:\s+(?:ya|dong|ini|yang ini))?\s*[,:]?\s+(?:bahwa\s+)?(.{3,})$/i);
+    if (m) return { jenis: 'catat', isi: m[1].trim() };
+    return null;
+  }
+  const judulDari = isi => { const k = isi.replace(/[.,;:!]+/g, ' ').trim().split(' ').slice(0, 6).join(' '); return potong(k.charAt(0).toUpperCase() + k.slice(1), 50); };
+  function tulisRAG(cmd, sambungan, ctx) {
+    const bl = (sambungan.rakBlok || []).filter(Boolean);
+    if (!bl.length) return 'Aku tidak punya RAG untuk menyimpan pengetahuan. Sambungkan blok RAG ke port "pengetahuan" milikku.';
+    const b = bl.find(x => x.cfg.tulis);
+    if (!b) { ctx.jejak('guard', 'RAG hanya-baca: perintah menulis pengetahuan ditolak.'); return 'RAG-ku hanya bisa dibaca. Hidupkan "Agen boleh menulis lewat chat" di blok RAG kalau aku boleh menyimpan pengetahuan.'; }
+    const isi = potong(cmd.isi, 400);
+    if (root.Otak && root.Otak.adaInjeksi(isi)) { ctx.jejak('guard', 'Guard: catatan berpola injeksi tidak boleh masuk RAG.'); return 'Catatan itu tidak kusimpan karena berisi pola perintah yang mencurigakan.'; }
+    const bawaan = (root.Graf && root.Graf.RAK[b.cfg.preset]) || [];
+    const docs = (b.cfg.dokumen && b.cfg.dokumen.length ? b.cfg.dokumen : bawaan).map((d, i) => ({ id: 'd' + i, judul: d.judul, teks: d.teks }));
+    const mirip = (q, min) => (root.Manual ? root.Manual.cari(q, docs, 1, min) : [])[0];
+    const simpanDocs = list => { b.cfg.dokumen = list.map(d => ({ judul: d.judul, teks: d.teks })); if (ctx.grafBerubah) ctx.grafBerubah(b.id); };
+    if (cmd.jenis === 'hapus') {
+      const h = mirip(isi, 0.3);
+      if (!h) return `Aku tidak menemukan catatan tentang "${potong(isi, 60)}" di RAG.`;
+      simpanDocs(docs.filter(d => d.id !== h.id));
+      ctx.jejak('catat', `Menghapus dokumen RAG: "${h.judul}"`);
+      return `Oke, dokumen "${h.judul}" kuhapus dari RAG.`;
+    }
+    if (cmd.jenis === 'ralat') {
+      const h = mirip(isi, 0.3);
+      if (h) {
+        simpanDocs(docs.map(d => d.id === h.id ? { judul: d.judul, teks: isi } : d));
+        ctx.jejak('catat', `Meralat dokumen RAG "${h.judul}": "${potong(isi, 80)}"`);
+        return `Oke, dokumen "${h.judul}" kuralat menjadi: "${potong(isi, 120)}"`;
+      }
+    }
+    if (docs.some(d => d.teks.trim().toLowerCase() === isi.toLowerCase())) return 'Itu sudah ada di RAG.';
+    if (docs.length >= 16) { ctx.jejak('guard', 'RAG penuh (16 dokumen): catatan baru ditolak.'); return 'RAG sudah penuh (16 dokumen). Hapus satu catatan dulu, misalnya "hapus catatan ...".'; }
+    const judul = judulDari(isi);
+    simpanDocs(docs.concat([{ judul, teks: isi }]));
+    ctx.jejak('catat', `Menulis dokumen RAG baru: "${judul}"`);
+    return `Oke, kucatat di RAG: "${potong(isi, 120)}"`;
+  }
+
   async function jalankanAgen(nodeCfg, pesan, sambungan, ctx) {
     const W = ctx.W, S = ctx.S, st = I().status(W, S);
     const k = { W, S, st, ctx, cfgAlat: sambungan.alat || {}, pengaman: sambungan.pengaman, aksi: [], ditolak: [], jejak: ctx.jejak, panggilan: 0 };
     const rak = sambungan.rak || [];
+    const cmd = perintahRAG(pesan.teks);
+    if (cmd) return { balasan: tulisRAG(cmd, sambungan, ctx), aksi: [], ditolak: [], asal: 'kode', panggilan: 0, diambil: [] };
     const kunciR = (pesan.sumber || 'chat') + ':' + (pesan.chatId || '');
     const mem = sambungan.memori;
     const riwayat = mem && mem.konteks > 0 ? ((ctx.riwayat && ctx.riwayat[kunciR]) || []).slice(-mem.konteks) : [];
@@ -3021,7 +3075,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     return 'Aku belum paham. Coba sebut perangkat dan areanya, misalnya "nyalakan kipas kandang", atau tanya "berapa suhu kamar?".';
   }
 
-  const api = { diLingkup, ALAT, KATA_JENIS, KATA_AREA, parse, jalankanTool, jalankanAgen, cekGuardAksi, hitung, promptAgen, sekarang };
+  const api = { perintahRAG, diLingkup, ALAT, KATA_JENIS, KATA_AREA, parse, jalankanTool, jalankanAgen, cekGuardAksi, hitung, promptAgen, sekarang };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.AlatStudio = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3053,7 +3107,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     aturan: { kelompok: 'proses', judul: 'Aturan JIKA-MAKA', warna: '#1f9e6e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan']], cfg: { sensor: '', variabel: 'suhu', op: '>', nilai: 30, aktuator: '', aksi: 'nyala', sebaliknya: true }, konsep: 'Otomasi tanpa AI. Untuk keputusan sederhana, aturan lebih cepat, murah, dan pasti daripada AI.' },
     orkestrator: { kelompok: 'otak', judul: 'Orkestrator', warna: '#0f766e', masuk: [['masuk', 'pesan']], keluar: [['keluar', 'pesan'], ['tugas', 'tugas']], cfg: { mode: 'otomatis' }, konsep: 'Membagi pesan ke beberapa agen pekerja (multi-agen), lalu menggabungkan jawabannya.' },
     agen: { kelompok: 'otak', judul: 'Agen', warna: '#16a34a', masuk: [['masuk', 'pesan'], ['tugas', 'tugas'], ['alat', 'alat'], ['pengetahuan', 'pengetahuan'], ['memori', 'memori'], ['pengaman', 'pengaman']], keluar: [['keluar', 'pesan']], cfg: { nama: 'Agen Rumah', persona: 'asisten rumah yang ramah', model: '', hemat: true, maksLangkah: 4 }, konsep: 'Otak yang berpikir dengan model AI (atau parser) dan memanggil alat yang tersambung ke port "alat".' },
-    rak: { kelompok: 'pendukung', judul: 'RAG', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah' }, konsep: 'RAG (Retrieval-Augmented Generation): dokumen yang dicari dan dibaca agen sebelum menjawab.' },
+    rak: { kelompok: 'pendukung', judul: 'RAG', warna: '#ca8a04', keluar: [['keluar', 'pengetahuan']], cfg: { preset: 'rumah', tulis: false }, konsep: 'RAG (Retrieval-Augmented Generation): dokumen yang dicari dan dibaca agen sebelum menjawab. Bila diizinkan, agen bisa menambah, meralat, dan menghapus dokumen lewat chat.' },
     memori: { kelompok: 'pendukung', judul: 'Memori', warna: '#9333ea', keluar: [['keluar', 'memori']], cfg: { konteks: 4 }, konsep: 'Context window: beberapa pesan terakhir ikut diingat agen.' },
     guard_aksi: { kelompok: 'pendukung', judul: 'Guard Aksi', warna: '#dc2626', keluar: [['keluar', 'pengaman']], cfg: { batas: true, persetujuan: true }, konsep: 'Batas aman di kode: pemanas di atas 33 C, pompa saat tandon kosong, kipas dan pemanas bersamaan, plus persetujuan manusia untuk aksi berisiko.' },
     alat_sensor: { kelompok: 'alat', judul: 'Alat Sensor', warna: '#0891b2', keluar: [['keluar', 'alat']], cfg: { lingkup: 'semua' }, konsep: 'Tool baca_sensor: membaca sensor lewat ESP.' },
@@ -3167,6 +3221,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       if (!ke(a.id, 'alat').length) s.push({ tingkat: 'info', teks: `${a.cfg.nama}: belum punya alat. Tanpa alat, agen hanya bisa mengobrol.` });
       if (ke(a.id, 'alat').some(k => H.blok.find(b => b.id === k.dari).jenis === 'alat_aktuator') && !ke(a.id, 'pengaman').length) s.push({ tingkat: 'peringatan', teks: `${a.cfg.nama}: mengendalikan perangkat tanpa Guard Aksi (mode rentan).` });
     }
+    if (H.blok.some(b => b.jenis === 'rak' && b.cfg.tulis) && !H.blok.some(b => b.jenis === 'guard_masukan')) s.push({ tingkat: 'peringatan', teks: 'RAG bisa ditulis lewat chat, tetapi belum ada Guard Masukan. Siapa pun yang bisa mengirim pesan bisa mengubah pengetahuan agen.' });
     const pemicuLuar = H.blok.filter(b => b.jenis === 'telegram');
     for (const t of pemicuLuar) if (!dari(t.id).some(k => H.blok.find(b => b.id === k.ke).jenis === 'guard_masukan')) s.push({ tingkat: 'peringatan', teks: 'Pesan Telegram langsung masuk tanpa Guard Masukan. Orang asing bisa mencoba menipu agen.' });
     return s;
@@ -3185,7 +3240,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       const alat = {}; ke('alat').forEach(b => { alat[b.jenis] = b.cfg || {}; });
       const rak = [].concat(...ke('pengetahuan').map(b => (b.cfg.dokumen && b.cfg.dokumen.length ? b.cfg.dokumen : RAK[b.cfg.preset] || [])));
       const mem = ke('memori')[0], pg = ke('pengaman')[0];
-      return { alat, rak, memori: mem ? mem.cfg : null, pengaman: pg ? pg.cfg : null };
+      return { alat, rak, rakBlok: ke('pengetahuan'), memori: mem ? mem.cfg : null, pengaman: pg ? pg.cfg : null };
     };
     const jejak = (k, t, id) => ctx.jejak && ctx.jejak(k, t, id);
     async function kirim(id, port, msg) { for (const k of keluarDari(id, port)) await kunjungi(k.ke, msg, k); }
@@ -4840,7 +4895,7 @@ window.KURIKULUM = {
       ta.value = (c.rute || []).map(r => `${r.nama}: ${r.kata.join(', ')}${r.contoh.length ? ' | ' + r.contoh.join('; ') : ''}`).join('\n');
       ta.onchange = () => { c.rute = ta.value.split('\n').filter(x => x.includes(':')).map(l => { const [n, isi] = l.split(/:(.*)/s); const [kata, contoh] = (isi || '').split('|'); return { nama: n.trim(), kata: (kata || '').split(',').map(s => s.trim()).filter(Boolean), contoh: (contoh || '').split(';').map(s => s.trim()).filter(Boolean) }; }); terap(); renderInspektur(); };
     }
-    if (b.jenis === 'rak') editorRAG(P, b, terap);
+    if (b.jenis === 'rak') { cekF('Agen boleh menulis lewat chat (ingat ..., ralat: ..., hapus catatan ...)', 'tulis'); editorRAG(P, b, terap); }
     const masuk = H.kabel.filter(k => k.ke === id).map(k => `${k.dari} (${k.portKe})`), keluar = H.kabel.filter(k => k.dari === id).map(k => `${k.ke} (${k.port})`);
     P.appendChild(mk('p', 'note', `Masuk dari: ${masuk.join(', ') || '-'}. Keluar ke: ${keluar.join(', ') || '-'}.`));
     const h = mk('button', 'btn bahaya', 'Hapus blok (Delete)'); h.type = 'button'; h.style.marginTop = '8px'; h.onclick = () => hapusBlok(id); P.appendChild(h);
@@ -4879,6 +4934,8 @@ window.KURIKULUM = {
       // pesan dari Telegram: pemilik mungkin jauh dari laptop, jadi persetujuan dibatasi 75 detik dan pengirim diberi tahu
       setuju: /^telegram/.test(pesan.sumber) ? async t => { if (klien && pesan.chatId) klien.kirim(pesan.chatId, 'Aksi ini butuh persetujuan pemilik di laptop (maksimal 75 detik): ' + t); return setuju(t + ' (dari Telegram ' + (pesan.nama || '') + ')', 75000); } : t => setuju(t), log: data.log, pengingat: data.pengingat,
       jejak, lewatKabel: k => KV.sorotKabel(k), maksLLM: 8,
+      // agen menulis RAG lewat chat: simpan papan, buang draf editor yang sudah usang
+      grafBerubah: id => { delete drafRAG[id]; simpanGraf(); KV.gambar(); if (pilihan === 'b:' + id) renderInspektur(); },
       kirimTelegram: klien && klien.izin.size ? t => klien.kirimPemilik(t) : null,
       cekGuardModel: (t, model) => window.OtakLLM.cekGuardModel(t, { ollamaUrl: cfg.ollamaUrl, guardModel: model }),
       ambilCuaca: async c => { const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${+c.lat}&longitude=${+c.lon}&current=temperature_2m,weather_code`).then(x => x.json()); const w = r.current.weather_code; return { kondisi: w >= 61 ? 'hujan' : w >= 3 ? 'berawan' : 'cerah', suhu_luar: r.current.temperature_2m }; },
@@ -5043,7 +5100,7 @@ window.KURIKULUM = {
       for (const c of kasus) {
         const W2 = salin(W), S2 = I.buatSim(W2, { mulai: S.menit % 1440 }); if (c.awal) c.awal(S2);
         const out = []; const t0 = performance.now();
-        try { await GR.jalankan(H, (H.blok.find(b => b.jenis === 'chat') || {}).id, { teks: c.pesan, sumber: 'chat' }, { W: W2, S: S2, cfgModel: cfgModel(), riwayat: {}, kalender: [], log: [], pengingat: [], setuju: async () => true, keluaran: (j, t) => out.push(t) }); } catch (e) { out.push('galat: ' + e.message); }
+        try { await GR.jalankan(salin(H), (H.blok.find(b => b.jenis === 'chat') || {}).id, { teks: c.pesan, sumber: 'chat' }, { W: W2, S: S2, cfgModel: cfgModel(), riwayat: {}, kalender: [], log: [], pengingat: [], setuju: async () => true, keluaran: (j, t) => out.push(t) }); } catch (e) { out.push('galat: ' + e.message); }
         const ok = c.cek({ teks: out.join(' ') }, S2); if (ok) benar++;
         hasil.appendChild(mk('li', '', `${ok ? 'benar' : 'SALAH'} | ${c.kat}: "${c.pesan}" (${((performance.now() - t0) / 1000).toFixed(1)} dtk) -> ${potong(out.join(' ') || '(tanpa jawaban)', 90)}`));
       }
