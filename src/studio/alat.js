@@ -175,6 +175,8 @@
         if (ragu) return { jenis: 'tanya_balik', balasan: `${I().KATALOG[ragu[0].jenis].nama} yang mana? ${ragu.map(p => p.nama).join(', atau ')}.` };
         target = target.filter(p => !byJenis.some(g => g.length > 1) || ada(t, [norm(p.nama)]) || A.length);
       }
+      // perangkat disebut tetapi tidak ada di area yang disebut: jelaskan, jangan menjawab "Selesai" tanpa berbuat apa-apa
+      if (!target.length) return { jenis: 'tanya_balik', balasan: `Tidak ada ${I().KATALOG[dis[0].jenis].nama.toLowerCase()} di ${A.map(a => a.nama).join(', ') || 'area itu'}. Yang ada: ${dis.map(p => p.nama + ' (' + ((W.area.find(a => a.id === st.rk[p.id].area) || {}).nama || 'di luar area') + ')').join(', ')}.` };
       const lv = t.match(/(level|kecepatan|tingkat)\s*(\d+)/);
       return { jenis: 'aksi', aksi: target.map(p => ({ perangkat: p.id, aksi: mati ? 'mati' : 'nyala', level: lv ? +lv[2] : undefined })) };
     }

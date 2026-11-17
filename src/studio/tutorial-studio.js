@@ -18,6 +18,11 @@
   const judul = no => { const p = (root.KURIKULUM && root.KURIKULUM.pertemuan || []).find(x => x.no === no); return p ? `Pertemuan ${no}: ${p.judul}` : `Pertemuan ${no}`; };
   const bangun = () => s().aturMode('bangun'), otak = () => s().aturMode('otak'), main = () => { s().aturMode('main'); s().tab('chat'); };
   const tab = n => () => s().tab(n);
+  // jejak: menunggu baris jejak BARU yang cocok pola
+  const hitungJejak = re => s().jejakData.filter(j => re.test(j.t)).length;
+  const catatJejak = (nama, re) => () => { awal[nama] = hitungJejak(re); };
+  const jejakBaru = (nama, re) => () => hitungJejak(re) > (awal[nama] || 0);
+  const dht = () => W().perangkat.find(p => p.jenis === 'dht22');
 
   function bab() {
     return [
@@ -41,6 +46,8 @@
         { judul: 'Lihat angkanya', teks: 'Buka tab Dashboard untuk melihat bacaan sensor dan status ESP.', sorot: '#tabs [data-tab="dasbor"]', selesai: () => paneOn('dasbor') },
         { judul: 'Kipas', teks: 'Seret "Kipas angin" ke kamar. Perhatikan Inspektur: kipas belum bisa disambung karena arusnya terlalu besar untuk pin ESP.', sorot: item('alat:kipas'), selesai: () => ada('kipas') },
         { judul: 'Relay', teks: 'Seret "Modul relay 1 kanal" ke dekat ESP. Lalu klik kipas di 3D dan klik "Sambung otomatis": kipas tersambung lewat relay.', sorot: item('alat:relay1'), selesai: () => misi('relay') },
+        { judul: 'Putuskan kabel', teks: 'Kabel bisa dilepas. Klik kabel kuning DHT22 di dunia 3D, lalu klik "Putuskan kabel" di Inspektur (atau tekan Delete). Perhatikan bacaannya hilang.', sorot: '#c3d', siapkan: bangun, selesai: () => dht() && !dht().sambung },
+        { judul: 'Sambung lagi dengan klik', teks: 'Klik DHT22, klik "Sambung ke...", lalu klik ESP di dunia 3D. Studio memilih pin yang cocok. Coba juga sambung kipas langsung ke ESP: ditolak, karena harus lewat relay.', sorot: '#c3d', selesai: () => dht() && dht().sambung && dht().sambung.esp },
         { judul: 'Rumah pertama selesai', teks: 'Coba jauhkan ESP dari router atau taruh di balik banyak dinding: sinyal melemah dan ESP bisa offline. Lanjut ke Pertemuan 3 untuk memberi rumah ini otak.' }
       ] },
       { id: 'p3', judul: judul(3), langkah: [
@@ -62,7 +69,9 @@
         { judul: 'Sambungkan aturan', teks: 'Tarik kabel dari "keluar" Chat ke "masuk" Aturan, dan dari "keluar" Aturan ke "masuk" Balas.', sorot: '#svgPapan', selesai: () => kabel('chat', 'keluar', 'aturan', 'masuk') && kabel('aturan', 'keluar', 'balas', 'masuk') },
         { judul: 'Jalankan aturan', teks: 'Mode Main: kirim "cek". Aturan membaca sensor lalu menyalakan atau mematikan kipas tanpa AI. Bila suhu belum lewat ambang, turunkan nilai ambangnya.', sorot: '#chatform', siapkan: () => { main(); catat('aksiAturan')(); }, selesai: naik('aksiAturan') },
         { judul: 'RAG', teks: 'Mode Otak: seret "RAG", lalu tarik kabel kuning ke port "pengetahuan" pada Agen.', sorot: item('blok:rak'), siapkan: otak, selesai: () => kabel('rak', 'keluar', 'agen', 'pengetahuan') },
+        { judul: 'Isi RAG sendiri', teks: 'Mode Otak: klik blok RAG. Klik "Tambah dokumen", tulis judul dan isinya (misalnya jadwal sampah rumahmu), lalu klik "Simpan RAG". Sebelum disimpan, agen belum tahu isinya.', sorot: '#svgPapan', siapkan: otak, selesai: () => blok('rak').some(b => b.cfg.dokumen && b.cfg.dokumen.length) },
         { judul: 'Agen yang membaca', teks: 'Mode Main: tanya "gimana cara hemat listrik?". Agen mencari di RAG dulu, lalu menjawab dari isinya.', sorot: '#chatform', siapkan: () => { main(); catat('jawabRak')(); }, selesai: naik('jawabRak') },
+        { judul: 'Menulis RAG lewat chat', teks: 'Klik blok RAG dan centang "Agen boleh menulis lewat chat". Lalu di mode Main kirim "ingat ya, kunci gudang di laci dapur". Kode yang menulis ke RAG, bukan AI.', sorot: '#chatform', siapkan: catatJejak('tulisRAG', /Menulis dokumen RAG baru/), selesai: jejakBaru('tulisRAG', /Menulis dokumen RAG baru/) },
         { judul: 'Selesai', teks: 'Isi RAG bisa kamu ubah di Inspektur lalu klik Simpan RAG. Coba tanyakan sesuatu yang tidak ada di RAG: agen yang baik mengaku belum tahu.' }
       ] },
       { id: 'p5', judul: judul(5), langkah: [
@@ -78,6 +87,7 @@
       { id: 'p6', judul: judul(6), langkah: [
         { judul: 'Tim agen', teks: 'Muat papan Multi-agen: orkestrator dengan Agen Rumah, Agen Kebun, dan Agen Kandang. Tiap agen hanya memegang alat di wilayahnya.', aksi: { label: 'Muat papan multi-agen', jalan: () => s().muatPreset(null, 'multi_agen') }, selesai: () => blok('orkestrator').length > 0 && blok('agen').length >= 2 },
         { judul: 'Bagi tugas', teks: 'Mode Main: kirim "siram kebun dong". Orkestrator menyerahkannya ke Agen Kebun. Lihat baris TUGAS di Jejak.', sorot: '#chatform', siapkan: () => { main(); catat('delegasi')(); }, selesai: naik('delegasi') },
+        { judul: 'Tugas berurutan', teks: 'Kirim "siram kebun lalu kasih pakan ayam". Orkestrator memecah tugas menjadi dua tahap berurutan: Agen Kebun dulu, lalu Agen Kandang yang melihat hasil tahap pertama.', sorot: '#chatform', siapkan: () => { main(); catatJejak('tahap', /dipecah menjadi/)(); }, selesai: jejakBaru('tahap', /dipecah menjadi/) },
         { judul: 'Telegram', teks: 'Di tab Telegram kamu bisa menyambungkan bot sungguhan: buat bot di @BotFather, tempel token, lalu "Hubungkan dan dengarkan". Jangan bagikan token ke siapa pun. Langkah ini boleh dilewati.', sorot: '#tabs [data-tab="telegram"]', siapkan: tab('telegram') },
         { judul: 'Laporan otomatis', teks: 'Mode Otak: seret blok "Jadwal", tarik kabel dari "keluar" Jadwal ke "masuk" Orkestrator, lalu klik "Jadwalkan 5 menit lagi".', sorot: item('blok:jadwal'), siapkan: otak, aksi: { label: 'Jadwalkan 5 menit lagi', jalan: () => { const S = s().S, m = (Math.floor(S.menit) + 5) % 1440, j = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); blok('jadwal').forEach(b => { b.cfg.jam = j; }); s().KV.gambar(); } }, selesai: () => H().kabel.some(k => jenisBlok(k.dari) === 'jadwal' && /orkestrator|agen/.test(jenisBlok(k.ke))) },
         { judul: 'Percepat waktu', teks: 'Klik 60x dan tunggu jamnya lewat. Agen bangun sendiri, membaca sensor, dan melapor.', sorot: '.seg[aria-label="Kecepatan simulasi"]', siapkan: catat('laporanJadwal'), selesai: naik('laporanJadwal') },

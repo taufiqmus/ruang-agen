@@ -3435,12 +3435,15 @@ window.KURIKULUM = {
     }
     window.addEventListener('keydown', e => { if (aktif && e.key === 'Escape') tutup(false); });
     // selama pengguna menyeret (kabel, blok, kamera, seret-lepas palet), gelembung tembus supaya tidak menghalangi titik lepas
+    let tekan = false;
     const tembus = on => gel.classList.toggle('tembus', on);
-    window.addEventListener('pointerdown', e => { if (aktif && !gel.contains(e.target)) tembus(true); }, true);
     // dilepas sesudah handler lain membaca titik lepas (elementFromPoint), bukan sebelumnya
-    const lepasTembus = () => setTimeout(() => tembus(false), 0);
-    window.addEventListener('pointerup', lepasTembus, true);
+    const lepasTembus = () => setTimeout(() => { if (!tekan) tembus(false); }, 0);
+    window.addEventListener('pointerdown', e => { if (aktif && !gel.contains(e.target)) { tekan = true; tembus(true); } }, true);
+    window.addEventListener('pointerup', () => { tekan = false; lepasTembus(); }, true);
+    window.addEventListener('pointercancel', () => { tekan = false; lepasTembus(); }, true);
     window.addEventListener('dragstart', () => { if (aktif) tembus(true); }, true);
+    // dragend bisa datang terlambat; jangan matikan tembus bila pengguna sedang menekan (misalnya menarik kabel)
     window.addEventListener('dragend', lepasTembus, true);
     window.addEventListener('drop', lepasTembus, true);
     window.addEventListener('resize', letakkan);
