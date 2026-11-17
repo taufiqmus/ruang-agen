@@ -6,7 +6,7 @@ const cek = (n, c, info) => { if (!c) { gagal++; console.log('GAGAL:', n, info !
 
 (async () => {
   const browser = await chromium.launch({ executablePath: ALAT.CHROME });
-  const ctx = await browser.newContext({ viewport: { width: 1400, height: 880 } });
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 880 }, acceptDownloads: true });
   await ctx.route('**/*', r => { const u = r.request().url(); if (u.startsWith('file:')) return r.continue(); if (/three(\.min)?\.js/.test(u)) return r.fulfill({ path: ALAT.THREE, contentType: 'application/javascript' }); return r.abort(); });
   await ctx.addInitScript(() => { try { localStorage.setItem('studio-wizard', 'true'); } catch (e) { /* abaikan */ } });
   const page = await ctx.newPage(); const galat = []; page.on('pageerror', e => galat.push(String(e)));
@@ -115,6 +115,34 @@ const cek = (n, c, info) => { if (!c) { gagal++; console.log('GAGAL:', n, info !
   await page.click('[data-mode="main"]');
   r = await kirim('hapus catatan kunci gudang');
   cek('chat: hapus catatan', /kuhapus/.test(r) && !(await S(() => window.__studio.H.blok.find(b => b.id === 'rak').cfg.dokumen.some(d => /laci/.test(d.teks)))), r);
+
+  /* 9. ekspor lalu impor proyek: isi RAG, izin tulis, aksi rute, strategi orkestrator ikut; berkas format lama tetap terbaca */
+  await S(() => { const s = window.__studio, H = s.H;
+    H.blok.push({ id: 'rt', jenis: 'router', x: 900, y: 500, cfg: { mode: 'semantik', ambang: 0.4, rute: [{ nama: 'jual', kata: ['jual'], contoh: [], aksi: 'balas', balasan: 'Hubungi pak RT.' }] } });
+    H.blok.push({ id: 'ork', jenis: 'orkestrator', x: 900, y: 650, cfg: { mode: 'ai', strategi: 'berurutan' } });
+    H.blok.find(b => b.id === 'rak').cfg.tulis = true; H.blok.find(b => b.id === 'rak').cfg.dokumen = [{ judul: 'Kode gerbang', teks: 'Kode gerbang belakang 4321.' }];
+    s.KV.muat(H); });
+  await page.click('#btnProyek');
+  const [unduhan] = await Promise.all([page.waitForEvent('download'), page.click('#proyekIsi .btn:has-text("Ekspor proyek")')]);
+  const isi = JSON.parse(require('fs').readFileSync(await unduhan.path(), 'utf8'));
+  cek('ekspor proyek: format berkas tetap studio-rumah-agen/1', isi.format === 'studio-rumah-agen/1');
+  await page.click('#proyekIsi .btn:has-text("Tutup")');
+  await S(() => { const s = window.__studio; s.muatPreset('kosong', 'kosong'); });
+  const tmp = require('path').join(require('os').tmpdir(), 'proyek-uji-eav.json'); require('fs').writeFileSync(tmp, JSON.stringify(isi));
+  await page.click('#btnProyek');
+  const [pilihBerkas] = await Promise.all([page.waitForEvent('filechooser'), page.click('#proyekIsi .btn:has-text("Impor proyek")')]);
+  await pilihBerkas.setFiles(tmp); await page.waitForTimeout(400);
+  const hasilImpor = await S(() => { const H = window.__studio.H, rk = H.blok.find(b => b.id === 'rak'), rt = H.blok.find(b => b.id === 'rt'), ok = H.blok.find(b => b.id === 'ork'); return { tulis: rk && rk.cfg.tulis, dok: rk && rk.cfg.dokumen.map(d => d.teks), aksi: rt && rt.cfg.rute[0].aksi, balasan: rt && rt.cfg.rute[0].balasan, ambang: rt && rt.cfg.ambang, mode: ok && ok.cfg.mode, strategi: ok && ok.cfg.strategi, perangkat: window.__studio.W.perangkat.length }; });
+  cek('impor proyek: RAG, izin tulis, aksi rute, ambang, strategi orkestrator, dan rumah kembali utuh', hasilImpor.tulis === true && /4321/.test(hasilImpor.dok[0]) && hasilImpor.aksi === 'balas' && /pak RT/.test(hasilImpor.balasan) && hasilImpor.ambang === 0.4 && hasilImpor.mode === 'ai' && hasilImpor.strategi === 'berurutan' && hasilImpor.perangkat > 10, hasilImpor);
+  // berkas lama: rute tanpa aksi, RAG tanpa izin tulis, orkestrator tanpa strategi
+  const lama = JSON.parse(JSON.stringify(isi)); lama.graf.blok.forEach(b => { if (b.jenis === 'router') b.cfg.rute.forEach(r => { delete r.aksi; delete r.balasan; }); if (b.jenis === 'rak') delete b.cfg.tulis; if (b.jenis === 'orkestrator') delete b.cfg.strategi; });
+  require('fs').writeFileSync(tmp, JSON.stringify(lama));
+  await page.click('#btnProyek');
+  const [pb2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#proyekIsi .btn:has-text("Impor proyek")')]);
+  await pb2.setFiles(tmp); await page.waitForTimeout(400);
+  const hl = await S(() => { const H = window.__studio.H; return { aksi: H.blok.find(b => b.id === 'rt').cfg.rute[0].aksi, tulis: H.blok.find(b => b.id === 'rak').cfg.tulis, strategi: H.blok.find(b => b.id === 'ork').cfg.strategi }; });
+  cek('berkas proyek versi lama: nilai bawaan aman (teruskan, hanya-baca, strategi otomatis)', hl.aksi === 'teruskan' && hl.tulis === false && hl.strategi === 'otomatis', hl);
+  require('fs').unlinkSync(tmp);
 
   cek('tanpa galat JS', galat.length === 0, galat);
   await browser.close();
