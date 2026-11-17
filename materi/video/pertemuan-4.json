@@ -1,0 +1,37 @@
+[
+ {
+  "id": 1,
+  "say": "Tidak semua hal butuh AI. Seret blok Aturan JIKA-MAKA: jika suhu lebih dari dua puluh delapan, nyalakan kipas.",
+  "layar": "Blok Aturan dan Inspektur"
+ },
+ {
+  "id": 2,
+  "say": "Aturan bekerja tanpa AI: cepat, gratis, dan pasti. Tapi kaku, hanya mengerti satu hal.",
+  "layar": "Kipas menyala oleh aturan"
+ },
+ {
+  "id": 3,
+  "say": "Untuk pengetahuan, kita pakai RAG. Seret blok RAG dan sambungkan ke port pengetahuan agen.",
+  "layar": "Kabel kuning pengetahuan"
+ },
+ {
+  "id": 4,
+  "say": "Klik RAG, tambah dokumen, tulis isinya, lalu simpan RAG. Sebelum disimpan, agen belum tahu isinya.",
+  "layar": "Editor RAG, tombol Simpan RAG"
+ },
+ {
+  "id": 5,
+  "say": "Tanya: gimana cara hemat listrik. Agen mencari dokumen dulu, lalu menjawab dari isinya.",
+  "layar": "Jejak AMBIL"
+ },
+ {
+  "id": 6,
+  "say": "Agen juga bisa menulis RAG lewat chat, kalau diizinkan. Ketik: ingat ya, kunci gudang di laci dapur.",
+  "layar": "Centang izin tulis, chat ingat ya"
+ },
+ {
+  "id": 7,
+  "say": "Yang menulis adalah kode, bukan AI. Dan kalau ditanya sesuatu yang tidak ada di RAG, agen yang baik mengaku belum tahu.",
+  "layar": "Jawaban jujur belum tahu"
+ }
+]

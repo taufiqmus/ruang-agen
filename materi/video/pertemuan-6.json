@@ -1,0 +1,32 @@
+[
+ {
+  "id": 1,
+  "say": "Satu agen untuk semuanya itu berat. Kita buat tim: Agen Rumah, Agen Kebun, dan Agen Kandang.",
+  "layar": "Papan multi-agen"
+ },
+ {
+  "id": 2,
+  "say": "Orkestrator membagi tugas sesuai wilayah. Siram kebun dong, diserahkan ke Agen Kebun.",
+  "layar": "Jejak TUGAS ke Agen Kebun"
+ },
+ {
+  "id": 3,
+  "say": "Coba tugas berurutan: siram kebun lalu kasih pakan ayam. Orkestrator memecahnya menjadi dua tahap, Agen Kebun dulu, lalu Agen Kandang.",
+  "layar": "Jawaban Tahap satu dan Tahap dua"
+ },
+ {
+  "id": 4,
+  "say": "Agen ini bisa dihubungkan ke bot Telegram sungguhan. Token hanya tersimpan di browser, dan hanya akun yang diizinkan yang bisa memerintah.",
+  "layar": "Tab Telegram, token disamarkan"
+ },
+ {
+  "id": 5,
+  "say": "Terakhir, blok Jadwal. Agen bangun sendiri pada jam tertentu, membaca sensor, dan melapor tanpa ditanya.",
+  "layar": "Blok Jadwal, waktu dipercepat"
+ },
+ {
+  "id": 6,
+  "say": "Sekarang giliranmu. Rancang rumah impianmu, rakit tim agen yang aman, lalu ukur dengan Uji agen. Selamat merakit.",
+  "layar": "Rumah lengkap, penutup"
+ }
+]

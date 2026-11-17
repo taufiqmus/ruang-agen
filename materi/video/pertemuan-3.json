@@ -1,0 +1,37 @@
+[
+ {
+  "id": 1,
+  "say": "Masuk mode Otak. Di sini kita merakit otak agen dari blok, seperti puzzle.",
+  "layar": "Papan otak kosong"
+ },
+ {
+  "id": 2,
+  "say": "Seret Chat, Agen, dan Balas. Tarik kabel dari Chat ke Agen, lalu dari Agen ke Balas.",
+  "layar": "Menarik kabel antar blok"
+ },
+ {
+  "id": 3,
+  "say": "Mode Main, kirim halo. Agen menjawab. Tapi minta ia menyalakan kipas: ia jujur bahwa ia belum punya alat.",
+  "layar": "Chat halo dan jawaban jujur"
+ },
+ {
+  "id": 4,
+  "say": "Alat adalah tangan agen. Sambungkan Alat Sensor dan Alat Aktuator ke port alat. Kabel alat berwarna biru muda.",
+  "layar": "Kabel alat biru muda"
+ },
+ {
+  "id": 5,
+  "say": "Kirim: nyalakan kipas kamar. Agen memanggil alat, dan kode yang benar-benar menyalakan kipas lewat relay.",
+  "layar": "Kipas berputar di 3D"
+ },
+ {
+  "id": 6,
+  "say": "Buka Jejak. Terlihat blok yang dilewati, alat yang dipanggil, dan aksi yang terjadi.",
+  "layar": "Tab Jejak studio"
+ },
+ {
+  "id": 7,
+  "say": "Ingat prinsipnya: AI memilih alat, kode yang menjalankan. Di pertemuan berikutnya kita bandingkan aturan dan AI.",
+  "layar": "Ringkasan di layar"
+ }
+]

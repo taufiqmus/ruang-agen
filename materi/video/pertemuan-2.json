@@ -1,0 +1,47 @@
+[
+ {
+  "id": 1,
+  "say": "Selamat datang di Easy Agent Visualizer. Kita mulai dari lahan kosong.",
+  "layar": "Lahan kosong mode Bangun"
+ },
+ {
+  "id": 2,
+  "say": "Seret Kamar ke lahan. Lalu taruh router Wi-Fi. Lingkaran biru menunjukkan jangkauan sinyalnya.",
+  "layar": "Seret Kamar dan Router, cincin Wi-Fi"
+ },
+ {
+  "id": 3,
+  "say": "Ini ESP tiga dua, komputer kecil dengan Wi-Fi. Ia butuh listrik, jadi kita taruh adaptor lima volt dan sambungkan.",
+  "layar": "ESP di meja kecil, kabel merah ke adaptor"
+ },
+ {
+  "id": 4,
+  "say": "Lampu kecil di ESP berubah hijau: menyala dan online. Kalau ESP terlalu jauh dari router, lampunya kuning, offline.",
+  "layar": "Lampu ESP hijau lalu kuning"
+ },
+ {
+  "id": 5,
+  "say": "Taruh sensor DHT dua dua. Studio langsung menyambungkannya ke pin data, dan angkanya muncul di Dashboard.",
+  "layar": "Kabel kuning, tab Dashboard"
+ },
+ {
+  "id": 6,
+  "say": "Sekarang kipas. Ditolak. Arus kipas terlalu besar untuk pin ESP. Kita butuh relay.",
+  "layar": "Inspektur menunjukkan masalah relay"
+ },
+ {
+  "id": 7,
+  "say": "Taruh relay, sambungkan kipas lewat relay. Kabel abu-abu tebal adalah beban listrik besar.",
+  "layar": "Kabel hijau dan abu-abu"
+ },
+ {
+  "id": 8,
+  "say": "Kabel bisa diputus: klik kabelnya, lalu putuskan. Dan bisa disambung lagi dengan klik, sambung ke, lalu klik tujuannya.",
+  "layar": "Klik kabel, Putuskan, Sambung ke"
+ },
+ {
+  "id": 9,
+  "say": "Rumah pertama selesai. Berikutnya, kita beri rumah ini otak.",
+  "layar": "Rumah lengkap dengan label"
+ }
+]

@@ -48,4 +48,5 @@ Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh 
 ## Tutorial (19 November 2026)
 
 - Selesai: `materi/kurikulum.json` (6 pertemuan), mesin `src/tutorial.js` (gelembung bisa digeser, tembus saat menyeret), bab Studio di `src/studio/tutorial-studio.js` (Kenalan dan Pertemuan 2 sampai 6, termasuk putus/sambung kabel, isi RAG, tulis RAG lewat chat, tugas berurutan), tur Ruang Agen (Pertemuan 1). Uji `tests/studio/test_tutorial.js` lulus penuh dan masuk `npm run test:studio:browser`.
-- Belum: slide .pptx dan serial video. Video memakai suara pengguna (skill speak) dan menunggu persetujuan pengguna sebelum audio dibuat.
+- Slide: `materi/slide/Belajar-Agentic-AI-Rumah-Pintar.pptx` (17 slide, tangkapan layar asli, catatan pembicara).
+- Video: naskah 6 episode di `materi/video/`. Audio dan video belum dibuat, menunggu persetujuan pengguna (skill speak, suara pengguna).

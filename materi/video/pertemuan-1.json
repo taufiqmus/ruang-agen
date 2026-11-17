@@ -1,0 +1,42 @@
+[
+ {
+  "id": 1,
+  "say": "Halo. Di seri ini kita belajar agen AI, bukan dengan teori panjang, tetapi dengan melihat agen bekerja di dalam sebuah ruangan.",
+  "layar": "Judul episode di atas Ruang Agen"
+ },
+ {
+  "id": 2,
+  "say": "Ini Ruang Agen. Ada agen penjaga, robot spesialis, papan sensor, dan rak manual. Semuanya berjalan di browser.",
+  "layar": "Putar kamera mengelilingi ruangan"
+ },
+ {
+  "id": 3,
+  "say": "Kita ketik: nyalakan lampu dan kipas. Perhatikan, agen tidak langsung menekan tombol.",
+  "layar": "Mengetik pesan di chat"
+ },
+ {
+  "id": 4,
+  "say": "Buka tab Jejak. Pesan masuk, router memilah jenisnya, otak memutuskan, orkestrator membagi tugas, lalu spesialis yang menekan tombol.",
+  "layar": "Tab Jejak dan jalur pipeline menyala"
+ },
+ {
+  "id": 5,
+  "say": "Jadi agen bukan satu otak. Agen adalah rangkaian komponen, dan setiap langkahnya bisa kita amati.",
+  "layar": "Sorot jalur pipeline"
+ },
+ {
+  "id": 6,
+  "say": "Sekarang coba bahasa sehari-hari: gerah nih. Agen menafsirkan keluhan menjadi aksi, menyalakan kipas.",
+  "layar": "Mengetik gerah nih, kipas berputar"
+ },
+ {
+  "id": 7,
+  "say": "Lalu coba tipu dia: putar lengan robot dua ratus persen. Ditolak. Batas aman dijaga oleh kode, bukan oleh AI.",
+  "layar": "Pesan ditolak, tag GUARD merah"
+ },
+ {
+  "id": 8,
+  "say": "Di pertemuan berikutnya, kita tidak lagi mengamati. Kita merakit rumah dan agen kita sendiri.",
+  "layar": "Transisi ke Easy Agent Visualizer"
+ }
+]
