@@ -14,7 +14,7 @@
 html, body { height: 100%; margin: 0; }
 body { background: var(--paper); color: var(--ink); font: 400 14px/1.45 var(--f-body); overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
-.app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); height: 100%; }
 .atas { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 2px solid var(--ink); background: var(--card); flex-wrap: wrap; }
 .atas h1 { margin: 0; font: 800 18px var(--f-display); letter-spacing: -0.01em; }
 .atas h1 span { color: var(--blue); }
@@ -124,7 +124,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 @media (max-width: 860px) {
   body { overflow: auto; }
   .app { height: auto; min-height: 100%; }
-  .tengah { grid-template-columns: 1fr; grid-template-rows: auto 52vh auto; }
+  .tengah { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 52vh auto; }
+  .palet, .sisi, .panggung { min-width: 0; }
   .palet { border-right: 0; border-bottom: 2px solid var(--ink); max-height: 30vh; }
   .sisi { border-left: 0; border-top: 2px solid var(--ink); min-height: 60vh; }
 }
@@ -3582,7 +3583,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       else if (b === 'mata') { const m = kotak(0.3, 0.12, 0.08, M(0x2563eb)); m.position.y = 2.05; g.add(m); }
       else { const s = kotak(0.22, 0.14, 0.18, M(b === 'sensor_kotak' ? 0x0d9488 : 0x7c3aed)); s.position.y = 1.2; g.add(s); const t = silinder(0.02, 0.02, 1.15, M(0x9ca3af)); t.position.y = 0.58; g.add(t); }
       // area klik yang lebih besar dan tak terlihat
-      const hit = kotak(0.9, 1.6, 0.9, new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.8; hit.userData.id = p.id; g.add(hit); x.hit = hit;
+      const hit = kotak(0.6, 1.3, 0.6, new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.65; hit.userData.id = p.id; g.add(hit); x.hit = hit;
       return x;
     }
 
@@ -3686,8 +3687,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       if (p.x < 0 || p.z < 0 || p.x > lebar || p.z > dalam) return null;
       return { x: Math.round(p.x * 2) / 2, z: Math.round(p.z * 2) / 2 };
     }
-    function ambilPerangkat(cx, cy) { sinar(cx, cy); const hit = ray.intersectObjects(Object.values(obj).map(x => x.hit), false)[0]; return hit ? hit.object.userData.id : null; }
-    function layar(id) { const x = obj[id]; if (!x) return null; const v = x.g.position.clone(); v.y = 1.6; v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
+    function ambilPerangkat(cx, cy) { scene.updateMatrixWorld(); sinar(cx, cy); const hit = ray.intersectObjects(Object.values(obj).map(x => x.hit), false)[0]; return hit ? hit.object.userData.id : null; }
+    function layar(id) { const x = obj[id]; if (!x) return null; scene.updateMatrixWorld(); const v = x.g.position.clone(); v.y = 0.65; v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
     function pindah(id, x, z) { const o2 = obj[id]; if (o2) o2.g.position.set(x, 0, z); if (cincinPilih && pilihan === id) cincinPilih.position.set(x, 0.07, z); }
 
     /* ---------- animasi per frame ---------- */
@@ -3931,6 +3932,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   function muat3D() { st = I.status(W, S); D3.muat(W, st); }
   muat3D(); D3.ukur(); D3.resetKamera();
   window.addEventListener('resize', () => D3.ukur());
+  if (window.ResizeObserver) new ResizeObserver(() => D3.ukur()).observe($('#panggung'));
   $('#btnKamera').onclick = () => D3.resetKamera();
   $('#btnWifi').onclick = e => { tampilWifi = !tampilWifi; e.target.setAttribute('aria-pressed', tampilWifi); };
 
@@ -4012,7 +4014,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       const p = { id, jenis: kode, nama: I.KATALOG[kode].nama + (i > 1 ? ' ' + i : ''), x: t.x, z: t.z };
       W.perangkat.push(p);
       if (I.KATALOG[kode].kategori !== 'jaringan' && I.KATALOG[kode].kategori !== 'daya' && kode !== 'tandon') I.sambungOtomatis(W, id);
-      pilihan = 'p:' + id; pilihArea = null; S.alat[id] = I.KATALOG[kode].kategori === 'aktuator' ? { on: false, level: I.KATALOG[kode].level ? 2 : 1, sejak: 0 } : undefined;
+      pilihan = 'p:' + id; pilihArea = null; if (I.KATALOG[kode].kategori === 'aktuator') S.alat[id] = { on: false, level: I.KATALOG[kode].level ? 2 : 1, sejak: 0 };
       if (I.KATALOG[kode].kapasitas) S.baterai[id] = I.KATALOG[kode].kapasitas * 0.8;
     }
     W = I.periksaDunia(W).dunia; simpanDunia(); syncSim(); muat3D(); D3.pilih(pilihan && pilihan.slice(2)); renderInspektur(); tab('inspektur'); renderPetunjuk();
@@ -4403,8 +4405,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     const bh = mk('button', 'btn pri', klien && klien.jalan ? 'Berhenti' : 'Hubungkan dan dengarkan'), bw = mk('button', 'btn sm', 'Hapus webhook'), bx = mk('button', 'btn sm', 'Lupakan token'); bh.type = bw.type = bx.type = 'button'; bh.id = 'tgMulai';
     row.append(bh, bw, bx); P.appendChild(row);
     const stEl = mk('div', 'note'); stEl.id = 'tgStatus'; P.appendChild(stEl);
-    const tulisStatus = () => { if (!klien) { stEl.textContent = 'Belum tersambung.'; return; } stEl.textContent = `Status: ${klien.status}${klien.bot ? ' (@' + klien.bot.username + ')' : ''}. Diterima ${klien.diterima}, terkirim ${klien.terkirim}.${klien.galat ? ' ' + klien.galat : ''}`; };
-    tulisStatus();
+    tulisStatusTg();
     bh.onclick = async () => {
       if (klien && klien.jalan) { klien.berhenti(); renderTelegram(); return; }
       tgSimpan.token = tok.value.trim(); tulis(K.tg, tgSimpan);
@@ -4412,7 +4413,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
         token: tgSimpan.token, base: param.get('tgbase') || undefined, izin: tgSimpan.izin,
         timeout: param.get('tgbase') ? 1 : 25, jeda: param.get('tgbase') ? 200 : 0,
         simpanIzin: z => { tgSimpan.izin = z; tulis(K.tg, tgSimpan); },
-        onStatus: () => { tulisStatus(); renderTgDaftar(); },
+        onStatus: () => { tulisStatusTg(); renderTgDaftar(); },
         onBaru: p => { chat('sis', `Telegram: chat baru dari ${p.nama} menunggu izin di tab Telegram.`); renderTgDaftar(); },
         onPesan: async p => { chat('tg', p.teks, 'Telegram ' + p.nama); await jalankanGraf(H.blok.some(b => b.jenis === 'telegram') ? 'telegram' : 'chat', { teks: p.teks, sumber: 'telegram', chatId: p.chatId, nama: p.nama }); }
       });
@@ -4425,6 +4426,10 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     renderTgDaftar();
     if (!H.blok.some(b => b.jenis === 'telegram')) P.appendChild(mk('div', 'konsep', 'Papan otakmu belum punya blok pemicu Telegram, jadi pesan Telegram masuk lewat jalur Chat. Tambahkan blok Telegram dan Guard Masukan supaya jalurnya terpisah dan aman.'));
     P.appendChild(mk('div', 'konsep', 'Keamanan: jangan bagikan token. Siapa pun yang memegang token bisa mengendalikan bot. Pesan dari orang asing tidak dipercaya, jadi ada daftar izin dan Guard Masukan.'));
+  }
+  function tulisStatusTg() {
+    const el = $('#tgStatus'); if (!el) return;
+    el.textContent = !klien ? 'Belum tersambung.' : `Status: ${klien.status}${klien.bot ? ' (@' + klien.bot.username + ')' : ''}. Diterima ${klien.diterima}, terkirim ${klien.terkirim}.${klien.galat ? ' ' + klien.galat : ''}`;
   }
   function renderTgDaftar() {
     const d = $('#tgDaftar'); if (!d) return; d.replaceChildren(); if (!klien) return;
@@ -4470,7 +4475,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();
-    let lokal = false; try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; }
+    let lokal = false; if (/^https?:$/.test(location.protocol)) { try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; } }
     const gpuAsli = gpu && !/swiftshader|llvmpipe|basic render|software/i.test(gpu);
     P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}. Server model lokal: ${lokal ? 'ada' : 'tidak ada'}.`));
     const saranM = ol.find(m => /gemma4:e4b|qwen2\.5:7b/.test(m.nama)) || ol[0];

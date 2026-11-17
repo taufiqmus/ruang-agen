@@ -52,6 +52,7 @@
   function muat3D() { st = I.status(W, S); D3.muat(W, st); }
   muat3D(); D3.ukur(); D3.resetKamera();
   window.addEventListener('resize', () => D3.ukur());
+  if (window.ResizeObserver) new ResizeObserver(() => D3.ukur()).observe($('#panggung'));
   $('#btnKamera').onclick = () => D3.resetKamera();
   $('#btnWifi').onclick = e => { tampilWifi = !tampilWifi; e.target.setAttribute('aria-pressed', tampilWifi); };
 
@@ -133,7 +134,7 @@
       const p = { id, jenis: kode, nama: I.KATALOG[kode].nama + (i > 1 ? ' ' + i : ''), x: t.x, z: t.z };
       W.perangkat.push(p);
       if (I.KATALOG[kode].kategori !== 'jaringan' && I.KATALOG[kode].kategori !== 'daya' && kode !== 'tandon') I.sambungOtomatis(W, id);
-      pilihan = 'p:' + id; pilihArea = null; S.alat[id] = I.KATALOG[kode].kategori === 'aktuator' ? { on: false, level: I.KATALOG[kode].level ? 2 : 1, sejak: 0 } : undefined;
+      pilihan = 'p:' + id; pilihArea = null; if (I.KATALOG[kode].kategori === 'aktuator') S.alat[id] = { on: false, level: I.KATALOG[kode].level ? 2 : 1, sejak: 0 };
       if (I.KATALOG[kode].kapasitas) S.baterai[id] = I.KATALOG[kode].kapasitas * 0.8;
     }
     W = I.periksaDunia(W).dunia; simpanDunia(); syncSim(); muat3D(); D3.pilih(pilihan && pilihan.slice(2)); renderInspektur(); tab('inspektur'); renderPetunjuk();
@@ -524,8 +525,7 @@
     const bh = mk('button', 'btn pri', klien && klien.jalan ? 'Berhenti' : 'Hubungkan dan dengarkan'), bw = mk('button', 'btn sm', 'Hapus webhook'), bx = mk('button', 'btn sm', 'Lupakan token'); bh.type = bw.type = bx.type = 'button'; bh.id = 'tgMulai';
     row.append(bh, bw, bx); P.appendChild(row);
     const stEl = mk('div', 'note'); stEl.id = 'tgStatus'; P.appendChild(stEl);
-    const tulisStatus = () => { if (!klien) { stEl.textContent = 'Belum tersambung.'; return; } stEl.textContent = `Status: ${klien.status}${klien.bot ? ' (@' + klien.bot.username + ')' : ''}. Diterima ${klien.diterima}, terkirim ${klien.terkirim}.${klien.galat ? ' ' + klien.galat : ''}`; };
-    tulisStatus();
+    tulisStatusTg();
     bh.onclick = async () => {
       if (klien && klien.jalan) { klien.berhenti(); renderTelegram(); return; }
       tgSimpan.token = tok.value.trim(); tulis(K.tg, tgSimpan);
@@ -533,7 +533,7 @@
         token: tgSimpan.token, base: param.get('tgbase') || undefined, izin: tgSimpan.izin,
         timeout: param.get('tgbase') ? 1 : 25, jeda: param.get('tgbase') ? 200 : 0,
         simpanIzin: z => { tgSimpan.izin = z; tulis(K.tg, tgSimpan); },
-        onStatus: () => { tulisStatus(); renderTgDaftar(); },
+        onStatus: () => { tulisStatusTg(); renderTgDaftar(); },
         onBaru: p => { chat('sis', `Telegram: chat baru dari ${p.nama} menunggu izin di tab Telegram.`); renderTgDaftar(); },
         onPesan: async p => { chat('tg', p.teks, 'Telegram ' + p.nama); await jalankanGraf(H.blok.some(b => b.jenis === 'telegram') ? 'telegram' : 'chat', { teks: p.teks, sumber: 'telegram', chatId: p.chatId, nama: p.nama }); }
       });
@@ -546,6 +546,10 @@
     renderTgDaftar();
     if (!H.blok.some(b => b.jenis === 'telegram')) P.appendChild(mk('div', 'konsep', 'Papan otakmu belum punya blok pemicu Telegram, jadi pesan Telegram masuk lewat jalur Chat. Tambahkan blok Telegram dan Guard Masukan supaya jalurnya terpisah dan aman.'));
     P.appendChild(mk('div', 'konsep', 'Keamanan: jangan bagikan token. Siapa pun yang memegang token bisa mengendalikan bot. Pesan dari orang asing tidak dipercaya, jadi ada daftar izin dan Guard Masukan.'));
+  }
+  function tulisStatusTg() {
+    const el = $('#tgStatus'); if (!el) return;
+    el.textContent = !klien ? 'Belum tersambung.' : `Status: ${klien.status}${klien.bot ? ' (@' + klien.bot.username + ')' : ''}. Diterima ${klien.diterima}, terkirim ${klien.terkirim}.${klien.galat ? ' ' + klien.galat : ''}`;
   }
   function renderTgDaftar() {
     const d = $('#tgDaftar'); if (!d) return; d.replaceChildren(); if (!klien) return;
@@ -591,7 +595,7 @@
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();
-    let lokal = false; try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; }
+    let lokal = false; if (/^https?:$/.test(location.protocol)) { try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; } }
     const gpuAsli = gpu && !/swiftshader|llvmpipe|basic render|software/i.test(gpu);
     P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}. Server model lokal: ${lokal ? 'ada' : 'tidak ada'}.`));
     const saranM = ol.find(m => /gemma4:e4b|qwen2\.5:7b/.test(m.nama)) || ol[0];

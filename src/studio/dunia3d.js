@@ -100,7 +100,7 @@
       else if (b === 'mata') { const m = kotak(0.3, 0.12, 0.08, M(0x2563eb)); m.position.y = 2.05; g.add(m); }
       else { const s = kotak(0.22, 0.14, 0.18, M(b === 'sensor_kotak' ? 0x0d9488 : 0x7c3aed)); s.position.y = 1.2; g.add(s); const t = silinder(0.02, 0.02, 1.15, M(0x9ca3af)); t.position.y = 0.58; g.add(t); }
       // area klik yang lebih besar dan tak terlihat
-      const hit = kotak(0.9, 1.6, 0.9, new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.8; hit.userData.id = p.id; g.add(hit); x.hit = hit;
+      const hit = kotak(0.6, 1.3, 0.6, new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.65; hit.userData.id = p.id; g.add(hit); x.hit = hit;
       return x;
     }
 
@@ -204,8 +204,8 @@
       if (p.x < 0 || p.z < 0 || p.x > lebar || p.z > dalam) return null;
       return { x: Math.round(p.x * 2) / 2, z: Math.round(p.z * 2) / 2 };
     }
-    function ambilPerangkat(cx, cy) { sinar(cx, cy); const hit = ray.intersectObjects(Object.values(obj).map(x => x.hit), false)[0]; return hit ? hit.object.userData.id : null; }
-    function layar(id) { const x = obj[id]; if (!x) return null; const v = x.g.position.clone(); v.y = 1.6; v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
+    function ambilPerangkat(cx, cy) { scene.updateMatrixWorld(); sinar(cx, cy); const hit = ray.intersectObjects(Object.values(obj).map(x => x.hit), false)[0]; return hit ? hit.object.userData.id : null; }
+    function layar(id) { const x = obj[id]; if (!x) return null; scene.updateMatrixWorld(); const v = x.g.position.clone(); v.y = 0.65; v.project(camera); const r = o.canvas.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }
     function pindah(id, x, z) { const o2 = obj[id]; if (o2) o2.g.position.set(x, 0, z); if (cincinPilih && pilihan === id) cincinPilih.position.set(x, 0.07, z); }
 
     /* ---------- animasi per frame ---------- */

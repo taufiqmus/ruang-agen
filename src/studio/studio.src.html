@@ -14,7 +14,7 @@
 html, body { height: 100%; margin: 0; }
 body { background: var(--paper); color: var(--ink); font: 400 14px/1.45 var(--f-body); overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
-.app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); height: 100%; }
 .atas { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 2px solid var(--ink); background: var(--card); flex-wrap: wrap; }
 .atas h1 { margin: 0; font: 800 18px var(--f-display); letter-spacing: -0.01em; }
 .atas h1 span { color: var(--blue); }
@@ -124,7 +124,8 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 @media (max-width: 860px) {
   body { overflow: auto; }
   .app { height: auto; min-height: 100%; }
-  .tengah { grid-template-columns: 1fr; grid-template-rows: auto 52vh auto; }
+  .tengah { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 52vh auto; }
+  .palet, .sisi, .panggung { min-width: 0; }
   .palet { border-right: 0; border-bottom: 2px solid var(--ink); max-height: 30vh; }
   .sisi { border-left: 0; border-top: 2px solid var(--ink); min-height: 60vh; }
 }
