@@ -212,7 +212,6 @@
     const mem = sambungan.memori;
     const riwayat = mem && mem.konteks > 0 ? ((ctx.riwayat && ctx.riwayat[kunciR]) || []).slice(-mem.konteks) : [];
     const potongan = rak.length && root.Manual ? root.Manual.cari(pesan.teks, rak, 2, 0.4).filter(p => !(root.Otak && root.Otak.adaInjeksi(p.judul + ' ' + p.teks))) : [];
-    if (potongan.length) ctx.jejak('ambil', 'Membaca pengetahuan: ' + potongan.map(p => p.judul).join('; '));
     if (riwayat.length) ctx.jejak('konteks', `Memori: ${riwayat.length} pasang pesan sebelumnya ikut dipertimbangkan.`);
     const daftarTool = Object.keys(k.cfgAlat).filter(j => ALAT[j]).map(j => ALAT[j].tool(W, st, k.cfgAlat[j]));
     const pakaiLLM = ctx.cfgModel && ctx.cfgModel.mode && ctx.cfgModel.mode !== 'parser';
@@ -223,6 +222,7 @@
     const hemat = nodeCfg.hemat !== false;
     if (pakaiLLM && !(hemat && parserYakin)) {
       try {
+        if (potongan.length) ctx.jejak('ambil', 'Membaca pengetahuan untuk AI: ' + potongan.map(p => p.judul).join('; '));
         const msgs = [{ role: 'system', content: promptAgen(nodeCfg, W, S, st, k.cfgAlat, potongan, riwayat, ctx.fakta) }, { role: 'user', content: String(pesan.teks).slice(0, 400) }];
         const cfgM = Object.assign({}, ctx.cfgModel, nodeCfg.model ? (ctx.cfgModel.mode === 'ollama' ? { ollamaModel: nodeCfg.model } : ctx.cfgModel.mode === 'kunci' ? { models: [nodeCfg.model] } : {}) : {});
         const maks = Math.max(1, Math.min(6, nodeCfg.maksLangkah || 4));
@@ -274,7 +274,7 @@
       const bagian = h.bacaan.map(b => b.galat ? `${b.sensor}: ${b.galat}` : `${b.sensor}: ` + Object.entries(b.nilai).filter(([v]) => !fokus.length || fokus.includes(v)).map(([v, x]) => `${I().VAR[v].nama} ${typeof x === 'boolean' ? (x ? 'ya' : 'tidak') : Number.isNaN(x) ? 'NaN (cek kabel)' : x + ' ' + I().VAR[v].satuan}`).join(', ')).filter(x => !/:\s*$/.test(x));
       return `Jam ${sekarang(S)}. ` + (bagian.join('. ') || 'Tidak ada sensor yang cocok.') + '.';
     }
-    if (r.jenis === 'rak') return `Menurut ${r.hit[0].judul}: ${potong(r.hit[0].teks, 280)}`;
+    if (r.jenis === 'rak') { k.jejak('ambil', 'Membaca pengetahuan: ' + r.hit.map(h => h.judul).join('; ')); return `Menurut ${r.hit[0].judul}: ${potong(r.hit[0].teks, 280)}`; }
     if (r.jenis === 'hitung') { const h = hitung(r.ekspresi); return h.ok ? `Hasilnya ${h.hasil}.` : 'Tidak bisa dihitung: ' + h.alasan + '.'; }
     if (r.jenis === 'cuaca') { const h = await jalankanTool('cuaca', {}, k); return h.ok ? `Cuaca ${h.kondisi}, suhu luar ${h.suhu_luar} C (${h.sumber}).` : h.alasan; }
     return 'Aku belum paham. Coba sebut perangkat dan areanya, misalnya "nyalakan kipas kandang", atau tanya "berapa suhu kamar?".';

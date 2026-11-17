@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Rumah Agen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --ink: #161a2e; --paper: #f6f3ec; --card: #fffdf8; --muted: #5d6276; --blue: #2f5bff; --mint: #1fb67f; --coral: #ff5a47; --yellow: #ffc928; --shadow: 3px 3px 0 var(--ink);
+  --f-display: "Bricolage Grotesque", system-ui, sans-serif; --f-body: "Onest", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, monospace; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 400 14px/1.45 var(--f-body); overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+.atas { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 2px solid var(--ink); background: var(--card); flex-wrap: wrap; }
+.atas h1 { margin: 0; font: 800 18px var(--f-display); letter-spacing: -0.01em; }
+.atas h1 span { color: var(--blue); }
+.seg { display: flex; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; background: var(--card); box-shadow: 2px 2px 0 var(--ink); }
+.seg button { border: 0; background: transparent; padding: 5px 11px; cursor: pointer; font-weight: 600; }
+.seg button + button { border-left: 2px solid var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.jam { font: 600 13px var(--f-mono); padding: 4px 9px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; }
+.lencana { font: 600 12px var(--f-mono); padding: 4px 9px; border: 2px solid var(--ink); border-radius: 999px; background: var(--yellow); }
+.spasi { flex: 1; }
+.btn { border: 2px solid var(--ink); border-radius: 8px; background: #fff; padding: 5px 11px; cursor: pointer; font-weight: 600; box-shadow: 2px 2px 0 var(--ink); }
+.btn:active { transform: translate(2px, 2px); box-shadow: none; }
+.btn.pri { background: var(--blue); color: #fff; }
+.btn.sm { padding: 2px 8px; font-size: 12.5px; }
+.btn.bahaya { background: var(--coral); color: #fff; }
+.tengah { display: grid; grid-template-columns: 220px minmax(0, 1fr) 380px; min-height: 0; }
+.palet { border-right: 2px solid var(--ink); overflow-y: auto; padding: 10px; background: var(--card); }
+.palet h3 { margin: 10px 0 6px; font: 800 13px var(--f-display); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.palet h3:first-child { margin-top: 0; }
+.item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 5px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; cursor: grab; user-select: none; font-size: 13px; }
+.item:hover { background: #fff6d6; }
+.item.menaruh { background: var(--yellow); }
+.item i { width: 22px; height: 22px; border-radius: 6px; flex: none; display: grid; place-items: center; font: 700 11px var(--f-mono); color: #fff; font-style: normal; }
+.item small { color: var(--muted); margin-left: auto; font: 600 10.5px var(--f-mono); }
+.panggung { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #cfe0f2; }
+.panggung canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.papan { position: absolute; inset: 0; background: rgba(246, 243, 236, 0.93); display: none; }
+.papan.on { display: block; }
+.papan svg { width: 100%; height: 100%; display: block; touch-action: none; }
+.blok .badan { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+.blok.dipilih .badan { stroke: var(--blue); stroke-width: 3.5; }
+.blok.aktif .badan { stroke: var(--mint); stroke-width: 5; }
+.blok .judul { fill: #fff; font: 700 13px var(--f-display); pointer-events: none; }
+.blok .sub { fill: var(--muted); font: 500 11px var(--f-body); pointer-events: none; }
+.blok .lport { fill: var(--muted); font: 500 10px var(--f-mono); pointer-events: none; }
+.blok { cursor: grab; }
+.port.cocok { stroke-width: 5; r: 9; }
+.kabel.dipilih { stroke-width: 5; filter: drop-shadow(0 0 3px #2f5bff); }
+.kabel.alir { stroke-dasharray: 10 6; animation: alir 0.6s linear infinite; stroke-width: 4.5; }
+@keyframes alir { to { stroke-dashoffset: -32; } }
+.saran { position: absolute; right: 10px; top: 10px; max-width: 58%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; pointer-events: none; }
+.papan.on ~ .petunjuk { top: auto; bottom: 10px; }
+.papan.on ~ .alat3d { display: none; }
+.saran span { pointer-events: auto; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--ink); font-size: 12px; background: #fff; }
+.saran .galat { background: #ffd9d4; } .saran .peringatan { background: #fff0c2; } .saran .info { background: #e5ebff; }
+.petunjuk { position: absolute; left: 10px; top: 10px; max-width: 360px; padding: 8px 11px; border: 2px solid var(--ink); border-radius: 10px; background: var(--card); box-shadow: var(--shadow); font-size: 13px; }
+.petunjuk b { font-family: var(--f-display); }
+.label3d { position: absolute; pointer-events: none; transform: translate(-50%, -100%); background: var(--ink); color: #fff; font: 600 11.5px var(--f-mono); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+.toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 14px; border: 2px solid var(--ink); border-radius: 10px; background: #ffd9d4; box-shadow: var(--shadow); max-width: 80%; font-weight: 600; z-index: 5; }
+.toast[hidden] { display: none; }
+.alat3d { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.sisi { border-left: 2px solid var(--ink); display: flex; flex-direction: column; min-height: 0; background: var(--paper); }
+.tabs { display: flex; gap: 4px; padding: 8px 8px 0; overflow-x: auto; scrollbar-width: thin; }
+.tabs button { border: 2px solid var(--ink); border-bottom: 0; border-radius: 8px 8px 0 0; background: #e7e3d8; padding: 4px 9px; cursor: pointer; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--card); }
+.pane { flex: 1; min-height: 0; overflow-y: auto; margin: 0 8px 8px; padding: 10px; background: var(--card); border: 2px solid var(--ink); border-radius: 0 0 10px 10px; display: none; }
+.pane.on { display: block; }
+.pane h3 { margin: 12px 0 6px; font: 800 14px var(--f-display); }
+.pane h3:first-child { margin-top: 0; }
+.pane label { display: block; font: 700 12.5px var(--f-display); margin: 8px 0 3px; }
+.pane input[type=text], .pane input[type=number], .pane input[type=password], .pane select, .pane textarea { width: 100%; border: 2px solid var(--ink); border-radius: 8px; padding: 5px 8px; background: #fff; min-width: 0; }
+.pane textarea { min-height: 70px; resize: vertical; font: 12.5px var(--f-mono); }
+.pane .cek { display: flex; gap: 6px; align-items: center; font: 600 13px var(--f-body); margin: 6px 0; }
+.note { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+.masalah { margin: 6px 0; padding: 6px 8px 6px 22px; border: 2px solid var(--ink); border-radius: 8px; background: #ffe4df; font-size: 12.5px; }
+.ok { padding: 6px 8px; border: 2px solid var(--ink); border-radius: 8px; background: #d3f5e6; font-size: 12.5px; }
+.konsep { padding: 8px 10px; border: 2px dashed var(--ink); border-radius: 8px; background: #fff8dc; font-size: 12.5px; margin: 8px 0; }
+.baris { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.baris > * { flex: 1; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.msg { flex-shrink: 0; max-width: 90%; padding: 6px 10px; border: 2px solid var(--ink); border-radius: 12px; white-space: pre-line; overflow-wrap: anywhere; }
+.msg .who { display: block; font: 600 10px var(--f-mono); text-transform: uppercase; color: var(--muted); }
+.msg.kamu { align-self: flex-end; background: #e5ebff; }
+.msg.agen { align-self: flex-start; background: #fff; }
+.msg.tg { align-self: flex-start; background: #dff3fb; }
+.msg.sis { align-self: center; max-width: 100%; border-style: dashed; color: var(--muted); font-size: 12.5px; }
+.msg.ngetik i { display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%; background: var(--ink); opacity: .25; animation: titik 1.2s infinite; }
+.msg.ngetik i:nth-child(3) { animation-delay: .2s; } .msg.ngetik i:nth-child(4) { animation-delay: .4s; }
+@keyframes titik { 30% { opacity: 1; } }
+.chatbox { display: flex; flex-direction: column; height: 100%; }
+.chatbox .log { flex: 1; overflow-y: auto; padding-bottom: 6px; }
+.chatform { display: flex; gap: 6px; margin-top: 8px; }
+.chatform input { flex: 1; }
+.chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.chips button { border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); padding: 1px 9px; font-size: 12px; cursor: pointer; }
+.jejak { list-style: none; margin: 0; padding: 0; font: 12px var(--f-mono); }
+.jejak li { display: grid; grid-template-columns: 70px 1fr; gap: 6px; padding: 3px 0; border-bottom: 1px dashed #d8d3c6; }
+.jejak .tag { font-weight: 600; text-align: center; border: 2px solid var(--ink); border-radius: 5px; font-size: 10px; align-self: start; background: #fff; }
+.jejak .k-guard .tag { background: var(--coral); color: #fff; } .jejak .k-aksi .tag { background: var(--mint); color: #fff; } .jejak .k-tool .tag { background: #cdeef6; } .jejak .k-otak .tag { background: var(--yellow); } .jejak .k-sep { grid-template-columns: 1fr; font-weight: 700; color: var(--blue); }
+.kartu { border: 2px solid var(--ink); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; background: #fff; }
+.kartu.selesai { background: #d3f5e6; }
+.kartu h4 { margin: 0 0 4px; font: 700 13.5px var(--f-display); }
+table.tabel { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.tabel td, table.tabel th { border-bottom: 1px solid #ddd6c6; padding: 4px; text-align: left; }
+.sensor canvas { width: 100%; height: 34px; display: block; }
+pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 8px; font: 11px/1.45 var(--f-mono); max-height: 320px; overflow: auto; white-space: pre; }
+.modal { position: fixed; inset: 0; background: rgba(22, 26, 46, 0.55); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal .isi { background: var(--card); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); max-width: 720px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 18px; }
+.modal h2 { margin: 0 0 6px; font: 800 22px var(--f-display); }
+.pilihan { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.pilihan button { text-align: left; border: 2px solid var(--ink); border-radius: 10px; background: #fff; padding: 9px; cursor: pointer; }
+.pilihan button[aria-pressed="true"] { background: #e5ebff; box-shadow: 3px 3px 0 var(--blue); }
+.pilihan b { display: block; font-family: var(--f-display); }
+.pilihan small { color: var(--muted); }
+@media (max-width: 1100px) { .tengah { grid-template-columns: 180px minmax(0, 1fr) 320px; } }
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100%; }
+  .tengah { grid-template-columns: 1fr; grid-template-rows: auto 52vh auto; }
+  .palet { border-right: 0; border-bottom: 2px solid var(--ink); max-height: 30vh; }
+  .sisi { border-left: 0; border-top: 2px solid var(--ink); min-height: 60vh; }
+}
+@media (prefers-reduced-motion: reduce) { .kabel.alir, .msg.ngetik i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="atas">
+    <h1>Studio <span>Rumah Agen</span></h1>
+    <div class="seg" role="group" aria-label="Mode">
+      <button type="button" data-mode="bangun" aria-pressed="true">Bangun</button>
+      <button type="button" data-mode="otak" aria-pressed="false">Otak</button>
+      <button type="button" data-mode="main" aria-pressed="false">Main</button>
+    </div>
+    <span class="jam" id="jam">Hari 1, 07:00</span>
+    <div class="seg" role="group" aria-label="Kecepatan simulasi">
+      <button type="button" data-cepat="0" aria-pressed="false" title="Jeda">II</button>
+      <button type="button" data-cepat="1" aria-pressed="true">1x</button>
+      <button type="button" data-cepat="10" aria-pressed="false">10x</button>
+      <button type="button" data-cepat="60" aria-pressed="false">60x</button>
+    </div>
+    <span class="spasi"></span>
+    <span class="lencana" id="lencanaOtak">Otak: parser</span>
+    <button class="btn sm" type="button" id="btnProyek">Proyek</button>
+    <button class="btn sm" type="button" id="btnWizard">Pilih model</button>
+  </header>
+  <div class="tengah">
+    <aside class="palet" id="palet" aria-label="Palet"></aside>
+    <main class="panggung" id="panggung">
+      <canvas id="c3d" aria-label="Dunia 3D rumah pintar"></canvas>
+      <div class="papan" id="papan"><svg id="svgPapan" aria-label="Papan otak"></svg><div class="saran" id="saran"></div></div>
+      <div class="petunjuk" id="petunjuk"></div>
+      <div class="alat3d" id="alat3d">
+        <button class="btn sm" type="button" id="btnWifi" aria-pressed="true">Wi-Fi</button>
+        <button class="btn sm" type="button" id="btnKamera">Reset kamera</button>
+      </div>
+      <div class="toast" id="toast" hidden></div>
+    </main>
+    <aside class="sisi">
+      <div class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" data-tab="chat" aria-selected="true">Chat</button>
+        <button type="button" role="tab" data-tab="inspektur" aria-selected="false">Inspektur</button>
+        <button type="button" role="tab" data-tab="dasbor" aria-selected="false">Dashboard</button>
+        <button type="button" role="tab" data-tab="jejak" aria-selected="false">Jejak</button>
+        <button type="button" role="tab" data-tab="misi" aria-selected="false">Misi</button>
+        <button type="button" role="tab" data-tab="telegram" aria-selected="false">Telegram</button>
+        <button type="button" role="tab" data-tab="lab" aria-selected="false">Lab</button>
+        <button type="button" role="tab" data-tab="kode" aria-selected="false">Kode</button>
+        <button type="button" role="tab" data-tab="model" aria-selected="false">Model</button>
+      </div>
+      <section class="pane on" data-pane="chat">
+        <div class="chatbox">
+          <ul class="log" id="chatlog"></ul>
+          <div class="chips" id="chips"></div>
+          <form class="chatform" id="chatform" autocomplete="off"><input type="text" id="inp" maxlength="300" placeholder="Tulis pesan untuk agen" aria-label="Pesan"><button class="btn pri" type="submit" id="kirim">Kirim</button></form>
+        </div>
+      </section>
+      <section class="pane" data-pane="inspektur" id="inspektur"></section>
+      <section class="pane" data-pane="dasbor" id="dasbor"></section>
+      <section class="pane" data-pane="jejak"><div class="baris" style="margin-bottom:6px"><button class="btn sm" type="button" id="jejakBersih">Bersihkan</button><button class="btn sm" type="button" id="jejakEkspor">Ekspor JSON</button></div><ul class="jejak" id="jejak"></ul></section>
+      <section class="pane" data-pane="misi" id="misi"></section>
+      <section class="pane" data-pane="telegram" id="telegram"></section>
+      <section class="pane" data-pane="lab" id="lab"></section>
+      <section class="pane" data-pane="kode" id="kode"></section>
+      <section class="pane" data-pane="model" id="model"></section>
+    </aside>
+  </div>
+</div>
+<div class="modal" id="wizard" hidden><div class="isi" id="wizardIsi"></div></div>
+<div class="modal" id="proyek" hidden><div class="isi" id="proyekIsi"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*MANUAL*/
+</script>
+<script>
+/*DUNIA*/
+</script>
+<script>
+/*SEMESTA*/
+</script>
+<script>
+/*BRAIN*/
+</script>
+<script>
+/*ROUTER*/
+/*LLM*/
+</script>
+<script>
+/*IOT*/
+/*ALAT*/
+/*GRAF*/
+/*TELEGRAM*/
+/*EKSPOR*/
+/*MISI*/
+/*DUNIA3D*/
+/*KANVAS*/
+</script>
+<script>
+/*STUDIO*/
+</script>
+</body>
+</html>

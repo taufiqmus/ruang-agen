@@ -5,6 +5,12 @@ src=baca('src/index.src.html')
 for tag,f in [('/*MANUAL*/','src/manual.js'),('/*DUNIA*/','src/dunia.js'),('/*SEMESTA*/','src/semesta.js'),('/*BRAIN*/','src/brain.js'),('/*PROMPT*/','src/prompt.js'),('/*ROUTER*/','src/router.js'),('/*LLM*/','src/brain-llm.js'),('/*ADEGAN*/','src/adegan.js'),('/*GAME*/','src/game.js')]:
     src=src.replace(tag,baca(f))
 open('index.html','w',encoding='utf-8').write(src)
-for f in ['index.html']+['src/'+n for n in os.listdir('src')]+['server/'+n for n in os.listdir('server') if n.endswith('.py')]:
+# Studio Rumah Agen (v2): entri terpisah, memakai ulang modul v1
+st=baca('src/studio/studio.src.html')
+for tag,f in [('/*MANUAL*/','src/manual.js'),('/*DUNIA*/','src/dunia.js'),('/*SEMESTA*/','src/semesta.js'),('/*BRAIN*/','src/brain.js'),('/*ROUTER*/','src/router.js'),('/*LLM*/','src/brain-llm.js'),
+              ('/*IOT*/','src/studio/iot.js'),('/*ALAT*/','src/studio/alat.js'),('/*GRAF*/','src/studio/graf.js'),('/*TELEGRAM*/','src/studio/telegram.js'),('/*EKSPOR*/','src/studio/ekspor.js'),('/*MISI*/','src/studio/misi.js'),('/*DUNIA3D*/','src/studio/dunia3d.js'),('/*KANVAS*/','src/studio/kanvas.js'),('/*STUDIO*/','src/studio/studio.js')]:
+    st=st.replace(tag,baca(f))
+open('studio.html','w',encoding='utf-8').write(st)
+for f in ['index.html','studio.html']+['src/'+n for n in os.listdir('src') if n.endswith(('.js','.html'))]+['src/studio/'+n for n in os.listdir('src/studio')]+['server/'+n for n in os.listdir('server') if n.endswith('.py')]:
     assert '\u2014' not in baca(f), 'em dash ditemukan di '+f
-print('build ok:', os.path.getsize('index.html'), 'bytes')
+print('build ok:', os.path.getsize('index.html'), 'bytes; studio:', os.path.getsize('studio.html'), 'bytes')

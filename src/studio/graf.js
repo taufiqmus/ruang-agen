@@ -251,17 +251,17 @@
     chatbot: { nama: 'Chatbot pertama', blok: [b('chat', 'chat', 40, 120), b('agen', 'agen', 280, 100), b('balas', 'balas', 560, 120)], kabel: [k('chat', 'keluar', 'agen', 'masuk'), k('agen', 'keluar', 'balas', 'masuk')] },
     agen_rumah: {
       nama: 'Agen rumah lengkap',
-      blok: [b('chat', 'chat', 30, 60), b('guard', 'guard_masukan', 200, 60), b('agen', 'agen', 420, 60, { nama: 'Agen Rumah' }), b('balas', 'balas', 680, 60), b('tolak', 'balas', 420, 300),
-        b('sensor', 'alat_sensor', 200, 220), b('aktuator', 'alat_aktuator', 200, 300), b('rak', 'rak', 200, 380, { preset: 'rumah' }), b('memori', 'memori', 640, 220), b('pengaman', 'guard_aksi', 640, 320)],
+      blok: [b('chat', 'chat', 20, 40), b('guard', 'guard_masukan', 230, 40), b('agen', 'agen', 480, 40, { nama: 'Agen Rumah' }), b('balas', 'balas', 720, 40), b('tolak', 'balas', 720, 200),
+        b('sensor', 'alat_sensor', 230, 200), b('aktuator', 'alat_aktuator', 230, 300), b('pengaman', 'guard_aksi', 230, 400), b('rak', 'rak', 20, 260, { preset: 'rumah' }), b('memori', 'memori', 20, 360)],
       kabel: [k('chat', 'keluar', 'guard', 'masuk'), k('guard', 'lolos', 'agen', 'masuk'), k('guard', 'tolak', 'tolak', 'masuk'), k('agen', 'keluar', 'balas', 'masuk'),
         k('sensor', 'keluar', 'agen', 'alat'), k('aktuator', 'keluar', 'agen', 'alat'), k('rak', 'keluar', 'agen', 'pengetahuan'), k('memori', 'keluar', 'agen', 'memori'), k('pengaman', 'keluar', 'agen', 'pengaman')]
     },
     multi_agen: {
       nama: 'Multi-agen: rumah, kebun, kandang',
-      blok: [b('chat', 'chat', 20, 200), b('guard', 'guard_masukan', 170, 200), b('ork', 'orkestrator', 360, 200), b('balas', 'balas', 600, 380), b('tolak', 'balas', 360, 380),
-        b('a_kebun', 'agen', 620, 40, { nama: 'Agen Kebun', persona: 'petani hidroponik yang teliti' }), b('a_kandang', 'agen', 620, 200, { nama: 'Agen Kandang', persona: 'peternak ayam yang sabar' }),
-        b('s_kebun', 'alat_sensor', 860, 0, { lingkup: 'kebun' }), b('x_kebun', 'alat_aktuator', 860, 70, { lingkup: 'kebun' }), b('rk_kebun', 'rak', 860, 140, { preset: 'kebun' }),
-        b('s_kandang', 'alat_sensor', 860, 220, { lingkup: 'kandang' }), b('x_kandang', 'alat_aktuator', 860, 290, { lingkup: 'kandang' }), b('rk_ternak', 'rak', 860, 360, { preset: 'ternak' }), b('pg', 'guard_aksi', 620, 330)],
+      blok: [b('chat', 'chat', 20, 60), b('guard', 'guard_masukan', 230, 60), b('ork', 'orkestrator', 460, 60), b('balas', 'balas', 460, 260), b('tolak', 'balas', 230, 260),
+        b('s_kebun', 'alat_sensor', 700, 0, { lingkup: 'kebun' }), b('x_kebun', 'alat_aktuator', 700, 95, { lingkup: 'kebun' }), b('rk_kebun', 'rak', 700, 190, { preset: 'kebun' }),
+        b('s_kandang', 'alat_sensor', 700, 320, { lingkup: 'kandang' }), b('x_kandang', 'alat_aktuator', 700, 415, { lingkup: 'kandang' }), b('rk_ternak', 'rak', 700, 510, { preset: 'ternak' }), b('pg', 'guard_aksi', 460, 420),
+        b('a_kebun', 'agen', 940, 20, { nama: 'Agen Kebun', persona: 'petani hidroponik yang teliti' }), b('a_kandang', 'agen', 940, 330, { nama: 'Agen Kandang', persona: 'peternak ayam yang sabar' })],
       kabel: [k('chat', 'keluar', 'guard', 'masuk'), k('guard', 'lolos', 'ork', 'masuk'), k('guard', 'tolak', 'tolak', 'masuk'), k('ork', 'keluar', 'balas', 'masuk'), k('ork', 'tugas', 'a_kebun', 'tugas'), k('ork', 'tugas', 'a_kandang', 'tugas'),
         k('s_kebun', 'keluar', 'a_kebun', 'alat'), k('x_kebun', 'keluar', 'a_kebun', 'alat'), k('rk_kebun', 'keluar', 'a_kebun', 'pengetahuan'), k('s_kandang', 'keluar', 'a_kandang', 'alat'), k('x_kandang', 'keluar', 'a_kandang', 'alat'), k('rk_ternak', 'keluar', 'a_kandang', 'pengetahuan'),
         k('pg', 'keluar', 'a_kebun', 'pengaman'), k('pg', 'keluar', 'a_kandang', 'pengaman')]
