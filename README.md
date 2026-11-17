@@ -181,7 +181,7 @@ Hasil ukur dan pilihan model ada di [UJI.md](UJI.md). Ringkasnya: model 1,5B dip
 
 ### Ollama lokal (alternatif)
 
-Tab Otak, pilih "Ollama lokal" (prompt ringkas dan router hemat yang sama). Pasang Ollama, `ollama pull qwen2.5:1.5b`, dan izinkan alamat halaman lewat `OLLAMA_ORIGINS` (tanpa itu halaman `file://` dan GitHub Pages ditolak dengan HTTP 403; uji lokal: `OLLAMA_ORIGINS=*`).
+Pasang Ollama, `ollama pull qwen2.5:1.5b`, jalankan game lewat `MULAI.bat --tanpa-model` (alamat `127.0.0.1:8000` sudah diizinkan Ollama), lalu tab Otak, pilih "Ollama lokal". Prompt ringkas dan router hemat yang sama berlaku. Membuka `index.html` langsung butuh `OLLAMA_ORIGINS` (tanpa itu ditolak HTTP 403). Dengan GPU jauh lebih cepat (0,35 sampai 0,8 detik per panggilan). Langkah lengkap di [PANDUAN.md](PANDUAN.md).
 
 ## Input suara
 

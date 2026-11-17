@@ -45,13 +45,20 @@ Daftar di openrouter.ai, buka https://openrouter.ai/settings/keys, **Create Key*
 
 ### Opsional: Ollama
 
-Alternatif cara B bila sudah memasang Ollama. Langkahnya lebih banyak:
-1. Pasang dari https://ollama.com/download.
-2. Set `OLLAMA_ORIGINS` supaya browser boleh memanggil Ollama. Jika game dibuka lewat `MULAI.bat --tanpa-model` (alamat localhost), tidak perlu diset. Jika `index.html` dibuka langsung, perlu `setx OLLAMA_ORIGINS "*"`. Untuk GitHub Pages, isi alamat situsnya. Lalu tutup dan buka lagi Ollama.
-3. `ollama pull qwen2.5:1.5b`.
-4. Tab Otak, pilih "Ollama lokal", isi model `qwen2.5:1.5b`, **Simpan**, **Tes koneksi**.
+Alternatif cara B, cocok bila laptop punya GPU (jauh lebih cepat) atau ingin mencoba model lain.
 
-`OLLAMA_ORIGINS="*"` membuat situs apa pun yang Anda buka bisa memanggil Ollama di laptop ini. Pakai alamat spesifik bila memungkinkan.
+**Cara paling mudah (tanpa mengatur `OLLAMA_ORIGINS`):**
+1. Pasang Ollama dari https://ollama.com/download, lalu buka aplikasinya (ikon muncul di tray).
+2. Opsional, supaya model tidak memenuhi drive C: `setx OLLAMA_MODELS "D:\ollama\models"`, lalu Quit Ollama dari tray dan buka lagi.
+3. Di Command Prompt: `ollama pull qwen2.5:1.5b` (sekitar 1 GB).
+4. Di folder game: `MULAI.bat --tanpa-model`. Browser terbuka di `http://127.0.0.1:8000`, alamat yang sudah diizinkan Ollama tanpa pengaturan.
+5. Tab **Otak**, pilih **Ollama lokal (di laptop ini)**, isi model `qwen2.5:1.5b`, biarkan **Router hemat** tercentang, **Simpan**, lalu **Tes koneksi** sampai "Berhasil".
+
+**Bila ingin membuka `index.html` langsung (klik dua kali):** halaman itu memanggil Ollama dari asal `null`, yang ditolak Ollama (HTTP 403). Jalankan `setx OLLAMA_ORIGINS "*"`, lalu Quit Ollama dari tray dan buka lagi. Untuk game di GitHub Pages, isi alamat situsnya, misalnya `setx OLLAMA_ORIGINS "https://<akun>.github.io"`.
+
+`OLLAMA_ORIGINS="*"` membuat situs apa pun yang Anda buka bisa memanggil Ollama di laptop ini. Cara paling mudah di atas lebih aman.
+
+Hasil uji (`qwen2.5:1.5b`, GPU RTX 3060): 0,35 sampai 0,8 detik per panggilan model. Dengan router hemat, semua ruang 6 dari 6 atau 7 dari 7 benar, dan Lab 25 dari 28. Rinciannya di [UJI.md](UJI.md).
 
 ## 2. Penggunaan
 
