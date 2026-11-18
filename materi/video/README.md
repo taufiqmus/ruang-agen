@@ -1,6 +1,6 @@
 # Serial video per pertemuan
 
-Status: **naskah siap, audio dan video belum dibuat.** Audio memakai suara dosen (skill `speak`, profil `me`) dan baru dibuat setelah dosen menyetujui.
+Status: **episode 1 (percontohan) sudah dibuat** di `D:playgroundAgentic AI gameideo-materiPertemuan-1-Apa-itu-agen-AI.mp4` (60 detik, 1280x720, suara `me`). Episode 2 sampai 6 menunggu persetujuan dosen atas percontohan.
 
 - `pertemuan-1.json` sampai `pertemuan-6.json`: format `speak batch` (`id`, `say`), ditambah `layar` (gambar yang tampil saat kalimat itu dibacakan).
 - Narasi tiap episode sekitar 1 menit. Dengan jeda untuk demo layar, panjang tiap episode sekitar 2 sampai 3 menit.
