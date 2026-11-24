@@ -9,7 +9,8 @@ ruang-agen/
   index.html          hasil build (jangan diedit langsung)
   MULAI.bat           satu klik: menyajikan game dan studio (Windows)
   mulai.sh            sama, untuk Mac dan Linux
-  README.md  PANDUAN.md  UJI.md  PENGEMBANG.md
+  README.md           pintu masuk
+  docs/               PANDUAN, STUDIO, UJI, PENGEMBANG
   build.py            merakit index.html dari src/
   package.json        perintah uji (npm test) dan alat uji browser
   src/                kode game
@@ -52,7 +53,7 @@ Entri terpisah `studio.html`, dirakit `build.py` dari `src/studio/studio.src.htm
 | `src/studio/kanvas.js` | Papan SVG: seret blok, tarik kabel bertipe, geser dan zoom |
 | `src/studio/studio.js` | Perekat UI, loop simulasi, pemicu jadwal dan sensor, semua tab, wizard |
 
-Prinsip v1 tetap berlaku: AI hanya memilih tool; argumen tool divalidasi, guard aksi dan persetujuan di kode; graf tanpa Guard Aksi berjalan sebagai mode rentan dengan peringatan. Skema dunia dan graf punya `versi` dan pemeriksa, dan tidak pernah memuat rahasia. Rencana dan status kerja ada di `RENCANA_V2.md`.
+Prinsip v1 tetap berlaku: AI hanya memilih tool; argumen tool divalidasi, guard aksi dan persetujuan di kode; graf tanpa Guard Aksi berjalan sebagai mode rentan dengan peringatan. Skema dunia dan graf punya `versi` dan pemeriksa, dan tidak pernah memuat rahasia.
 
 Parameter alamat studio: `?awal=<preset dunia>`, `?graf=<preset graf>`, `?jam=<jam mulai>`, `?cepat=<0|1|10|60>`, `?mode=<bangun|otak|main>`, `?grafis=<ringan|realistis>`, `?tanpaWizard=1`, `?tgbase=<alamat API Telegram tiruan untuk uji>`.
 

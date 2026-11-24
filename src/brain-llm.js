@@ -124,7 +124,7 @@
       if (o.tools) { body.tools = o.tools; body.tool_choice = 'auto'; } else if (o.skema) body.response_format = { type: 'json_object', schema: o.skema };
       try { d = await http(base + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, timeout); }
       catch (e) {
-        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Server model lokal tidak terjangkau. Pastikan server berjalan di laptop ini (lihat PANDUAN.md) dan alamatnya benar.');
+        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Server model lokal tidak terjangkau. Pastikan server berjalan di laptop ini (lihat docs/PANDUAN.md) dan alamatnya benar.');
         throw e;
       }
       model = 'lokal:' + String((d && d.model) || cfg.lokalModel || 'lokal').split(/[\\/]/).pop();

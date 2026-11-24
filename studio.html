@@ -328,7 +328,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
 <script>
 /* Dunia: semua ruang didefinisikan sebagai DATA (objek JSON), bukan kode.
    Otak (brain.js), prompt LLM (prompt.js), dan adegan 3D (adegan.js) membaca definisi yang sama.
-   Mau menambah ruang, perangkat, kata gaul, atau misi? Cukup ubah datanya (lihat PANDUAN.md, bagian "Membuat ruang sendiri").
+   Mau menambah ruang, perangkat, kata gaul, atau misi? Cukup ubah datanya (lihat docs/PANDUAN.md, bagian "Membuat ruang sendiri").
 
    Empat TIPE perangkat (keadaan dan aksinya tetap, supaya guard di kode bisa memeriksa semuanya):
      saklar : {on}                 aksi on / off
@@ -1940,7 +1940,7 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
       if (o.tools) { body.tools = o.tools; body.tool_choice = 'auto'; } else if (o.skema) body.response_format = { type: 'json_object', schema: o.skema };
       try { d = await http(base + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, timeout); }
       catch (e) {
-        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Server model lokal tidak terjangkau. Pastikan server berjalan di laptop ini (lihat PANDUAN.md) dan alamatnya benar.');
+        if (e instanceof GalatOtak && e.kode === 'jaringan') throw new GalatOtak('jaringan', 'Server model lokal tidak terjangkau. Pastikan server berjalan di laptop ini (lihat docs/PANDUAN.md) dan alamatnya benar.');
         throw e;
       }
       model = 'lokal:' + String((d && d.model) || cfg.lokalModel || 'lokal').split(/[\\/]/).pop();

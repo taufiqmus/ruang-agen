@@ -4,8 +4,6 @@ model/
 .ruangagen-pilihan.json
 # alat uji
 node_modules/
-# lain-lain
-venv/
 __pycache__/
 *.gguf
 *.png

@@ -1,6 +1,6 @@
 /* Dunia: semua ruang didefinisikan sebagai DATA (objek JSON), bukan kode.
    Otak (brain.js), prompt LLM (prompt.js), dan adegan 3D (adegan.js) membaca definisi yang sama.
-   Mau menambah ruang, perangkat, kata gaul, atau misi? Cukup ubah datanya (lihat PANDUAN.md, bagian "Membuat ruang sendiri").
+   Mau menambah ruang, perangkat, kata gaul, atau misi? Cukup ubah datanya (lihat docs/PANDUAN.md, bagian "Membuat ruang sendiri").
 
    Empat TIPE perangkat (keadaan dan aksinya tetap, supaya guard di kode bisa memeriksa semuanya):
      saklar : {on}                 aksi on / off
