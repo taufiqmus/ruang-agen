@@ -41,6 +41,7 @@ Panduan studio ada di **[STUDIO.md](docs/STUDIO.md)**.
 
 ## Dokumen
 
+- **[Panduan-Instalasi.pdf](docs/Panduan-Instalasi.pdf)**: panduan visual instalasi dan penyiapan model, untuk dibagikan ke mahasiswa.
 - **[PANDUAN.md](docs/PANDUAN.md)**: cara memasang, cara bermain, semua tab, membuat ruang dan semesta sendiri, pemecahan masalah, dan saran untuk dosen.
 - **[STUDIO.md](docs/STUDIO.md)**: Easy Agent Visualizer, dari ESP pertama sampai bot Telegram.
 - [UJI.md](docs/UJI.md): laporan pengujian.
