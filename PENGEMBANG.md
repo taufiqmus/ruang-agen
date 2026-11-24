@@ -7,17 +7,17 @@ Untuk yang ingin mengubah kode game. Pengguna cukup membaca [PANDUAN.md](PANDUAN
 ```
 ruang-agen/
   index.html          hasil build (jangan diedit langsung)
-  MULAI.bat           satu klik: game dan model AI lokal (Windows)
+  MULAI.bat           satu klik: menyajikan game dan studio (Windows)
   mulai.sh            sama, untuk Mac dan Linux
   README.md  PANDUAN.md  UJI.md  PENGEMBANG.md
   build.py            merakit index.html dari src/
   package.json        perintah uji (npm test) dan alat uji browser
   src/                kode game
-  server/             server model lokal (Python)
+  server/             peluncur (Python standar, atau PowerShell bila tanpa Python)
   tests/              semua uji, dengan tests/vendor/three.min.js untuk uji tanpa internet
 ```
 
-Dibuat otomatis dan tidak masuk git: `.venv/` (Python milik MULAI.bat), `model/` (berkas model), `node_modules/` (alat uji).
+Dibuat otomatis dan tidak masuk git: `.ruangagen-pilihan.json` (pilihan menu), `node_modules/` (alat uji).
 
 | Berkas | Fungsi |
 |---|---|
@@ -30,8 +30,9 @@ Dibuat otomatis dan tidak masuk git: `.venv/` (Python milik MULAI.bat), `model/`
 | `src/router.js` | Router semantik: contoh kalimat per rute (bawaan, dari data ruang, dan `contoh` rute semesta), kemiripan ringan (kata dan trigram huruf) atau vektor embedding, kelompok keputusan |
 | `src/brain-llm.js` | `panggilModel` (satu pintu untuk Ollama, server lokal, dan OpenRouter: JSON schema, tool calling, atau teks bebas), validasi skema, retry, router hemat dan semantik, loop tool, embedding dan cache, guard model, RAG hibrida, reranker, ringkasan bergulir, fallback ke parser |
 | `src/adegan.js` | Adegan 3D (Three.js r128): material realistis, bayangan, pantulan, mode ringan, totem router dan label agen dari data |
-| `server/jalankan.py` | Dipanggil MULAI.bat: menyiapkan `.venv`, memasang paket siap pakai, lalu menjalankan server |
-| `server/server_lokal.py` | Server game dan model kecil di satu alamat (llama-cpp-python, CPU). Hanya menyajikan `index.html` dan API `/v1` |
+| `server/jalankan.py` | Dipanggil MULAI.bat: menu penyiapan (deteksi laptop, pilih otak, katalog model Ollama, `ollama pull`) lalu server berkas (hanya pustaka standar, hanya `index.html`, `studio.html`, dan `/_info`) |
+| `server/mini.ps1` | Cadangan MULAI.bat bila tidak ada Python: server berkas yang sama dengan PowerShell |
+| `src/ollama-kelola.js` | Katalog model, penilaian kecocokan, `/api/pull` dengan progres, dan panel DOM yang dipakai tab Otak (game) dan tab Model (Studio). Katalog harus sama dengan `OLLAMA_MODEL` di `jalankan.py` (dijaga `tests/test_peluncur.js`) |
 
 Edit berkas di `src/`, lalu jalankan `python build.py`. Ruang dan semesta bawaan ada di `src/dunia.js` dan `src/semesta.js`.
 
@@ -90,13 +91,15 @@ Field semesta baru: `router.rute[].contoh` (maksimal 8 kalimat, 80 karakter) dan
 
 Context window: game mengirim `opsi.riwayat` (pasangan `{u, a}`) ke `OtakLLM.pikirAsync`. Riwayat berpola injeksi dibuang, lalu sisanya masuk prompt sebagai blok DATA. `opsi.saatLLM` dipanggil tepat sebelum inferensi (animasi titik tiga). Router hemat meneruskan klarifikasi ke LLM bila ada riwayat, dan meneruskan pertanyaan obrolan bila `agen.ngobrol` hidup (`Otak.cocokObrolan`).
 
-## Model lokal
+## Peluncur dan model
 
-`MULAI.bat` mencari Python 3.10 sampai 3.12 (`py` launcher, lalu `python`), menawarkan pemasangan Python 3.12 lewat winget bila tidak ada, lalu menjalankan `server/jalankan.py`. Skrip itu membuat `.venv`, memasang paket dengan `--only-binary=:all:` (tidak butuh compiler), mengunduh model Qwen2.5 Instruct Q4_K_M ke `model/`, dan menjalankan `server/server_lokal.py`. Game dan API berada di satu alamat, jadi tidak ada CORS, dan game mendeteksi `/v1/models` lalu beralih ke model lokal selama pengguna belum memilih otak sendiri.
+`MULAI.bat` mencari Python 3.7 ke atas (`py -3`, `python`, `python3`) dan menjalankan `server/jalankan.py`, yang hanya memakai pustaka standar: tanpa `.venv`, tanpa pip, tanpa unduhan paket. Tanpa Python, MULAI.bat memakai `server/mini.ps1` (PowerShell). Model bahasa tidak dijalankan oleh proyek ini lagi: otaknya parser, OpenRouter, atau Ollama. Mode `lokal` di `brain-llm.js` tetap ada sebagai klien generik untuk server lain yang kompatibel OpenAI (diberi label "lanjutan" di UI).
 
-Strategi untuk model kecil: prompt ringkas yang dirakit dari ruang aktif, keluaran dipaksa lewat grammar JSON schema berisi daftar perangkat ruang, dan router hemat (parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru). Model kecil sangat peka terhadap redaksi prompt: setiap perubahan `src/prompt.js` perlu diukur ulang dengan `tests/live_check.js`.
+Game dibuka lewat `http://127.0.0.1:8000` karena Ollama mengizinkan asal itu secara bawaan (tanpa `OLLAMA_ORIGINS`). Server memberi `/_info` (RAM, CPU, VRAM) supaya panel model bisa menilai kecocokan model; browser sendiri tidak bisa membaca VRAM. Menu mengirim pilihan ke halaman lewat `?otak=ollama&model=...`, dipakai hanya bila browser belum punya pengaturan otak.
 
-Variabel lingkungan untuk uji: `RUANG_PYTHON` (paksa Python tertentu di MULAI.bat), `RUANG_TANPA_BROWSER=1` (jangan buka browser). Parameter alamat: `?grafis=ringan|realistis`, `?kejadian=mati`.
+Strategi untuk model kecil (1,5B ke bawah): prompt ringkas yang dirakit dari ruang aktif, keluaran dipaksa lewat grammar JSON schema berisi daftar perangkat ruang, dan router hemat (parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru). Model kecil sangat peka terhadap redaksi prompt: setiap perubahan `src/prompt.js` perlu diukur ulang dengan `tests/live_check.js`.
+
+Variabel lingkungan untuk uji: `RUANG_TANPA_MENU=1` (lewati menu), `RUANG_TANPA_BROWSER=1` (jangan buka browser). Parameter alamat: `?grafis=ringan|realistis`, `?kejadian=mati`.
 
 ## Build dan uji
 
@@ -114,9 +117,7 @@ Uji satu per satu ada di `tests/` (misalnya `node tests/test_semesta.js`). Chrom
 Uji nyata (butuh layanan sungguhan):
 
 ```bash
-node tests/test_mulai_live.js                                  # setelah MULAI.bat berjalan: browser baru langsung memakai model lokal
 OPENROUTER_API_KEY=sk-or-... node tests/live_check.js         # 15 pesan dasar ke OpenRouter (kunci lewat variabel lingkungan)
-SUITE=ruang RUANG=kafe LOKAL=http://127.0.0.1:8000/v1 RINGKAS=1 RUTE=hemat node tests/live_check.js lokal   # ke model MULAI.bat
 OLLAMA=1 SUITE=semua node tests/live_check.js qwen2.5:1.5b    # ke Ollama
 OLLAMA=1 node tests/test_browser_live.js                       # Ollama dari browser
 ```

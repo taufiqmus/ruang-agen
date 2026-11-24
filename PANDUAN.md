@@ -12,60 +12,62 @@ Klik dua kali `index.html` dan buka dengan Chrome atau Edge. Agen memakai **pars
 
 ### B. Dengan AI di laptop sendiri (disarankan)
 
-1. Klik dua kali **`MULAI.bat`** di folder game. Di Mac atau Linux, buka terminal di folder game lalu jalankan `./mulai.sh`.
-2. Jawab menu penyiapan (lihat di bawah).
-3. Tunggu. Pertama kali butuh internet dan beberapa menit. Kemajuan tampil sebagai langkah `[1/4]` sampai `[4/4]`.
-4. Browser terbuka sendiri dan langsung memakai otak yang kamu pilih.
-5. **Biarkan jendela hitam tetap terbuka selama bermain.** Tutup jendela itu untuk berhenti.
+Tidak ada yang perlu dipasang selain (bila mau) Ollama. `MULAI.bat` tidak membuat lingkungan Python dan tidak mengunduh paket, jadi siap dalam hitungan detik.
 
-Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
-1. Menu menampilkan isi laptopmu: jumlah inti CPU, RAM, kartu grafis NVIDIA (bila ada), dan apakah Ollama sudah terpasang.
-2. Pilih otak AI. Menu memberi saran sesuai laptopmu, tetapi pilihannya bebas:
+1. Klik dua kali **`MULAI.bat`** di folder game. Di Mac atau Linux, buka terminal di folder game lalu jalankan `./mulai.sh`.
+2. Jawab menu penyiapan (lihat di bawah). Saat pertama kali saja.
+3. Browser terbuka sendiri dengan otak yang kamu pilih.
+4. **Biarkan jendela hitam tetap terbuka selama bermain.** Tutup jendela itu untuk berhenti.
+
+Menu penyiapan di jendela hitam:
+1. Menampilkan isi laptopmu: inti CPU, RAM, kartu grafis NVIDIA (bila ada), dan apakah Ollama sudah terpasang.
+2. Pilih otak AI. Menu memberi saran, tetapi pilihannya bebas dan bisa diganti kapan saja di tab **Otak**:
 
    | Pilihan | Unduhan | Cocok untuk |
    |---|---|---|
-   | 1. Tanpa AI (parser) | Tidak ada model | Laptop apa pun |
-   | 2. Model lokal kecil 0,5B | Sekitar 0,5 GB | RAM 4 GB, jawaban sederhana |
-   | 3. Model lokal sedang 1,5B | Sekitar 1 GB | RAM 8 GB ke atas, tanpa kartu grafis |
-   | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
+   | 1. Tanpa AI (parser) | Tidak ada | Laptop apa pun |
+   | 2. Ollama | Model yang kamu pilih | Model AI jalan di laptopmu, gratis, tanpa internet setelah diunduh. Paling cepat dengan kartu grafis NVIDIA |
+   | 3. OpenRouter | Tidak ada | Model besar lewat internet, butuh kunci gratis (diisi di dalam game) |
 
-3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
+3. Bila memilih Ollama:
+   - Ollama belum terpasang: menu menawarkan memasangnya otomatis (Windows, lewat `winget`) atau membuka halaman unduhannya.
+   - Menu menampilkan **katalog model** dengan ukuran unduhan dan penilaian untuk laptopmu (cocok, lambat, atau terlalu berat) serta satu model yang disarankan. Ketik nomornya (boleh beberapa, dipisah koma), atau ketik nama model lain (misalnya `llama3.2:1b`). Menu mengunduhnya lewat `ollama pull`. Ketik `0` untuk melewati.
 4. Pilih aplikasi yang dibuka: **Easy Agent Visualizer** atau **Ruang Agen**.
 
-Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
+Pilihan disimpan. Berikutnya `MULAI.bat` langsung jalan.
 
-Berikutnya cukup klik dua kali `MULAI.bat` lagi. Game siap dalam beberapa detik tanpa mengunduh ulang.
+**Menambah model nanti**, bila laptopmu ternyata masih kuat, ada dua cara:
+- Di game: tab **Otak**, pilih **Ollama**, lalu di bagian **Unduh atau tambah model** klik **Unduh** pada model yang diinginkan (Studio: tab **Model**). Ada bar kemajuan dan tombol **Pakai** setelah selesai. Tanpa terminal.
+- Di terminal: `MULAI.bat --model` membuka menu model yang sama.
 
-Kalau laptop belum punya Python yang cocok, `MULAI.bat` menawarkan memasangnya (ketik `Y`), lalu minta kamu menjalankan `MULAI.bat` sekali lagi.
+Penilaian "cocok" hanyalah perkiraan dari RAM dan kartu grafis. Bila model terasa lambat, pilih yang lebih kecil.
 
-Pilihan tambahan (klik kanan di folder game, pilih "Open in Terminal", lalu ketik):
+Perintah tambahan (klik kanan di folder game, pilih "Open in Terminal"):
 
 | Perintah | Kegunaan |
 |---|---|
-| `MULAI.bat --ukuran 0.5b` | Model paling ringan untuk laptop sangat terbatas. Jawabannya lebih lemah |
-| `MULAI.bat --threads 2` | Batasi pemakaian CPU supaya laptop tidak panas |
-| `MULAI.bat --tanpa-model` | Buka game lewat alamat lokal tanpa model, misalnya untuk tombol Bicara atau untuk Ollama |
+| `MULAI.bat --pilih` | Ulangi seluruh menu penyiapan |
+| `MULAI.bat --model` | Hanya menu model Ollama (tambah model) |
+| `MULAI.bat --studio` | Buka Easy Agent Visualizer |
+| `MULAI.bat --port 8100` | Pakai port lain bila 8000 terpakai (otomatis mencari yang kosong) |
+
+Laptop tanpa Python: `MULAI.bat` otomatis memakai server kecil dari PowerShell. Menu di terminal tidak ada, tetapi semua pilihan model tersedia di tab **Otak** di dalam game.
 
 ### C. AI besar lewat internet (OpenRouter, gratis)
 
 1. Daftar di openrouter.ai, buka https://openrouter.ai/settings/keys, klik **Create Key**, lalu salin kunci `sk-or-...` (hanya tampil sekali).
 2. Di game, buka tab **Otak**, pilih "LLM dengan kunci OpenRouter sendiri", tempel kunci, klik **Simpan**, lalu **Tes koneksi**.
 
-Kunci hanya tersimpan di browsermu. Jangan menempelkannya di chat, grup, atau repositori. Akun gratis dibatasi sekitar 50 pesan AI per hari. Bila kuota habis, agen otomatis memakai parser.
+Kunci hanya tersimpan di browsermu. Jangan menempelkannya di chat, grup, atau repositori. Akun gratis dibatasi sekitar 50 pesan AI per hari. Bila kuota habis, agen otomatis memakai parser. Tiap mahasiswa sebaiknya membuat kunci sendiri sebelum kelas.
 
-### D. Ollama (bila sudah memasang Ollama)
-
-Cocok bila laptop punya kartu grafis (jauh lebih cepat) atau ingin mencoba model lain.
+### D. Ollama (pasang sendiri)
 
 1. Pasang Ollama dari https://ollama.com/download, lalu buka aplikasinya (ikon muncul di tray).
 2. Opsional, supaya model tidak memenuhi drive C: `setx OLLAMA_MODELS "D:\ollama\models"`, lalu Quit Ollama dari tray dan buka lagi.
-3. Di Command Prompt: `ollama pull qwen2.5:1.5b`.
-4. Di folder game: `MULAI.bat --tanpa-model`. Browser terbuka di `http://127.0.0.1:8000`.
-5. Tab **Otak**, pilih **Ollama lokal (di laptop ini)**. Daftar model yang sudah diunduh muncul sendiri. Pilih model, biarkan **Router hemat** tercentang, klik **Simpan**, lalu **Tes koneksi** sampai muncul "Berhasil".
+3. Klik dua kali `MULAI.bat`. Browser terbuka di `http://127.0.0.1:8000`.
+4. Tab **Otak**, pilih **Ollama lokal (di laptop ini)**. Di **Unduh atau tambah model**, klik **Unduh** pada model pilihanmu, lalu **Pakai**, **Simpan**, dan **Tes koneksi** sampai muncul "Berhasil". Biarkan **Router hemat** tercentang.
 
-Untuk mencoba model lain, unduh dulu lewat Command Prompt (misalnya `ollama pull llama3.2:1b`), klik **Muat daftar** di tab Otak, pilih modelnya, lalu **Simpan**.
-
-Membuka `index.html` langsung (klik dua kali) dengan Ollama butuh `setx OLLAMA_ORIGINS "*"`, lalu Quit Ollama dan buka lagi. Pengaturan itu membuat situs apa pun yang kamu buka bisa memanggil Ollama di laptopmu, jadi cara di atas lebih aman.
+Membuka `index.html` langsung (klik dua kali) dengan Ollama butuh `setx OLLAMA_ORIGINS "*"`, lalu Quit Ollama dan buka lagi. Pengaturan itu membuat situs apa pun yang kamu buka bisa memanggil Ollama di laptopmu, jadi buka lewat `MULAI.bat` lebih aman.
 
 ### Untuk kelas daring
 
@@ -87,7 +89,7 @@ Dosen mengunggah `index.html` ke repositori GitHub, membuka Settings, Pages, mem
 | Manual | Isi rak manual (buku panduan agen), titip catatan, dan uji pencarian |
 | Dunia | Pindah semesta dan ruang, mutu grafis, ajari kata gaul, buat ruang dan semesta |
 | Agen | Studio Agen: ubah isi kepala agen |
-| Otak | Pilih otak: parser, model lokal, OpenRouter, atau Ollama |
+| Otak | Pilih otak (parser, OpenRouter, atau Ollama) dan unduh model Ollama |
 
 ### Apa yang terjadi saat kamu mengirim pesan
 
@@ -202,9 +204,8 @@ Rute **tolak** selalu menang dan hanya dipicu kata pemicu, tidak pernah oleh rou
 | Pilihan | Kapan |
 |---|---|
 | Parser aturan | Bawaan. Gratis, tanpa internet, instan |
-| Model lokal kecil, Python | Saat game dibuka lewat `MULAI.bat` (terpilih otomatis) |
 | LLM dengan kunci OpenRouter sendiri | AI besar lewat internet |
-| Ollama lokal | Bila sudah memasang Ollama |
+| Ollama lokal | Bila sudah memasang Ollama. Model dipilih dan diunduh dari tab ini |
 
 **Router hemat** (hidup secara bawaan untuk AI di laptop): pesan yang sudah dikenali parser dikerjakan parser, dan AI hanya dipanggil untuk pesan baru. Hasilnya lebih cepat dan lebih andal. Matikan untuk melihat AI kecil bekerja sendirian dan bandingkan hasilnya. Bila AI gagal, agen otomatis kembali ke parser dan Jejak menjelaskan alasannya.
 
@@ -257,13 +258,13 @@ Agen tidak bersuara. Tombol **Bicara** mengubah ucapanmu menjadi pesan. Butuh Ch
 |---|---|
 | Layar 3D kosong | Game memuat pustaka 3D dari internet. Pastikan ada internet, pakai Chrome atau Edge terbaru, atau buka dengan alamat berakhiran `?grafis=ringan` |
 | Animasi patah-patah | Pilih grafis Ringan di tab Dunia |
-| `MULAI.bat` berhenti dengan GAGAL | Periksa internet lalu jalankan lagi. Bila tetap gagal, pasang Python 3.12 64-bit dari python.org lalu jalankan lagi |
-| "Server model lokal tidak terjangkau" | Jendela `MULAI.bat` sudah tertutup. Klik dua kali `MULAI.bat` lagi |
-| AI di laptop terasa lambat | Normal di laptop lama. Pastikan Router hemat hidup, coba `MULAI.bat --ukuran 0.5b` atau `--threads 2`, atau pakai parser |
+| `MULAI.bat` langsung tertutup atau GAGAL | Buka lewat Command Prompt supaya pesannya terbaca. Tanpa Python pun jalan lewat PowerShell. Cadangan terakhir: klik dua kali `index.html` (parser) |
+| "Server tidak terjangkau" atau halaman tidak terbuka | Jendela `MULAI.bat` sudah tertutup. Klik dua kali `MULAI.bat` lagi |
+| AI di laptop terasa lambat | Normal di laptop lama. Pastikan Router hemat hidup, pilih model lebih kecil di tab Otak (`qwen2.5:1.5b`), atau pakai parser |
 | Tes koneksi: "kunci ditolak" | Kunci OpenRouter salah atau sudah dihapus. Buat kunci baru |
 | "kuota model gratis habis" | Batas harian OpenRouter tercapai. Agen memakai parser. Coba lagi besok |
 | Jejak OTAK: "LLM gagal" | Normal. Alasannya tertulis, dan agen tetap bekerja lewat parser |
-| Ollama "tidak terjangkau" | Ollama belum berjalan, atau game dibuka langsung tanpa `OLLAMA_ORIGINS`. Pakai `MULAI.bat --tanpa-model` |
+| Ollama "tidak terjangkau" | Ollama belum berjalan (buka aplikasinya), atau game dibuka langsung tanpa `OLLAMA_ORIGINS`. Buka lewat `MULAI.bat`, lalu klik **Periksa lagi** di panel model |
 | Tombol Bicara tidak muncul | Browser tidak mendukung. Pakai Chrome atau Edge |
 | "Belum bisa diterapkan" di tab Dunia | Baca daftar merah di bawah kotak JSON. Tiap baris menyebut bagian yang salah |
 | Pengaturan atau ruang buatan hilang | Tersimpan di browser dan terhapus bila data situs dibersihkan atau memakai jendela privat. Simpan cadangan dengan **Ekspor** |
@@ -381,7 +382,7 @@ Selain game ini, ada **Easy Agent Visualizer** (`studio.html`): mahasiswa meraki
 
 1. Unggah `index.html` ke GitHub Pages dan bagikan alamatnya. Mahasiswa langsung bisa bermain dengan parser.
 2. Untuk sesi dengan AI, pilih salah satu:
-   - **AI di laptop sendiri** (disarankan): tiap mahasiswa menjalankan `MULAI.bat`. Unduhan sekitar 1,2 GB per laptop, sebaiknya di jaringan kampus sebelum sesi. Folder `model/` bisa disalin lewat flashdisk supaya tidak perlu mengunduh ulang.
+   - **AI di laptop sendiri** (disarankan): tiap mahasiswa menjalankan `MULAI.bat`. Minta mahasiswa memasang Ollama (sekitar 1 GB) dan mengunduh `qwen2.5:1.5b` (1 GB) **sebelum kelas**. 30 orang mengunduh bersamaan di Wi-Fi kampus pasti macet. Cadangan: bawa installer Ollama dan folder model (`%USERPROFILE%\.ollama\models`) di flashdisk.
    - **OpenRouter**: tiap mahasiswa membuat akun sendiri. Satu kunci bersama tidak cukup untuk satu kelas.
 3. Laptop yang terlalu lambat bisa memakai parser. Semua misi tetap bisa diselesaikan.
 

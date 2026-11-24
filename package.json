@@ -4,8 +4,8 @@
   "description": "Game 3D untuk belajar agentic AI (bahasa Indonesia)",
   "scripts": {
     "build": "python build.py",
-    "test": "node tests/test_brain.js && node tests/test_manual.js && node tests/test_dunia.js && node tests/test_semesta.js && node tests/test_llm.js && node tests/test_ingatan.js && node tests/test_pipeline.js",
-    "test:browser": "node tests/test_browser.js && node tests/test_browser_semesta.js && node tests/test_resource_rendah.js",
+    "test": "node tests/test_brain.js && node tests/test_manual.js && node tests/test_dunia.js && node tests/test_semesta.js && node tests/test_llm.js && node tests/test_ingatan.js && node tests/test_pipeline.js && node tests/test_peluncur.js",
+    "test:browser": "node tests/test_browser.js && node tests/test_browser_semesta.js && node tests/test_resource_rendah.js && node tests/test_ollama_panel.js",
     "test:studio": "node tests/studio/test_iot.js && node tests/studio/test_graf.js && node tests/studio/test_studio_lain.js && node tests/studio/test_fuzz.js",
     "test:studio:browser": "node tests/studio/test_studio_browser.js && node tests/studio/test_studio_rendah.js && node tests/studio/test_kabel3d.js && node tests/studio/test_hapus_rag.js && node tests/studio/test_area3d.js && node tests/studio/test_monyet.js && node tests/studio/test_tutorial.js"
   },

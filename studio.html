@@ -2282,6 +2282,171 @@ pre.kode { background: var(--ink); color: #e9ecff; padding: 8px; border-radius: 
   root.OtakLLM = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+/* Pengelola model Ollama: katalog, kecocokan dengan laptop, dan unduhan model lewat API Ollama (/api/pull).
+   Dipakai game (tab Otak) dan Easy Agent Visualizer (tab Model), jadi mahasiswa memilih dan menambah model tanpa terminal. */
+(function (root) {
+  'use strict';
+  /* ram = RAM minimum (GB). gpu = VRAM (GB) supaya nyaman cepat; tanpa itu model tetap jalan di CPU, hanya lebih lambat. */
+  const KATALOG = [
+    { nama: 'qwen2.5:1.5b', gb: 1.0, ram: 4, gpu: 0, alat: false, ket: 'Ringan, jalan di CPU. Cukup untuk praktikum. Jarang bisa memakai alat.' },
+    { nama: 'qwen2.5:3b', gb: 1.9, ram: 8, gpu: 4, alat: false, ket: 'Sedang. Lebih paham kalimat bebas.' },
+    { nama: 'qwen2.5:7b', gb: 4.7, ram: 16, gpu: 6, alat: true, ket: 'Bisa memakai alat (tool calling). Paling nyaman dengan kartu grafis.' },
+    { nama: 'gemma4:e4b', gb: 6.6, ram: 16, gpu: 8, alat: true, ket: 'Bisa memakai alat, paling andal di uji Studio. Butuh laptop kuat.' },
+    { nama: 'embeddinggemma', gb: 0.6, ram: 4, gpu: 0, alat: false, tambahan: true, ket: 'Tambahan: router embedding dan RAG hibrida.' },
+    { nama: 'llama-guard3:1b', gb: 1.6, ram: 4, gpu: 0, alat: false, tambahan: true, ket: 'Tambahan: guard model untuk konten berbahaya.' }
+  ];
+
+  const bersih = u => String(u || 'http://localhost:11434').trim().replace(/\/+$/, '');
+  const sama = (a, b) => a === b || a === b + ':latest' || a + ':latest' === b;
+
+  /* hw = { ram, vram } dalam GB, bisa kosong (browser tidak membaca VRAM). Hasil: cocok, pas, berat, atau ? */
+  function kecocokan(m, hw) {
+    if (!hw || !hw.ram) return '?';
+    if (hw.ram < m.ram) return 'berat';
+    if (m.gpu && !(hw.vram >= m.gpu)) return 'pas';
+    return 'cocok';
+  }
+  /* Model utama terbesar yang masih "cocok". Bila tak ada yang cocok, model termurah. */
+  function saran(hw) {
+    const utama = KATALOG.filter(m => !m.tambahan);
+    const ok = utama.filter(m => kecocokan(m, hw) === 'cocok');
+    return (ok.length ? ok[ok.length - 1] : utama[0]).nama;
+  }
+
+  async function tersedia(base, ambil) {
+    const f = ambil || root.fetch;
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const t = ctl && setTimeout(() => ctl.abort(), 4000);
+    try {
+      const r = await f(bersih(base) + '/api/tags', ctl ? { signal: ctl.signal } : {});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return ((await r.json()).models || []).map(m => ({ nama: m.name, gb: (m.size || 0) / 1e9 })).sort((a, b) => a.gb - b.gb);
+    } finally { if (t) clearTimeout(t); }
+  }
+
+  /* Mengunduh model. onProgres({ status, persen }) dipanggil tiap baris NDJSON dari Ollama. */
+  async function tarik(base, nama, onProgres, opsi) {
+    opsi = opsi || {};
+    const f = opsi.ambil || root.fetch;
+    const r = await f(bersih(base) + '/api/pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: nama, name: nama, stream: true }), signal: opsi.signal });
+    if (!r.ok) throw new Error('Ollama menolak unduhan (HTTP ' + r.status + ')');
+    const baca = (r.body && r.body.getReader) ? r.body.getReader() : null;
+    const dec = new TextDecoder();
+    let sisa = '', selesai = false;
+    const proses = baris => {
+      if (!baris.trim()) return;
+      let d; try { d = JSON.parse(baris); } catch (e) { return; }
+      if (d.error) throw new Error(d.error);
+      if (d.status === 'success') selesai = true;
+      if (onProgres) onProgres({ status: d.status || '', persen: d.total ? Math.min(100, Math.round(100 * (d.completed || 0) / d.total)) : null });
+    };
+    if (baca) {
+      for (;;) {
+        const { done, value } = await baca.read();
+        if (done) break;
+        sisa += dec.decode(value, { stream: true });
+        const bagian = sisa.split('\n'); sisa = bagian.pop();
+        bagian.forEach(proses);
+      }
+      proses(sisa);
+    } else { (await r.text()).split('\n').forEach(proses); }
+    if (!selesai) throw new Error('Unduhan berhenti sebelum selesai. Periksa internet, lalu coba lagi (unduhan dilanjutkan dari bagian yang sudah ada).');
+  }
+
+  /* Info laptop: dari server MULAI (/_info, bisa membaca RAM dan VRAM), cadangannya dari browser. */
+  async function infoLaptop(ambil) {
+    const f = ambil || root.fetch;
+    const loc = root.location;
+    if (loc && /^https?:$/.test(loc.protocol) && ['127.0.0.1', 'localhost'].includes(loc.hostname)) {
+      try { const r = await f(loc.origin + '/_info'); if (r.ok) { const d = await r.json(); if (d && d.ram) return { ram: d.ram, vram: d.vram || 0, gpu: d.gpu || '', cpu: d.cpu || 0, dari: 'server' }; } } catch (e) { /* tidak ada server MULAI */ }
+    }
+    const nav = root.navigator || {};
+    return { ram: nav.deviceMemory || 0, vram: 0, gpu: '', cpu: nav.hardwareConcurrency || 0, dari: 'browser' };
+  }
+
+  /* Panel di DOM. o = { base(), aktif(), pakai(nama), setelahUbah?() } */
+  function panel(wadah, o) {
+    const D = root.document;
+    const mk = (tag, cls, txt) => { const e = D.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+    const tombol = (txt, fn) => { const b = mk('button', 'btn sm', txt); b.type = 'button'; b.style.cssText = 'padding:3px 9px;white-space:nowrap'; b.onclick = fn; return b; };
+    const kini = { daftar: [], hw: null, galat: '', unduh: {} };   // unduh[nama] = { persen, status, batal }
+    const status = mk('p', 'note'); status.setAttribute('role', 'status');
+    const info = mk('p', 'note');
+    const tabel = mk('div'); tabel.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin:6px 0';
+    const bebas = mk('input'); bebas.type = 'text'; bebas.placeholder = 'nama model lain, misalnya llama3.2:1b'; bebas.setAttribute('aria-label', 'Nama model Ollama lain');
+    const barisBebas = mk('div'); barisBebas.style.cssText = 'display:flex;gap:6px';
+    barisBebas.append(bebas, tombol('Unduh', () => { const n = bebas.value.trim(); if (n) { mulaiUnduh(n); bebas.value = ''; } }));
+    wadah.replaceChildren(status, info, tabel, barisBebas);
+
+    const terpasang = n => kini.daftar.some(d => sama(d.nama, n));
+    function baris(m) {
+      const b = mk('div'); b.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 8px;border:1px solid var(--line,#8884);border-radius:8px';
+      const atas = mk('div'); atas.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+      const nama = mk('b', '', m.nama); nama.style.flex = '1 1 auto';
+      const gb = mk('span', 'note', (m.gb ? m.gb.toFixed(1) : '?') + ' GB');
+      atas.append(nama, gb);
+      const cocok = m.kat ? kecocokan(m.kat, kini.hw) : '?';
+      if (m.kat) {
+        const label = { cocok: 'cocok untuk laptopmu', pas: 'bisa, tetapi lambat', berat: 'terlalu berat', '?': 'kecocokan tidak diketahui' }[cocok];
+        const t = mk('span', 'note', (m.kat.nama === kini.saran ? 'DISARANKAN, ' : '') + label); if (cocok === 'berat') t.style.color = 'var(--bad,#c33)';
+        atas.appendChild(t);
+      }
+      const u = kini.unduh[m.nama];
+      if (u) { atas.appendChild(tombol('Batal', () => u.batal())); }
+      else if (terpasang(m.nama)) {
+        if (!(m.kat && m.kat.tambahan)) atas.appendChild(tombol(sama(o.aktif(), m.nama) ? 'Dipakai' : 'Pakai', () => { o.pakai(m.nama); render(); }));
+        atas.appendChild(mk('span', 'note', 'terpasang'));
+      } else atas.appendChild(tombol('Unduh', () => mulaiUnduh(m.nama)));
+      b.appendChild(atas);
+      if (m.kat) b.appendChild(mk('span', 'note', m.kat.ket));
+      if (u) {
+        const p = mk('progress'); p.max = 100; if (u.persen != null) p.value = u.persen; p.style.width = '100%'; p.setAttribute('aria-label', 'Kemajuan unduhan ' + m.nama);
+        b.append(p, mk('span', 'note', (u.persen != null ? u.persen + '% ' : '') + (u.status || 'memulai...')));
+      }
+      if (kini.galatModel && kini.galatModel[m.nama]) { const g = mk('span', 'note', kini.galatModel[m.nama]); g.style.color = 'var(--bad,#c33)'; b.appendChild(g); }
+      return b;
+    }
+    function render() {
+      const daftar = KATALOG.map(k => ({ nama: k.nama, gb: k.gb, kat: k }));
+      kini.daftar.forEach(d => { if (!KATALOG.some(k => sama(d.nama, k.nama))) daftar.push({ nama: d.nama, gb: d.gb }); });
+      Object.keys(kini.unduh).concat(Object.keys(kini.galatModel || {})).forEach(n => { if (!daftar.some(d => sama(d.nama, n))) daftar.push({ nama: n, gb: 0 }); });
+      kini.saran = saran(kini.hw);
+      const hw = kini.hw;
+      info.textContent = hw && hw.ram ? `Laptopmu: ${hw.cpu ? hw.cpu + ' inti CPU, ' : ''}RAM ${hw.ram}${hw.dari === 'browser' ? ' GB atau lebih (perkiraan browser)' : ' GB'}${hw.vram ? ', kartu grafis ' + hw.vram.toFixed(0) + ' GB' : hw.dari === 'server' ? ', tanpa kartu grafis NVIDIA' : ', kartu grafis tidak terbaca'}. Penilaian "cocok" hanya perkiraan.` : 'Spesifikasi laptop tidak terbaca, jadi kecocokan tidak ditampilkan. Mulai dari model terkecil.';
+      tabel.replaceChildren(...daftar.map(baris));
+      status.textContent = kini.galat || `Ollama berjalan, ${kini.daftar.length} model terpasang. Unduh model baru kapan saja bila laptopmu masih kuat.`;
+    }
+    async function muat() {
+      status.textContent = 'Memeriksa Ollama...';
+      try { kini.daftar = await tersedia(o.base()); kini.galat = ''; }
+      catch (e) { kini.daftar = []; kini.galat = 'Ollama tidak terjangkau. Pasang Ollama dari ollama.com/download dan buka aplikasinya, lalu klik Periksa lagi. Buka game lewat MULAI.bat, bukan klik dua kali berkas, supaya Ollama mengizinkannya.'; }
+      render();
+    }
+    async function mulaiUnduh(nama) {
+      if (kini.unduh[nama]) return;
+      const ctl = new AbortController();
+      const u = kini.unduh[nama] = { persen: null, status: '', batal: () => ctl.abort() };
+      kini.galatModel = kini.galatModel || {}; delete kini.galatModel[nama];
+      render();
+      try {
+        await tarik(o.base(), nama, p => { u.persen = p.persen != null ? p.persen : u.persen; u.status = p.status; render(); }, { signal: ctl.signal });
+      } catch (e) { kini.galatModel[nama] = ctl.signal.aborted ? 'Unduhan dibatalkan.' : 'Gagal: ' + (e && e.message ? e.message : e); }
+      delete kini.unduh[nama];
+      await muat();
+      if (o.setelahUbah) o.setelahUbah();
+    }
+    const ulang = tombol('Periksa lagi', muat); ulang.id = 'oklPeriksa';
+    wadah.appendChild(ulang);
+    infoLaptop().then(h => { kini.hw = h; render(); });
+    muat();
+    return { muat };
+  }
+
+  const api = { KATALOG, kecocokan, saran, tersedia, tarik, infoLaptop, panel };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.OllamaKelola = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
 </script>
 <script>
 /* Easy Agent Visualizer: dunia IoT sebagai DATA.
@@ -4565,7 +4730,7 @@ window.KURIKULUM = {
   let st = I.status(W, S);
   const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: (/^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:8000') + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
   // pilihan dari menu penyiapan MULAI.bat (?otak=ollama&model=...), hanya bila mahasiswa belum memilih otak sendiri
-  if (['parser', 'ollama', 'lokal'].includes(param.get('otak')) && !baca(K.cfg, null)) { cfg.mode = param.get('otak'); if (param.get('model')) cfg.ollamaModel = param.get('model'); tulis(K.cfg, Object.assign({}, cfg, { otomatis: true })); }
+  if (['parser', 'ollama', 'lokal', 'kunci'].includes(param.get('otak')) && !baca(K.cfg, null)) { cfg.mode = param.get('otak'); if (param.get('model')) cfg.ollamaModel = param.get('model'); tulis(K.cfg, Object.assign({}, cfg, { otomatis: true })); }
   const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, laporanJadwal: 0 }, baca(K.stat, {}));
   const misiSelesai = new Set(baca(K.misi, []));
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
@@ -5328,7 +5493,7 @@ window.KURIKULUM = {
   function renderModel() {
     const P = $('#model'); P.replaceChildren();
     P.appendChild(mk('h3', '', 'Otak utama'));
-    const m = field(P, 'Sumber otak', pilihanEl([['parser', 'Tanpa AI: parser aturan'], ['lokal', 'Model lokal Python (MULAI.bat)'], ['ollama', 'Ollama di laptop ini'], ['kunci', 'OpenRouter (kunci sendiri)']], cfg.mode)); m.id = 'mdMode';
+    const m = field(P, 'Sumber otak', pilihanEl([['parser', 'Tanpa AI: parser aturan'], ['lokal', 'Server lokal lain (kompatibel OpenAI)'], ['ollama', 'Ollama di laptop ini'], ['kunci', 'OpenRouter (kunci sendiri)']], cfg.mode)); m.id = 'mdMode';
     const isi = mk('div'); P.appendChild(isi);
     const gambar = () => {
       isi.replaceChildren();
@@ -5336,8 +5501,10 @@ window.KURIKULUM = {
         const u = field(isi, 'Alamat Ollama', mk('input')); u.type = 'text'; u.value = cfg.ollamaUrl; u.onchange = () => { cfg.ollamaUrl = u.value; };
         const s = field(isi, 'Model', pilihanEl(daftarOllama.map(x => [x.nama, `${x.nama} (${x.gb.toFixed(1)} GB)`]).concat(daftarOllama.some(x => x.nama === cfg.ollamaModel) ? [] : [[cfg.ollamaModel, cfg.ollamaModel]]), cfg.ollamaModel)); s.id = 'mdModel'; s.onchange = () => { cfg.ollamaModel = s.value; };
         const b = mk('button', 'btn sm', 'Muat daftar model'); b.type = 'button'; b.onclick = async () => { await muatOllama(); gambar(); toast(daftarOllama.length + ' model ditemukan.', !!daftarOllama.length); }; isi.appendChild(b);
+        const kel = mk('div'); kel.id = 'mdKelola'; isi.append(mk('h3', '', 'Unduh atau tambah model'), kel);
+        if (window.OllamaKelola) window.OllamaKelola.panel(kel, { base: () => cfg.ollamaUrl, aktif: () => cfg.ollamaModel, pakai: n => { cfg.ollamaModel = n; if (![...s.options].some(o => o.value === n)) s.add(new Option(n, n)); s.value = n; toast(n + ' dipilih. Klik Simpan.', true); }, setelahUbah: () => muatOllama() });
         isi.appendChild(mk('p', 'note', 'Untuk agen yang memanggil tool, pakai model yang mendukung tool calling, misalnya qwen2.5:7b atau gemma4:e4b. Model 1,5B ke bawah jarang berhasil, dan parser akan mengambil alih.'));
-      } else if (m.value === 'lokal') { const u = field(isi, 'Alamat server', mk('input')); u.type = 'text'; u.value = cfg.lokalUrl; u.onchange = () => { cfg.lokalUrl = u.value; }; isi.appendChild(mk('p', 'note', 'Jalankan MULAI.bat. Model kecil di CPU jarang bisa memakai tool, jadi router hemat dan parser banyak membantu.')); }
+      } else if (m.value === 'lokal') { const u = field(isi, 'Alamat server', mk('input')); u.type = 'text'; u.value = cfg.lokalUrl; u.onchange = () => { cfg.lokalUrl = u.value; }; isi.appendChild(mk('p', 'note', 'Untuk server yang berbicara seperti OpenAI (misalnya LM Studio). Kebanyakan mahasiswa cukup memakai Ollama.')); }
       else if (m.value === 'kunci') { const k = field(isi, 'Kunci OpenRouter', mk('input')); k.type = 'password'; k.value = cfg.apiKey; k.onchange = () => { cfg.apiKey = k.value; }; const md = field(isi, 'Model (pisah koma)', mk('input')); md.type = 'text'; md.value = cfg.models; md.onchange = () => { cfg.models = md.value; }; isi.appendChild(mk('p', 'note', 'Kunci hanya disimpan di browser ini. Akun gratis dibatasi sekitar 50 permintaan per hari, dan satu pesan agen bisa memakai beberapa permintaan.')); }
       else isi.appendChild(mk('p', 'note', 'Parser memahami perintah dan pertanyaan sederhana tanpa AI. Cocok untuk laptop apa pun dan tanpa internet.'));
     };
@@ -5358,18 +5525,17 @@ window.KURIKULUM = {
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();
-    let lokal = false; if (/^https?:$/.test(location.protocol)) { try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; } }
     const gpuAsli = gpu && !/swiftshader|llvmpipe|basic render|software/i.test(gpu);
-    if (location.protocol === 'file:') P.appendChild(mk('p', 'note', 'Halaman ini dibuka sebagai berkas. Ollama menolak halaman berkas, jadi bila Ollama terpasang tetapi tidak terdeteksi, buka studio lewat MULAI.bat --tanpa-model --studio.'));
-    P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}. Server model lokal: ${lokal ? 'ada' : 'tidak ada'}.`));
+    if (location.protocol === 'file:') P.appendChild(mk('p', 'note', 'Halaman ini dibuka sebagai berkas. Ollama menolak halaman berkas, jadi bila Ollama terpasang tetapi tidak terdeteksi, buka studio lewat MULAI.bat (pilih Easy Agent Visualizer di menu).'));
+    P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}.`));
     const saranM = ol.find(m => /gemma4:e4b|qwen2\.5:7b/.test(m.nama)) || ol[0];
     const opsi = [
       ['parser', 'Tanpa AI', 'Parser aturan. Jalan di laptop apa pun, tanpa internet.'],
       ['ollama', 'Ollama', ol.length ? `Pakai ${saranM.nama}${gpuAsli ? ' (ada kartu grafis, cepat)' : ''}.` : 'Belum terdeteksi. Pasang Ollama dulu (lihat PANDUAN).'],
-      ['lokal', 'Model lokal Python', lokal ? 'Server MULAI.bat terdeteksi.' : 'Jalankan MULAI.bat untuk memakai ini.'],
+      
       ['kunci', 'OpenRouter', 'Model besar lewat internet dengan kunci gratis sendiri.']
     ];
-    const rek = ol.length && gpuAsli ? 'ollama' : lokal ? 'lokal' : ol.length ? 'ollama' : 'parser';
+    const rek = ol.length ? 'ollama' : 'parser';
     let dipilih = rek;
     const grid = mk('div', 'pilihan'); P.appendChild(grid);
     opsi.forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === dipilih); b.append(mk('b', '', j + (v === rek ? ' (disarankan)' : '')), mk('small', '', d)); b.onclick = () => { dipilih = v; grid.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid.appendChild(b); });

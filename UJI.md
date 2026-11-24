@@ -24,13 +24,17 @@ Cakupan: halaman termuat tanpa galat JS, enam tab, spesialis tiap ruang. Lab: mi
 
 `test_browser_semesta.js`: 58 cek, semua lulus. Cakupan: semesta Kampus dimuat dengan 6 ruang; rute KAMPUS, CURHAT, dan DILARANG di browser; **pipeline hidup** (MEMORI, RAG, GUARD merah saat aksi ditolak, MASUKAN merah saat injeksi, ORKESTRATOR dan SPESIALIS, KELUARAN); misi semesta (Tur Kampus, Jagoan Router) selesai lintas ruang dengan XP dan badge; kejadian "masuk", "pesanKe", dan padam; **Studio Agen**: ubah nama, persona, kata setuju dan menolak, sapaan, gaya, strategi orkestrator, nama orkestrator, rute buatan dari form, sinonim, pola masukan, guard keluaran lalu Terapkan, hasilnya langsung dipakai agen, bertahan setelah muat ulang; **mode rentan** (peringatan tampil, guard aksi mati meloloskan lengan 200%, dinyalakan lagi menolak); semesta baru dari templat, JSON semesta disunting (kejadian, misi, pengetahuan baru), JSON salah memberi galat ramah tanpa mengganti semesta aktif, ekspor lalu impor berkas, hapus semesta, migrasi data lama (ruang buatan, XP, bintang, dan mode otak proxy); tiga ruang baru (dapur, kebun, perpustakaan) di grafis realistis dan interlock dapur.
 
-### Satu klik untuk mahasiswa (`MULAI.bat`)
+### Satu klik untuk mahasiswa (`MULAI.bat`), diperbarui 24 November 2026
 
-Diuji nyata di laptop ini dari folder tanpa `.venv` dan tanpa model (17 November 2026), dengan Python 3.8 di PATH (sengaja diabaikan skrip) dan Python 3.11 lewat `py`:
-- Skrip memilih `py -3.11`, membuat `.venv`, memasang paket siap pakai (147 MB), mengunduh model 0,5B dari nol (469 MB), lalu server siap dalam **70 detik**.
-- `test_mulai_live.js` lulus: browser baru tanpa pengaturan apa pun mendeteksi model di alamat yang sama dan langsung memakainya. Pesan dikenal dikerjakan parser (router hemat), pesan baru dijawab model lokal sungguhan, tanpa masalah CORS, tanpa galat JS.
-- Jalan kedua saat port 8000 masih terpakai: siap dalam **6 detik** di port 8001, tanpa memasang atau mengunduh ulang.
-- Belum diuji: laptop tanpa Python sama sekali (jalur pemasangan lewat winget), Windows tanpa winget, Mac dan Linux (`mulai.sh`).
+Model Python (llama-cpp) dihapus. Peluncur hanya memakai pustaka standar Python, jadi tidak ada `.venv`, pip, atau unduhan model. Pemilihan dan unduhan model Ollama ada di menu penyiapan dan di dalam game.
+
+Diuji nyata di laptop ini (Windows 11):
+- `MULAI.bat` dengan Python 3.8 di PATH: server siap dalam **2,6 detik** dari folder tanpa `.venv` dan tanpa model. Port 8000 terpakai: instans kedua otomatis di port 8001.
+- `MULAI.bat` dengan PATH hanya berisi System32 dan PowerShell (tanpa Python): jatuh ke `server/mini.ps1`. `/`, `/studio.html`, dan `/_info` berjalan, `/package.json` dan `/server/mini.ps1` mengembalikan 404.
+- Menu penyiapan dijalankan dengan jawaban tiruan untuk jalur Ollama (deteksi RTX 3060, katalog, lewati unduhan, pilih model yang sudah ada) dan jalur `--model`.
+- Browser sungguhan di `http://127.0.0.1:8555` dengan Ollama sungguhan: panel model menampilkan 10 model terpasang, saran `gemma4:e4b` untuk RTX 3060 12 GB, tombol Pakai mengisi model, dan `/api/pull` nyata (model yang sudah ada) mengalirkan progres sampai `success`. Tanpa galat JS dan tanpa `OLLAMA_ORIGINS`.
+- Uji otomatis baru: `tests/test_peluncur.js` (server berkas, `/_info`, hanya halaman yang boleh disajikan, katalog dan saran Python sama dengan JS) dan `tests/test_ollama_panel.js` (20 cek di game dan Studio: katalog, kecocokan, unduhan dengan progres, model di luar katalog, galat dari Ollama, unduhan terputus, tombol Pakai, Ollama mati).
+- Belum diuji: Windows tanpa winget saat Ollama belum terpasang (jalur pemasangan otomatis), unduhan model besar sungguhan lewat panel (hanya model yang sudah ada), Mac dan Linux (`mulai.sh`), banyak mahasiswa mengunduh bersamaan di jaringan kampus.
 
 ## 3. Simulasi sumber daya komputasi rendah
 
@@ -83,7 +87,7 @@ Dari browser (`file://` dan `http://localhost`): Tes koneksi berhasil, alur penu
 | Kafe (7 pesan) | 7 dari 7 | 5 dari 7 dijawab LLM |
 | Studio (6 pesan) | 5 dari 6 | "go live" dijawab LLM sebagai tidak paham karena prompt belum memuat alias ruang. **Diperbaiki**: alias dan kata gaul ruang kini masuk prompt. Belum diukur ulang ke OpenRouter karena layanan gratis lambat |
 
-### 4.2 Model lokal Python dari browser
+### 4.2 Model lokal Python dari browser (arsip: model Python sudah dihapus dari proyek)
 
 `test_browser_live.js` dengan `LOKAL=1`, dari `file://` dan `http://localhost`: semua lulus (CORS server mengizinkan, grammar JSON, router hemat). Diulang setelah refactor dunia: lulus.
 
@@ -202,7 +206,6 @@ Diuji 17 sampai 19 November 2026. Semua uji v1 tetap lulus di setiap commit. `np
 | Browser dengan GPU sungguhan (kecepatan grafis realistis) | Semua uji WebGL memakai software rendering. Angka fps bukan indikator GPU |
 | Laptop berspesifikasi rendah fisik, RAM 4 GB | Hanya simulasi CPU dan sinyal perangkat |
 | Mikrofon dan pengenalan suara `id-ID` | Butuh suara manusia dan izin mikrofon |
-| Pemasangan `llama-cpp-python` di mesin lain | Diuji di Windows x64 dengan Python 3.12. macOS, Linux, dan Python lain belum |
 | GitHub Pages memanggil server lokal atau Ollama | Hanya diuji dari `file://` dan `http://localhost` |
 | Ruang buatan dengan definisi sangat besar atau sangat aneh | Pemeriksa membatasi jumlah dan panjang, tetapi tidak ada uji fuzzing |
 | Firefox, Safari, perangkat sentuh nyata | Hanya Chrome dan emulasi lebar 390 px |

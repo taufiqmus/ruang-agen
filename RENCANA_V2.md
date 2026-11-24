@@ -43,7 +43,7 @@ Mahasiswa merakit rumah pintar sendiri dalam 3D (ruang, kebun, kandang, ESP32, s
 
 ## Status
 
-Semua tonggak selesai (lihat `git log`). Belum: token Telegram sungguhan (butuh token pengguna), Open-Meteo nyata.
+Semua tonggak selesai (lihat `git log`). Peluncur disederhanakan (24 November 2026): model Python dihapus, MULAI.bat tanpa pemasangan, model Ollama dipilih di menu dan diunduh dari panel di game. Belum: token Telegram sungguhan (butuh token pengguna), Open-Meteo nyata.
 
 ## Tutorial (19 November 2026)
 

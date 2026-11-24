@@ -20,7 +20,7 @@
   let st = I.status(W, S);
   const cfg = Object.assign({ mode: 'parser', ollamaUrl: 'http://localhost:11434', ollamaModel: 'qwen2.5:7b', lokalUrl: (/^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:8000') + '/v1', lokalModel: 'lokal', apiKey: '', models: 'openrouter/free' }, baca(K.cfg, {}));
   // pilihan dari menu penyiapan MULAI.bat (?otak=ollama&model=...), hanya bila mahasiswa belum memilih otak sendiri
-  if (['parser', 'ollama', 'lokal'].includes(param.get('otak')) && !baca(K.cfg, null)) { cfg.mode = param.get('otak'); if (param.get('model')) cfg.ollamaModel = param.get('model'); tulis(K.cfg, Object.assign({}, cfg, { otomatis: true })); }
+  if (['parser', 'ollama', 'lokal', 'kunci'].includes(param.get('otak')) && !baca(K.cfg, null)) { cfg.mode = param.get('otak'); if (param.get('model')) cfg.ollamaModel = param.get('model'); tulis(K.cfg, Object.assign({}, cfg, { otomatis: true })); }
   const stat = Object.assign({ dibalas: 0, aksiAgen: 0, aksiAturan: 0, jawabRak: 0, injeksiDitolak: 0, aksiDitolak: 0, delegasi: 0, telegramDibalas: 0, dijawabSaatKacau: 0, laporanJadwal: 0 }, baca(K.stat, {}));
   const misiSelesai = new Set(baca(K.misi, []));
   const data = Object.assign({ kalender: [], log: [], pengingat: [] }, baca(K.data, {}));
@@ -783,7 +783,7 @@
   function renderModel() {
     const P = $('#model'); P.replaceChildren();
     P.appendChild(mk('h3', '', 'Otak utama'));
-    const m = field(P, 'Sumber otak', pilihanEl([['parser', 'Tanpa AI: parser aturan'], ['lokal', 'Model lokal Python (MULAI.bat)'], ['ollama', 'Ollama di laptop ini'], ['kunci', 'OpenRouter (kunci sendiri)']], cfg.mode)); m.id = 'mdMode';
+    const m = field(P, 'Sumber otak', pilihanEl([['parser', 'Tanpa AI: parser aturan'], ['lokal', 'Server lokal lain (kompatibel OpenAI)'], ['ollama', 'Ollama di laptop ini'], ['kunci', 'OpenRouter (kunci sendiri)']], cfg.mode)); m.id = 'mdMode';
     const isi = mk('div'); P.appendChild(isi);
     const gambar = () => {
       isi.replaceChildren();
@@ -791,8 +791,10 @@
         const u = field(isi, 'Alamat Ollama', mk('input')); u.type = 'text'; u.value = cfg.ollamaUrl; u.onchange = () => { cfg.ollamaUrl = u.value; };
         const s = field(isi, 'Model', pilihanEl(daftarOllama.map(x => [x.nama, `${x.nama} (${x.gb.toFixed(1)} GB)`]).concat(daftarOllama.some(x => x.nama === cfg.ollamaModel) ? [] : [[cfg.ollamaModel, cfg.ollamaModel]]), cfg.ollamaModel)); s.id = 'mdModel'; s.onchange = () => { cfg.ollamaModel = s.value; };
         const b = mk('button', 'btn sm', 'Muat daftar model'); b.type = 'button'; b.onclick = async () => { await muatOllama(); gambar(); toast(daftarOllama.length + ' model ditemukan.', !!daftarOllama.length); }; isi.appendChild(b);
+        const kel = mk('div'); kel.id = 'mdKelola'; isi.append(mk('h3', '', 'Unduh atau tambah model'), kel);
+        if (window.OllamaKelola) window.OllamaKelola.panel(kel, { base: () => cfg.ollamaUrl, aktif: () => cfg.ollamaModel, pakai: n => { cfg.ollamaModel = n; if (![...s.options].some(o => o.value === n)) s.add(new Option(n, n)); s.value = n; toast(n + ' dipilih. Klik Simpan.', true); }, setelahUbah: () => muatOllama() });
         isi.appendChild(mk('p', 'note', 'Untuk agen yang memanggil tool, pakai model yang mendukung tool calling, misalnya qwen2.5:7b atau gemma4:e4b. Model 1,5B ke bawah jarang berhasil, dan parser akan mengambil alih.'));
-      } else if (m.value === 'lokal') { const u = field(isi, 'Alamat server', mk('input')); u.type = 'text'; u.value = cfg.lokalUrl; u.onchange = () => { cfg.lokalUrl = u.value; }; isi.appendChild(mk('p', 'note', 'Jalankan MULAI.bat. Model kecil di CPU jarang bisa memakai tool, jadi router hemat dan parser banyak membantu.')); }
+      } else if (m.value === 'lokal') { const u = field(isi, 'Alamat server', mk('input')); u.type = 'text'; u.value = cfg.lokalUrl; u.onchange = () => { cfg.lokalUrl = u.value; }; isi.appendChild(mk('p', 'note', 'Untuk server yang berbicara seperti OpenAI (misalnya LM Studio). Kebanyakan mahasiswa cukup memakai Ollama.')); }
       else if (m.value === 'kunci') { const k = field(isi, 'Kunci OpenRouter', mk('input')); k.type = 'password'; k.value = cfg.apiKey; k.onchange = () => { cfg.apiKey = k.value; }; const md = field(isi, 'Model (pisah koma)', mk('input')); md.type = 'text'; md.value = cfg.models; md.onchange = () => { cfg.models = md.value; }; isi.appendChild(mk('p', 'note', 'Kunci hanya disimpan di browser ini. Akun gratis dibatasi sekitar 50 permintaan per hari, dan satu pesan agen bisa memakai beberapa permintaan.')); }
       else isi.appendChild(mk('p', 'note', 'Parser memahami perintah dan pertanyaan sederhana tanpa AI. Cocok untuk laptop apa pun dan tanpa internet.'));
     };
@@ -813,18 +815,17 @@
     P.appendChild(mk('p', 'note', 'Kamu akan merakit rumah pintar (ESP, sensor, kabel, Wi-Fi) dan otak agennya sendiri. Pertama, pilih otak yang cocok dengan laptopmu. Bisa diubah kapan saja di tab Model.'));
     let gpu = '-'; try { const gl = document.createElement('canvas').getContext('webgl'); const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'tidak diketahui'; } catch (e) { /* abaikan */ }
     const ol = await muatOllama();
-    let lokal = false; if (/^https?:$/.test(location.protocol)) { try { const c = new AbortController(); setTimeout(() => c.abort(), 1500); lokal = (await fetch(location.origin + '/v1/models', { signal: c.signal })).ok; } catch (e) { lokal = false; } }
     const gpuAsli = gpu && !/swiftshader|llvmpipe|basic render|software/i.test(gpu);
-    if (location.protocol === 'file:') P.appendChild(mk('p', 'note', 'Halaman ini dibuka sebagai berkas. Ollama menolak halaman berkas, jadi bila Ollama terpasang tetapi tidak terdeteksi, buka studio lewat MULAI.bat --tanpa-model --studio.'));
-    P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}. Server model lokal: ${lokal ? 'ada' : 'tidak ada'}.`));
+    if (location.protocol === 'file:') P.appendChild(mk('p', 'note', 'Halaman ini dibuka sebagai berkas. Ollama menolak halaman berkas, jadi bila Ollama terpasang tetapi tidak terdeteksi, buka studio lewat MULAI.bat (pilih Easy Agent Visualizer di menu).'));
+    P.appendChild(mk('p', '', `Laptopmu: ${navigator.hardwareConcurrency || '?'} inti CPU, RAM ${navigator.deviceMemory ? navigator.deviceMemory + ' GB atau lebih' : 'tidak diketahui'}, grafis: ${potong(gpu, 60)}. Ollama: ${ol.length ? ol.length + ' model' : 'tidak terdeteksi'}.`));
     const saranM = ol.find(m => /gemma4:e4b|qwen2\.5:7b/.test(m.nama)) || ol[0];
     const opsi = [
       ['parser', 'Tanpa AI', 'Parser aturan. Jalan di laptop apa pun, tanpa internet.'],
       ['ollama', 'Ollama', ol.length ? `Pakai ${saranM.nama}${gpuAsli ? ' (ada kartu grafis, cepat)' : ''}.` : 'Belum terdeteksi. Pasang Ollama dulu (lihat PANDUAN).'],
-      ['lokal', 'Model lokal Python', lokal ? 'Server MULAI.bat terdeteksi.' : 'Jalankan MULAI.bat untuk memakai ini.'],
+      
       ['kunci', 'OpenRouter', 'Model besar lewat internet dengan kunci gratis sendiri.']
     ];
-    const rek = ol.length && gpuAsli ? 'ollama' : lokal ? 'lokal' : ol.length ? 'ollama' : 'parser';
+    const rek = ol.length ? 'ollama' : 'parser';
     let dipilih = rek;
     const grid = mk('div', 'pilihan'); P.appendChild(grid);
     opsi.forEach(([v, j, d]) => { const b = mk('button'); b.type = 'button'; b.dataset.v = v; b.setAttribute('aria-pressed', v === dipilih); b.append(mk('b', '', j + (v === rek ? ' (disarankan)' : '')), mk('small', '', d)); b.onclick = () => { dipilih = v; grid.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); }; grid.appendChild(b); });

@@ -2,7 +2,7 @@ const ALAT = require('./alat');   // pindah ke akar repo, cari Chrome dan three.
 /* Uji nyata dari browser ke OpenRouter atau Ollama (CORS, header, alur penuh). Hanya three.js yang dialihkan ke salinan lokal.
    Pakai: OPENROUTER_API_KEY=... PW=... THREE=... CHROME=... node tests/test_browser_live.js
           OLLAMA=1 PW=... THREE=... CHROME=... node tests/test_browser_live.js   (Ollama berjalan di localhost:11434)
-          LOKAL=1 PW=... THREE=... CHROME=... node tests/test_browser_live.js    (python server_lokal.py berjalan di localhost:8000, router hemat)
+          LOKAL=1 PW=... THREE=... CHROME=... node tests/test_browser_live.js    (server kompatibel OpenAI berjalan di localhost:8000, router hemat)
    Dijalankan dua kali: dari file:// (origin null) dan dari http://localhost (server statis sementara). */
 const path = require('path'), http = require('http'), fs = require('fs');
 const { chromium } = require(ALAT.PW);

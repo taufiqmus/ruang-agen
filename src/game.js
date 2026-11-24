@@ -64,7 +64,7 @@
     router: 'aturan', embedModel: 'embeddinggemma', guardModel: '', ragMode: 'tfidf', rerank: false, kutip: false, ringkasRiwayat: false, ingatBertahan: false }, baca(KFG, {}));
   if (!['parser', 'kunci', 'ollama', 'lokal'].includes(cfg.mode)) cfg.mode = 'parser'; // mode lama yang sudah dihapus
   // pilihan dari menu penyiapan MULAI.bat (?otak=ollama&model=...), hanya bila pemain belum memilih otak sendiri
-  { const q = new URLSearchParams(location.search); if (q.get('otak') === 'ollama' && !baca(KFG, null)) { cfg.mode = 'ollama'; if (q.get('model')) cfg.ollamaModel = q.get('model'); cfg.otomatis = true; tulis(KFG, cfg); } }
+  { const q = new URLSearchParams(location.search); if (['ollama', 'kunci'].includes(q.get('otak')) && !baca(KFG, null)) { cfg.mode = q.get('otak'); if (q.get('otak') === 'ollama' && q.get('model')) cfg.ollamaModel = q.get('model'); cfg.otomatis = true; tulis(KFG, cfg); } }
   const simpanCfg = () => tulis(KFG, cfg);
   const lokalan = () => cfg.mode === 'lokal' || cfg.mode === 'ollama';
   const cfgAktif = () => ({ mode: cfg.mode, apiKey: String(cfg.apiKey).trim(), models: String(cfg.models).split(',').map(s => s.trim()).filter(Boolean), ollamaUrl: String(cfg.ollamaUrl).trim(), ollamaModel: String(cfg.ollamaModel).trim(), lokalUrl: String(cfg.lokalUrl).trim(), lokalModel: String(cfg.lokalModel).trim(),
@@ -554,7 +554,13 @@
     simpanCfg(); tampilGrup(); renderOtak();
   }
   /* Daftar model Ollama diambil dari /api/tags, jadi pemain cukup memilih model yang sudah diunduh. */
+  let panelOl = null;
+  function pastikanPanelOllama() {
+    if (panelOl || !window.OllamaKelola) return;
+    panelOl = window.OllamaKelola.panel($('#otOllamaPanel'), { base: () => $('#otOllamaUrl').value || cfg.ollamaUrl, aktif: () => $('#otOllamaModel').value, pakai: n => { $('#otOllamaModel').value = n; $('#otStatus').textContent = n + ' dipilih. Klik Simpan.'; }, setelahUbah: () => muatModelOllama() });
+  }
   async function muatModelOllama() {
+    pastikanPanelOllama();
     const sel = $('#otOllamaPilih'), st = $('#otStatus');
     const base = String($('#otOllamaUrl').value || 'http://localhost:11434').trim().replace(/\/+$/, '');
     st.textContent = 'Memuat daftar model Ollama...';
@@ -571,7 +577,7 @@
       st.textContent = `${daftar.length} model ditemukan. Pilih, lalu Simpan.`;
     } catch (e) {
       sel.innerHTML = ''; sel.appendChild(mk('option', '', '(Ollama tidak terjangkau)'));
-      st.textContent = 'Daftar model gagal dimuat. Pastikan Ollama berjalan dan game dibuka lewat MULAI.bat --tanpa-model (atau OLLAMA_ORIGINS sudah diatur).';
+      st.textContent = 'Daftar model gagal dimuat. Pastikan Ollama berjalan dan game dibuka lewat MULAI.bat (atau OLLAMA_ORIGINS sudah diatur).';
     }
   }
   $('#otOllamaMuat').addEventListener('click', muatModelOllama);
@@ -627,20 +633,6 @@
       $('#otUjiRingkas').textContent = `Benar ${benar} dari ${kasus.length}, rata-rata ${(total / kasus.length / 1000).toFixed(1)} detik per pesan. Router: ${cfg.router}, otak: ${cfg.mode}.`;
     } finally { $('#otUji').disabled = false; setBusy(false); }
   });
-  /* Dibuka lewat MULAI.bat: game dan model berada di alamat yang sama. Bila pengguna belum pernah memilih otak sendiri,
-     otak langsung beralih ke model lokal, jadi mahasiswa tidak perlu mengatur apa pun. */
-  async function deteksiModelLokal() {
-    if (!/^https?:$/.test(location.protocol) || !['127.0.0.1', 'localhost'].includes(location.hostname)) return;
-    let ok = false;
-    try { const ctl = new AbortController(); setTimeout(() => ctl.abort(), 3000); ok = (await fetch(location.origin + '/v1/models', { signal: ctl.signal })).ok; } catch (e) { /* tidak ada model */ }
-    if (!ok) return;
-    const url = location.origin + '/v1';
-    if (!baca(KFG, null) || cfg.otomatis) {
-      Object.assign(cfg, { mode: 'lokal', lokalUrl: url, hemat: true, otomatis: true }); simpanCfg(); isiForm(); renderOtak();
-      chat('sis', 'Model lokal terdeteksi di laptop ini. Otak otomatis memakai model lokal dengan router hemat. Bisa diubah di tab Otak.');
-    } else if (cfg.mode !== 'lokal') chat('sis', `Model lokal terdeteksi di ${url}. Untuk memakainya, pilih "Model lokal kecil, Python" di tab Otak.`);
-  }
-
   /* ---------- tab Manual: editor rak, memori, dan uji pencarian ---------- */
   const opsiRag = () => ({ sinonim: SM().rag.sinonim, stop: SM().rag.stop });
   function renderNilai() {
@@ -928,7 +920,6 @@
   if (!masukSemesta(G.semesta, G.ruang)) { if (!masukSemesta('kampus', 'lab')) throw new Error('Semesta bawaan gagal dimuat'); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => adegan.gambarUlang());
   requestAnimationFrame(t => { last = t; loop(t); });
-  deteksiModelLokal();
   /* ---------- tutorial interaktif (Pertemuan 1): pengenalan agen lewat game ---------- */
   if (window.Tutorial) {
     const awalT = {};

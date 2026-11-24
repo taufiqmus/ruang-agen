@@ -410,7 +410,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
         <select id="otMode">
           <option value="parser">Parser aturan (gratis, tanpa internet)</option>
           <option value="kunci">LLM dengan kunci OpenRouter sendiri</option>
-          <option value="lokal">Model lokal kecil, Python (disarankan untuk laptop biasa)</option>
+          <option value="lokal">Server lokal lain, kompatibel OpenAI (lanjutan)</option>
           <option value="ollama">Ollama lokal (di laptop ini)</option>
         </select>
         <div class="grp" data-mode="kunci">
@@ -423,7 +423,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
           <input id="otLokalUrl" type="url" placeholder="http://localhost:8000/v1">
           <label for="otLokalModel">Nama model (bebas)</label>
           <input id="otLokalModel" type="text" placeholder="qwen2.5-1.5b">
-          <p class="note">Jalankan server dengan <code>python server_lokal.py</code> di laptop ini (langkahnya ada di PANDUAN.md). Tanpa kuota dan tanpa internet setelah model terunduh.</p>
+          <p class="note">Untuk server lain yang berbicara seperti OpenAI (misalnya LM Studio atau llama.cpp). Mahasiswa umumnya cukup memakai Ollama di atas.</p>
         </div>
         <div class="grp" data-mode="lokalan">
           <label class="cek"><input type="checkbox" id="otHemat"> Router hemat: parser mengerjakan pesan yang dikenalnya, model hanya untuk pesan baru</label>
@@ -441,7 +441,8 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
           <div style="display:flex;gap:6px"><select id="otOllamaPilih"><option value="">(klik Muat daftar)</option></select><button class="btn" type="button" id="otOllamaMuat" style="white-space:nowrap">Muat daftar</button></div>
           <label for="otOllamaModel">Model Ollama</label>
           <input id="otOllamaModel" type="text" placeholder="qwen2.5:1.5b">
-          <p class="note">Unduh model lain lewat Command Prompt, misalnya <code>ollama pull llama3.2:1b</code>, lalu klik Muat daftar.</p>
+          <h3>Unduh atau tambah model</h3>
+          <div id="otOllamaPanel"></div>
           <p class="note">Ollama harus berjalan di laptop ini dan mengizinkan alamat halaman game lewat OLLAMA_ORIGINS. Tanpa kuota dan tanpa internet, tetapi hanya berfungsi di laptop yang menjalankannya.</p>
         </div>
         <div class="grp" data-mode="llm">
@@ -493,6 +494,7 @@ details.json pre { margin: 8px 0 0; max-height: 170px; overflow: auto; backgroun
 <script>
 /*ROUTER*/
 /*LLM*/
+/*OLLAMAKELOLA*/
 </script>
 <script>
 /*ADEGAN*/

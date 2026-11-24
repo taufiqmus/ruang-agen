@@ -7,33 +7,18 @@ Rakit rumah pintarmu sendiri dalam 3D (ruang, kebun, kandang ayam, ESP32, sensor
 | Cara | Langkah | Bisa memakai |
 |---|---|---|
 | Paling cepat | Klik dua kali `studio.html` | Parser, OpenRouter, Telegram |
-| Dengan AI di laptop | Klik dua kali `MULAI.bat`, lalu di menu penyiapan pilih otak AI, model, dan **Easy Agent Visualizer**. Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama dan model lokal |
+| Dengan AI di laptop | Klik dua kali `MULAI.bat`, lalu di menu penyiapan pilih otak AI, model, dan **Easy Agent Visualizer**. Browser terbuka di `http://127.0.0.1:8000/studio.html` | Semua, termasuk Ollama |
 
 Ollama hanya mau dipanggil dari alamat `http://127.0.0.1` atau `http://localhost`, jadi untuk Ollama buka studio lewat `MULAI.bat`.
 
-Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam:
-1. Menu menampilkan isi laptopmu: jumlah inti CPU, RAM, kartu grafis NVIDIA (bila ada), dan apakah Ollama sudah terpasang.
-2. Pilih otak AI. Menu memberi saran sesuai laptopmu, tetapi pilihannya bebas:
+Saat pertama kali, `MULAI.bat` membuka **menu penyiapan** di jendela hitam (tanpa memasang apa pun, siap dalam hitungan detik): pilih otak (tanpa AI, Ollama, atau OpenRouter), pilih model Ollama dari katalog (ukuran dan penilaian cocok untuk laptopmu), lalu pilih **Easy Agent Visualizer**. Pilihan disimpan. Tambah model nanti lewat `MULAI.bat --model`, atau di tab **Model** studio: bagian **Unduh atau tambah model** punya tombol **Unduh** dengan bar kemajuan. Detail lengkap ada di `PANDUAN.md`.
 
-   | Pilihan | Unduhan | Cocok untuk |
-   |---|---|---|
-   | 1. Tanpa AI (parser) | Tidak ada model | Laptop apa pun |
-   | 2. Model lokal kecil 0,5B | Sekitar 0,5 GB | RAM 4 GB, jawaban sederhana |
-   | 3. Model lokal sedang 1,5B | Sekitar 1 GB | RAM 8 GB ke atas, tanpa kartu grafis |
-   | 4. Ollama | Sesuai model yang dipilih | Laptop dengan Ollama, paling cepat bila ada kartu grafis NVIDIA |
-
-3. Bila memilih Ollama, menu menampilkan daftar model beserta ukuran dan syaratnya (`qwen2.5:1.5b`, `qwen2.5:3b`, `qwen2.5:7b`, `gemma4:e4b`, ditambah `embeddinggemma` dan `llama-guard3:1b`). Model yang terlalu berat untuk laptopmu ditandai. Ketik nomornya (boleh beberapa, dipisah koma), lalu menu mengunduhnya lewat `ollama pull`. Bila Ollama belum terpasang, menu menawarkan membuka halaman unduhannya.
-4. Pilih aplikasi yang dibuka: **Easy Agent Visualizer** atau **Ruang Agen**.
-
-Pilihan disimpan, jadi berikutnya `MULAI.bat` langsung jalan. Untuk mengubah pilihan, jalankan `MULAI.bat --pilih`. Tanpa model lokal, hanya paket server kecil yang dipasang.
-
-Saat pertama dibuka, studio memeriksa laptopmu (jumlah inti CPU, RAM, kartu grafis), mencari Ollama dan server model lokal, lalu menyarankan otak yang cocok. Pilihannya tetap bebas:
+Saat pertama dibuka, studio memeriksa laptopmu (jumlah inti CPU, RAM, kartu grafis), mencari Ollama, lalu menyarankan otak yang cocok. Pilihannya tetap bebas:
 
 | Otak | Cocok untuk |
 |---|---|
 | Tanpa AI (parser) | Laptop apa pun, tanpa internet |
 | Ollama | Laptop dengan kartu grafis. Untuk agen yang memakai alat, pilih `qwen2.5:7b` atau `gemma4:e4b` |
-| Model lokal Python | Laptop tanpa Ollama, lewat `MULAI.bat` |
 | OpenRouter | Model besar lewat internet, kunci gratis milikmu sendiri |
 
 Kamu juga memilih titik awal: **Lahan kosong** (ikuti misi dari ESP pertama) atau **Rumah, kebun, dan kandang** (rumah siap pakai untuk dijelajahi). Pilihan model bisa diubah kapan saja di tab **Model**, dan wizard bisa dibuka lagi lewat tombol **Pilih model** (pilihan bawaannya mempertahankan rumah dan papanmu). Setiap kali preset menimpa rumah atau papan, chat menampilkan tombol **Kembalikan yang tadi**.
@@ -240,7 +225,7 @@ ESP, sensor, dan perangkat di studio murni simulasi. Yang bisa dibawa keluar ada
 | Kabel tidak mau tersambung | Tipe port berbeda. Baca pesan merah di atas papan |
 | Agen bilang "belum punya alat" | Sambungkan Alat Sensor atau Alat Aktuator ke port **alat** pada blok Agen |
 | Agen menolak menyalakan pemanas | Guard Aksi bekerja: kandang sudah panas, atau kipas menyala di area yang sama |
-| Ollama tidak terjangkau | Buka studio lewat `MULAI.bat --tanpa-model --studio`, bukan dengan klik dua kali |
+| Ollama tidak terjangkau | Buka studio lewat `MULAI.bat` (pilih Easy Agent Visualizer), bukan dengan klik dua kali |
 | AI menjawab tanpa menyalakan apa pun | Model kecil sering tidak bisa memakai alat. Pakai `qwen2.5:7b` atau `gemma4:e4b`, atau biarkan router hemat menyala |
 | Telegram "bentrok (409)" | Token dipakai di tempat lain. Tutup yang lain atau klik **Hapus webhook** |
 | Animasi patah-patah | Jeda simulasi atau kurangi jumlah perangkat (maksimal 48). Laptop lemah otomatis memakai grafis ringan |

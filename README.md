@@ -9,7 +9,7 @@ Gratis, bisa dimainkan tanpa internet, dan jalan di laptop biasa.
 | Cara | Langkah | Cocok untuk |
 |---|---|---|
 | **Langsung main** | Klik dua kali `index.html` (Chrome atau Edge) | Semua laptop, tanpa pasang apa pun |
-| **Dengan AI di laptop sendiri** | Klik dua kali `MULAI.bat` (Mac atau Linux: `./mulai.sh`). Menu penyiapan mendeteksi laptopmu, menyarankan model, lalu kamu memilih otak AI dan aplikasi. Pertama kali butuh internet dan beberapa menit, setelah itu beberapa detik | Belajar dengan model AI sungguhan, gratis dan tanpa kuota |
+| **Dengan AI di laptop sendiri** | Klik dua kali `MULAI.bat` (Mac atau Linux: `./mulai.sh`). Menu penyiapan mendeteksi laptopmu, lalu kamu memilih otak AI (Ollama, OpenRouter, atau parser), model Ollama dari katalog, dan aplikasi. Tanpa memasang Python atau paket apa pun, siap dalam hitungan detik. Model bisa ditambah kapan saja | Belajar dengan model AI sungguhan, gratis dan tanpa kuota |
 | **Untuk satu kelas** | Dosen mengunggah `index.html` ke GitHub Pages lalu membagikan alamatnya | Kelas daring |
 
 Lalu ketik di tab **Chat**, misalnya:
